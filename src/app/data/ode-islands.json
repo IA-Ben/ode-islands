@@ -144,14 +144,14 @@
         "height": 1920,
         "audio": true
       }
-    }
+    },
     {
       "text": {
         "subtitle": "NEXT UP"
       },
       "cta": {
-        "title": "Continue to Chapter ",
-        "url": "/chapter-2"
+        "title": "Continue to Chapter 3",
+        "url": "/chapter-3"
       },
       "theme": {
         "background": "#FBBAE0",
