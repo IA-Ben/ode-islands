@@ -131,9 +131,9 @@
     },
     {
       "video": {
-        "url": "1-ticket",
-        "width": 1920,
-        "height": 1080
+        "url": "2-ticket",
+        "width": 1080,
+        "height": 1920
       }
     },
     {
@@ -144,15 +144,87 @@
         "height": 1920,
         "audio": true
       }
+    }
+  ],
+  "chapter-3": [
+    {
+      "text": {
+        "title": "WELCOME TO THE ODE ISLANDS",
+        "cta": "Start Chapter"
+      },
+      "image": {
+        "url": "3-islands.jpg",
+        "width": 1080,
+        "height": 1920
+      },
+      "theme": {
+        "mix": "difference",
+        "title": "#37ffce"
+      }
     },
     {
       "text": {
-        "subtitle": "Chapter 3: Coming soon"
+        "description": "Who am I? What is this place? Where am I? How can it be so beautiful? Beautiful Beautiful ….Hippokiss"
+      }
+    },
+    {
+      "video": {
+        "url": "3-welcome",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "video": {
+        "url": "3-map",
+        "width": 1080,
+        "height": 1920
+      }
+    },
+    {
+      "video": {
+        "url": "3-trailer",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "video": {
+        "url": "3-statue",
+        "width": 1080,
+        "height": 1920
+      }
+    },
+    {
+      "video": {
+        "url": "3-running",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "text": {
+        "subtitle": "Behind-the-Scenes of the Ode Islands"
       },
       "theme": {
         "background": "#37ffce",
         "subtitle": "#000",
         "invert": true
+      }
+    },
+    {
+      "video": {
+        "url": "3-mocap",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
       }
     }
   ]
