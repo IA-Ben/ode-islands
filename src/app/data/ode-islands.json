@@ -145,6 +145,20 @@
         "audio": true
       }
     }
+    {
+      "text": {
+        "subtitle": "NEXT UP"
+      },
+      "cta": {
+        "title": "Continue to Chapter ",
+        "url": "/chapter-2"
+      },
+      "theme": {
+        "background": "#FBBAE0",
+        "subtitle": "#000",
+        "cta": "#E9F3E6"
+      }
+    }
   ],
   "chapter-3": [
     {
@@ -225,6 +239,16 @@
         "width": 1080,
         "height": 1920,
         "audio": true
+      }
+    },
+    {
+      "text": {
+        "subtitle": "COMING SOON"
+      },
+      "theme": {
+        "background": "#FBBAE0",
+        "subtitle": "#000",
+        "cta": "#E9F3E6"
       }
     }
   ]
