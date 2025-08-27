@@ -1,16 +1,9 @@
+
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: 'https', hostname: 'storage.googleapis.com' }]
-  },
-  turbo: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
   },
   typescript: {
     ignoreBuildErrors: false
@@ -18,6 +11,14 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
   experimental: {
     allowedDevOrigins: ['*.replit.dev', '*.repl.co', '*.worf.replit.dev']
+  },
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js',
+      },
+    },
   }
 }
 
