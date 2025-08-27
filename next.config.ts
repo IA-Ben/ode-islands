@@ -8,18 +8,7 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false
   },
-  trailingSlash: false,
-  experimental: {
-    allowedDevOrigins: ['*.replit.dev', '*.repl.co', '*.worf.replit.dev']
-  },
-  turbopack: {
-    rules: {
-      '*.svg': {
-        loaders: ['@svgr/webpack'],
-        as: '*.js',
-      },
-    },
-  }
+  trailingSlash: false
 }
 
 export default nextConfig
