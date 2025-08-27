@@ -17,7 +17,7 @@ interface PlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
 const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoUrlRef = useRef<string>("");
-  const videoUrl = video?.url ? `https://storage.googleapis.com/ode-island/vid/${video.url}/master.m3u8` : null;
+  const videoUrl = video?.url ? `https://storage.googleapis.com/ode-island/${video.url}/master.m3u8` : null;
   // const posterUrl = videoUrl?.replace("/master.m3u8", "/poster.jpg") || "";
 
   // Load HLS video once when url updates
