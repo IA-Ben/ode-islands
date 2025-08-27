@@ -4,17 +4,21 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: 'https', hostname: 'storage.googleapis.com' }]
   },
-  webpack: config => {
-    config.watchOptions = {
-      ...config.watchOptions,
-      ignored: ['**/resources/**', '**/node_modules/**']
-    }
-    return config
+  experimental: {
+    turbo: {
+      rules: {
+        '*.svg': {
+          loaders: ['@svgr/webpack'],
+          as: '*.js',
+        },
+      },
+    },
   },
   typescript: {
     ignoreBuildErrors: false
   },
-  trailingSlash: false
+  trailingSlash: false,
+  allowedDevOrigins: ['*.replit.dev', '*.repl.co']
 }
 
 export default nextConfig
