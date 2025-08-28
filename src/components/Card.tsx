@@ -66,11 +66,11 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
           />
         )}
         {/* Video */}
-        {video && videoUrl && (
+        {video && video.url && (
           <>
             <Player
               video={{
-                url: videoUrl,
+                url: video.url,
                 width: video.width,
                 height: video.height,
                 audio: video.audio,
