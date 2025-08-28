@@ -19,6 +19,11 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const videoUrlRef = useRef<string>("");
   const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || "";
   const videoUrl = video?.url ? `${cdnUrl}/vid/${video.url}/master.m3u8` : null;
+  
+  // Debug logging
+  console.log("CDN URL:", cdnUrl);
+  console.log("Video URL:", video?.url);
+  console.log("Final video URL:", videoUrl);
   // const posterUrl = videoUrl?.replace("/master.m3u8", "/poster.jpg") || "";
 
   // Load HLS video once when url updates
