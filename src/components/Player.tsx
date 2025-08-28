@@ -18,7 +18,18 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoUrlRef = useRef<string>("");
   const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || "";
-  const videoUrl = video?.url ? `${cdnUrl}/vid/${video.url}/master.m3u8` : null;
+  
+  // Handle both full URLs and identifiers
+  let videoUrl: string | null = null;
+  if (video?.url) {
+    if (video.url.startsWith('http')) {
+      // It's already a full URL, just add /master.m3u8
+      videoUrl = `${video.url}/master.m3u8`;
+    } else {
+      // It's an identifier, construct the full URL
+      videoUrl = `${cdnUrl}/vid/${video.url}/master.m3u8`;
+    }
+  }
   
   // Debug logging
   console.log("CDN URL:", cdnUrl);
