@@ -1,0 +1,55 @@
+
+> ode-island@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.4.4
+   - Local:        http://localhost:3000
+   - Network:      http://172.31.74.2:3000
+
+ ✓ Starting...
+ ✓ Ready in 2.6s
+ ○ Compiling / ...
+ ✓ Compiled / in 5.5s (562 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 6189ms
+ ⚠ Cross origin request detected from 3ca892ab-0068-4799-9d1a-3cfabec28a58-00-217wqluhfm8hd.worf.replit.dev to /_next/* resource. In a future major version of Next.js, you will need to explicitly configure "allowedDevOrigins" in next.config to allow this.
+Read more: https://nextjs.org/docs/app/api-reference/config/next-config-js/allowedDevOrigins
+ ○ Compiling /[id] ...
+ ✓ Compiled /[id] in 1511ms (626 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 2156ms
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 32ms
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 137ms
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 57ms
+ ✓ Compiled in 558ms (264 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 78ms
+ ✓ Compiled in 233ms (264 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 28ms
+ ✓ Compiled in 510ms (264 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 77ms
+ ✓ Compiled in 423ms (264 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 82ms
+ ✓ Compiled in 98ms (264 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 31ms
+ ✓ Compiled in 150ms (264 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /[id]. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET /chapter-1 200 in 43ms
