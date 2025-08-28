@@ -43,6 +43,10 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     videoUrlRef.current = videoUrl || "";
     const videoEl = videoRef.current;
     if (!videoEl || !videoUrl) return;
+    
+    // Clear any existing source first
+    videoEl.src = "";
+    
     if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
       // Native HLS support (Safari)
       videoEl.src = videoUrl;
@@ -53,9 +57,11 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       hls.on(Hls.Events.ERROR, (_, data) => {
         console.error("HLS error", data);
       });
-      // return () => {
-      //   hls.destroy();
-      // };
+      
+      // Cleanup function to destroy HLS instance
+      return () => {
+        hls.destroy();
+      };
     } else {
       console.error("HLS not supported in this browser");
     }
