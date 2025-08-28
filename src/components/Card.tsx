@@ -23,7 +23,6 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
   const subtitle = text?.subtitle;
   const description = text?.description;
   const imageUrl = image?.url ? `${cdnUrl}/img/${image.url}` : "";
-  const videoUrl = video?.url ? `${cdnUrl}/vid/${video.url}` : "";
   const videoImmersive = video && video?.type === "immersive" ? true : false;
   const textShadow = theme?.shadow ? "0 4px 16px rgba(0,0,0,0.4)" : undefined;
 
@@ -36,7 +35,7 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
     if (active && !anim) {
       setAnim(true);
     }
-  }, [videoUrl, active, anim, imageLoad]);
+  }, [active, anim, imageLoad]);
 
   return (
     <div
