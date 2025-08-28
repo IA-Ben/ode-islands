@@ -10,22 +10,3 @@ run = ["sh", "-c", "npm run dev"]
 [[ports]]
 localPort = 3000
 externalPort = 80
-
-[[ports]]
-localPort = 3001
-externalPort = 3001
-
-[workflows]
-runButton = "Dev Server"
-
-[[workflows.workflow]]
-name = "Dev Server"
-author = 39191462
-mode = "sequential"
-
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "npm run dev"
-
-hidden = [".next","node_modules",".env",".env.local"]
-run = "npm run dev"
