@@ -26,3 +26,6 @@ mode = "sequential"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "npm run dev"
+
+hidden = [".next","node_modules",".env",".env.local"]
+run = "npm run dev"
