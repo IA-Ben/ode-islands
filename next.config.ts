@@ -8,7 +8,11 @@ const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: false
   },
-  trailingSlash: false
+  trailingSlash: false,
+  // Ensure the app binds to 0.0.0.0 for external access in Replit
+  experimental: {
+    serverComponentsExternalPackages: []
+  }
 }
 
 export default nextConfig
