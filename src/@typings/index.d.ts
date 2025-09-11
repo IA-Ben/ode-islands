@@ -20,6 +20,7 @@ export type CardData = {
     width: number
     height: number
     audio?: boolean
+    audioMuted?: boolean
   }
   theme?: {
     mix?: CSSProperties['mixBlendMode']
