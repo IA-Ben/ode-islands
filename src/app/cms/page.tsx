@@ -24,6 +24,8 @@ export default function CMSPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<string>('chapter-1');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     checkAuthStatus();
@@ -38,12 +40,16 @@ export default function CMSPage() {
   const checkAuthStatus = async () => {
     try {
       console.log('Checking authentication status...');
-      const response = await fetch('/api/auth/user');
+      const response = await fetch('/api/auth/status');
       console.log('Auth status response:', response.status, response.statusText);
       if (response.ok) {
-        const userData = await response.json();
-        console.log('User data received:', userData);
-        setUser(userData);
+        // Get user data if authenticated
+        const userResponse = await fetch('/api/auth/user');
+        if (userResponse.ok) {
+          const userData = await userResponse.json();
+          console.log('User data received:', userData);
+          setUser(userData);
+        }
       } else {
         console.log('User not authenticated');
         setUser(null);
@@ -72,19 +78,35 @@ export default function CMSPage() {
     }
   };
 
-  const handleLogin = () => {
-    console.log('Login button clicked - redirecting to /api/login');
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginError('');
+    
     try {
-      window.location.href = '/api/login';
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password }),
+      });
+
+      if (response.ok) {
+        console.log('Login successful');
+        checkAuthStatus(); // Refresh auth status
+      } else {
+        const data = await response.json();
+        setLoginError(data.message || 'Invalid password');
+      }
     } catch (error) {
-      console.error('Error during login redirect:', error);
-      alert('Error during login redirect: ' + error);
+      console.error('Error during login:', error);
+      setLoginError('Login failed. Please try again.');
     }
   };
 
   const handleLogout = () => {
     // Clear user session and redirect
-    fetch('/api/logout', { method: 'POST' })
+    fetch('/api/auth/logout', { method: 'POST' })
       .then(() => {
         setUser(null);
         window.location.reload();
@@ -134,14 +156,34 @@ export default function CMSPage() {
           <h1 className="text-4xl font-bold mb-6">The Ode Islands</h1>
           <h2 className="text-2xl font-semibold mb-4">Admin Login</h2>
           <p className="text-gray-400 mb-8">
-            Sign in with your Replit account to access the content management system.
+            Enter the admin password to access the content management system.
           </p>
-          <Button 
-            onClick={handleLogin}
-            className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg"
-          >
-            🔐 Login with Replit
-          </Button>
+          
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Admin password"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+                required
+              />
+            </div>
+            
+            {loginError && (
+              <div className="text-red-400 text-sm">
+                {loginError}
+              </div>
+            )}
+            
+            <Button 
+              type="submit"
+              className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg"
+            >
+              🔐 Login
+            </Button>
+          </form>
         </div>
       </div>
     );

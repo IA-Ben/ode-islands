@@ -1,38 +1,70 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated, isAdmin } from "./replitAuth";
+import { setupSimpleAuth } from "./simpleAuth";
+import session from 'express-session';
+import connectPg from 'connect-pg-simple';
+
+// Simple auth middleware
+function isAuthenticated(req: any, res: any, next: any) {
+  if (req.session.isAuthenticated) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Authentication required' });
+  }
+}
+
+function isAdmin(req: any, res: any, next: any) {
+  if (req.session.isAuthenticated) {
+    next();
+  } else {
+    res.status(401).json({ error: 'Admin access required' });
+  }
+}
 
 // Re-export auth middleware
 export { isAuthenticated, isAdmin };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Auth middleware
-  await setupAuth(app);
+  // Setup session middleware
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: 7 * 24 * 60 * 60, // 1 week in seconds
+    tableName: "sessions",
+  });
+
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    },
+  }));
+
+  // Setup simple auth routes
+  setupSimpleAuth(app);
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = (req.user as any).claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      // For simple auth, just return basic admin user info
+      res.json({ 
+        id: 'admin',
+        email: 'admin@theodeislands.com',
+        first_name: 'Admin',
+        last_name: 'User',
+        is_admin: true
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
     }
-  });
-
-  app.post('/api/logout', (req, res) => {
-    req.logout(() => {
-      req.session.destroy((err) => {
-        if (err) {
-          console.error('Error destroying session:', err);
-          return res.status(500).json({ message: 'Failed to logout' });
-        }
-        res.clearCookie('connect.sid');
-        res.json({ message: 'Logged out successfully' });
-      });
-    });
   });
 
   // CMS API Routes - all require admin access
@@ -54,7 +86,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cms/chapters", isAdmin, async (req, res) => {
     try {
       const { id, cards } = req.body;
-      const userId = (req.user as any)?.claims?.sub;
+      const userId = 'admin'; // Simple auth user ID
       
       // Read current data
       const fs = await import('fs/promises');
