@@ -17,7 +17,7 @@ interface PlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
 const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoUrlRef = useRef<string>("");
-  const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || "https://storage.googleapis.com/ode-island";
+  const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || "https://storage.googleapis.com/odeislands";
   
   // Handle both full URLs and identifiers
   let videoUrl: string | null = null;
