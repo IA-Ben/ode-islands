@@ -27,7 +27,7 @@ export function getSession() {
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
     conString: process.env.DATABASE_URL,
-    createTableIfMissing: false,
+    createTableIfMissing: true,
     ttl: sessionTtl,
     tableName: "sessions",
   });
@@ -118,7 +118,7 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/login", (req, res, next) => {
     // Dynamically detect which domain strategy to use based on the request
-    const requestHost = req.get('host') || req.hostname;
+    const requestHost = req.hostname.toLowerCase();
     console.log('Login request from host:', requestHost);
     
     // Find matching strategy or fall back to primary domain
@@ -137,7 +137,7 @@ export async function setupAuth(app: Express) {
 
   app.get("/api/callback", (req, res, next) => {
     // Dynamically detect which domain strategy to use based on the request
-    const requestHost = req.get('host') || req.hostname;
+    const requestHost = req.hostname.toLowerCase();
     console.log('Callback request from host:', requestHost);
     
     // Find matching strategy or fall back to primary domain
