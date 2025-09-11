@@ -10,9 +10,7 @@ const nextConfig: NextConfig = {
   },
   trailingSlash: false,
   // Ensure the app binds to 0.0.0.0 for external access in Replit
-  experimental: {
-    serverComponentsExternalPackages: []
-  }
+  serverExternalPackages: []
 }
 
 export default nextConfig

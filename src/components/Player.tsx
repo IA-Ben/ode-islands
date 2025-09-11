@@ -17,7 +17,7 @@ interface PlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
 const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoUrlRef = useRef<string>("");
-  const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || "";
+  const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || "https://storage.googleapis.com/ode-island";
   
   // Handle both full URLs and identifiers
   let videoUrl: string | null = null;
@@ -31,10 +31,6 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     }
   }
   
-  // Debug logging
-  console.log("CDN URL:", cdnUrl);
-  console.log("Video URL:", video?.url);
-  console.log("Final video URL:", videoUrl);
   // const posterUrl = videoUrl?.replace("/master.m3u8", "/poster.jpg") || "";
 
   // Load HLS video once when url updates
