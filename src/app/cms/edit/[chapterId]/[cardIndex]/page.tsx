@@ -11,6 +11,14 @@ type ChapterData = {
   [key: string]: CardData[];
 };
 
+type User = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isAdmin: boolean;
+};
+
 export default function CardEditorPage() {
   const params = useParams();
   const router = useRouter();
@@ -21,19 +29,21 @@ export default function CardEditorPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [cardData, setCardData] = useState<CardData>({});
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
   
   const isNewCard = cardIndex === 'new';
   const cardIndexNum = isNewCard ? -1 : parseInt(cardIndex);
 
   useEffect(() => {
     checkAuth();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     if (user?.isAdmin) {
       fetchChapters();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
@@ -70,7 +80,7 @@ export default function CardEditorPage() {
       } else {
         router.push('/cms');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Auth check failed:', error);
       router.push('/cms');
     }
@@ -83,7 +93,7 @@ export default function CardEditorPage() {
         const data = await response.json();
         setChapters(data);
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error fetching chapters:', error);
     }
   };
@@ -180,7 +190,7 @@ export default function CardEditorPage() {
       } else {
         alert('Failed to save card');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Error saving card:', error);
       alert('Error saving card');
     } finally {
@@ -559,7 +569,7 @@ export default function CardEditorPage() {
                       value={cardData.theme?.mix || 'normal'}
                       onChange={(e) => setCardData(prev => ({
                         ...prev,
-                        theme: { ...prev.theme, mix: e.target.value as any }
+                        theme: { ...prev.theme, mix: e.target.value as 'normal' | 'multiply' | 'screen' | 'overlay' | 'soft-light' | 'hard-light' | 'color-dodge' | 'color-burn' | 'darken' | 'lighten' | 'difference' | 'exclusion' | 'hue' | 'saturation' | 'color' | 'luminosity' }
                       }))}
                       className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
                     >
