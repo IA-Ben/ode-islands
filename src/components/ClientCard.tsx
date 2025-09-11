@@ -1,6 +1,7 @@
 "use client";
 
 import { Card } from "./Card";
+import type { CardData } from '@/@typings';
 
 interface ClientCardProps {
   data: CardData;

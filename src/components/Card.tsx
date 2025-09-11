@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import type { CardData } from '@/@typings';
 
 import AnimateText from "./AnimateText";
 import Player from "./Player";

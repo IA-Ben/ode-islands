@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import ClientCard from "@/components/ClientCard";
 import Footer from "@/components/Footer";
+import type { CardData } from '@/@typings';
 import data from "../data/ode-islands.json";
 
 type ChapterData = {
