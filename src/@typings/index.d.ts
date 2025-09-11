@@ -58,7 +58,7 @@ export type CardData = {
       trigger: 'click' | 'hover' | 'timer' | 'message'
       target: string
       action: string
-      params?: any
+      params?: Record<string, unknown>
     }>
     
     // Communication with parent page

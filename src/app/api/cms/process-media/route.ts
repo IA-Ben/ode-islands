@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   // SECURITY MEASURE: This endpoint is disabled due to critical security vulnerabilities
   // See SECURITY_NOTICE.md for details
   return NextResponse.json(

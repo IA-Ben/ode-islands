@@ -3,21 +3,121 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import type { CardData } from '@/@typings';
 
+// PlayCanvas API type definitions
+interface PlayCanvasApp {
+  root: PlayCanvasEntity;
+  assets: PlayCanvasAssetRegistry;
+  scene: PlayCanvasScene;
+  start: () => void;
+  destroy: () => void;
+  setCanvasFillMode: (mode: number) => void;
+  setCanvasResolution: (mode: number) => void;
+}
+
+interface PlayCanvasEntity {
+  addChild: (child: PlayCanvasEntity) => void;
+  addComponent: (type: string, data?: Record<string, unknown>) => void;
+  setPosition: (...args: number[]) => void;
+  setEulerAngles: (...args: number[]) => void;
+  setLocalScale: (...args: number[]) => void;
+  lookAt: (...args: number[]) => void;
+}
+
+interface PlayCanvasAsset {
+  id: number;
+  resource: unknown;
+  ready: (callback: () => void) => void;
+  on: (event: string, callback: (err: Error | string) => void) => void;
+}
+
+interface PlayCanvasAssetRegistry {
+  add: (asset: PlayCanvasAsset) => void;
+  load: (asset: PlayCanvasAsset) => void;
+}
+
+interface PlayCanvasScene {
+  ambientLight: {
+    set: (...args: number[]) => void;
+  };
+}
+
+interface PlayCanvasModule {
+  Application: new (canvas: HTMLCanvasElement, options?: Record<string, unknown>) => PlayCanvasApp;
+  Asset: new (name: string, type: string, data: { url: string }) => PlayCanvasAsset;
+  Entity: new (name: string) => PlayCanvasEntity;
+  StandardMaterial: new () => PlayCanvasMaterial;
+  Color: new (...args: number[]) => PlayCanvasColor;
+  Mouse: new (element: HTMLElement) => PlayCanvasInputDevice;
+  TouchDevice: new (element: HTMLElement) => PlayCanvasInputDevice;
+  Keyboard: new (element: Window) => PlayCanvasInputDevice;
+  FILLMODE_KEEP_ASPECT: number;
+  FILLMODE_FILL_WINDOW: number;
+  RESOLUTION_AUTO: number;
+}
+
+interface PlayCanvasMaterial {
+  diffuse: PlayCanvasColor;
+  specular: PlayCanvasColor;
+  emissive: PlayCanvasColor;
+  shininess: number;
+  opacity: number;
+  diffuseMap: unknown;
+  update: () => void;
+  set: (...args: number[]) => void;
+}
+
+interface PlayCanvasColor {
+  set: (...args: number[]) => void;
+}
+
+interface PlayCanvasInputDevice {
+  element: HTMLElement;
+}
+
+type LoadedAsset = {
+  asset?: PlayCanvasAsset;
+  entity?: PlayCanvasEntity;
+  material?: PlayCanvasMaterial;
+};
+
+type ApiCallback = (result: unknown, error: string | Error | null) => void;
+type ApiMethod = (...args: unknown[]) => Promise<unknown>;
+type ApiStore = { methods: Record<string, ApiMethod>; callbacks: Record<string, ApiCallback> };
+
+interface AssetConfig {
+  name: string;
+  type: string;
+  url: string;
+  position?: number[];
+  rotation?: number[];
+  scale?: number[];
+  diffuseColor?: number[];
+  specularColor?: number[];
+  emissiveColor?: number[];
+  shininess?: number;
+  opacity?: number;
+  diffuseMap?: string;
+  volume?: number;
+  loop?: boolean;
+  autoPlay?: boolean;
+}
+
 interface PlayCanvasViewerProps {
   playcanvas: NonNullable<CardData['playcanvas']>;
   active?: boolean;
   className?: string;
   onSceneReady?: () => void;
-  onUserInteraction?: (event: any) => void;
+  onUserInteraction?: (event: Record<string, unknown>) => void;
   onError?: (error: Error) => void;
 }
 
 interface PlayCanvasMessage {
   type: string;
   action?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   target?: string;
   trigger?: string;
+  [key: string]: unknown;
 }
 
 // Allowed origins for postMessage validation - computed at runtime to avoid SSR issues
@@ -31,8 +131,8 @@ const getAllowedOrigins = () => {
 };
 
 // Asset loading function for PlayCanvas engine scenes
-const loadSceneAssets = async (app: any, pc: any, assets: any[]) => {
-  const loadedAssets = new Map<string, any>();
+const loadSceneAssets = async (app: PlayCanvasApp, pc: PlayCanvasModule, assets: AssetConfig[]) => {
+  const loadedAssets = new Map<string, { asset?: PlayCanvasAsset; entity?: PlayCanvasEntity; material?: PlayCanvasMaterial }>;
   
   for (const assetConfig of assets) {
     try {
@@ -65,7 +165,7 @@ const loadSceneAssets = async (app: any, pc: any, assets: any[]) => {
 };
 
 // Load GLB/model assets
-const loadModel = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<string, any>) => {
+const loadModel = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, PlayCanvasAsset | PlayCanvasEntity | PlayCanvasMaterial>) => {
   return new Promise((resolve, reject) => {
     const asset = new pc.Asset(assetConfig.name, 'model', {
       url: assetConfig.url
@@ -95,7 +195,7 @@ const loadModel = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<
       resolve(entity);
     });
     
-    asset.on('error', (err: any) => {
+    asset.on('error', (err: Error | string) => {
       reject(new Error(`Failed to load model ${assetConfig.name}: ${err}`));
     });
     
@@ -105,7 +205,7 @@ const loadModel = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<
 };
 
 // Load texture assets
-const loadTexture = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<string, any>) => {
+const loadTexture = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, PlayCanvasAsset | PlayCanvasEntity | PlayCanvasMaterial>) => {
   return new Promise((resolve, reject) => {
     const asset = new pc.Asset(assetConfig.name, 'texture', {
       url: assetConfig.url
@@ -116,7 +216,7 @@ const loadTexture = async (app: any, pc: any, assetConfig: any, loadedAssets: Ma
       resolve(asset);
     });
     
-    asset.on('error', (err: any) => {
+    asset.on('error', (err: Error | string) => {
       reject(new Error(`Failed to load texture ${assetConfig.name}: ${err}`));
     });
     
@@ -126,7 +226,7 @@ const loadTexture = async (app: any, pc: any, assetConfig: any, loadedAssets: Ma
 };
 
 // Load material assets
-const loadMaterial = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<string, any>) => {
+const loadMaterial = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, PlayCanvasAsset | PlayCanvasEntity | PlayCanvasMaterial>) => {
   const material = new pc.StandardMaterial();
   
   if (assetConfig.diffuseColor) {
@@ -161,7 +261,7 @@ const loadMaterial = async (app: any, pc: any, assetConfig: any, loadedAssets: M
 };
 
 // Load audio assets
-const loadAudio = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<string, any>) => {
+const loadAudio = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, LoadedAsset>) => {
   return new Promise((resolve, reject) => {
     const asset = new pc.Asset(assetConfig.name, 'audio', {
       url: assetConfig.url
@@ -186,7 +286,7 @@ const loadAudio = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<
       resolve(entity);
     });
     
-    asset.on('error', (err: any) => {
+    asset.on('error', (err: Error | string) => {
       reject(new Error(`Failed to load audio ${assetConfig.name}: ${err}`));
     });
     
@@ -196,7 +296,7 @@ const loadAudio = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<
 };
 
 // Load script assets
-const loadScript = async (app: any, pc: any, assetConfig: any, loadedAssets: Map<string, any>) => {
+const loadScript = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, LoadedAsset>) => {
   return new Promise((resolve, reject) => {
     const asset = new pc.Asset(assetConfig.name, 'script', {
       url: assetConfig.url
@@ -207,7 +307,7 @@ const loadScript = async (app: any, pc: any, assetConfig: any, loadedAssets: Map
       resolve(asset);
     });
     
-    asset.on('error', (err: any) => {
+    asset.on('error', (err: Error | string) => {
       reject(new Error(`Failed to load script ${assetConfig.name}: ${err}`));
     });
     
@@ -226,16 +326,44 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const engineAppRef = useRef<any>(null);
-  const apiRef = useRef<Record<string, Function> | null>(null);
+  const engineAppRef = useRef<PlayCanvasApp | null>(null);
+  const apiRef = useRef<Record<string, (...args: unknown[]) => Promise<unknown>> | null>(null);
   const cleanupRef = useRef<Array<() => void>>([]);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [engineInitialized, setEngineInitialized] = useState(false);
+  const [validationError, setValidationError] = useState<string | null>(null);
   
   // Instance-scoped API to prevent global pollution
-  const apiInstanceRef = useRef<Record<string, Function> | null>(null);
+  const apiInstanceRef = useRef<Record<string, (...args: unknown[]) => Promise<unknown>> | null>(null);
+
+  // Validation effect - handles all validation logic at top level to avoid conditional hooks
+  useEffect(() => {
+    switch (playcanvas.type) {
+      case 'iframe':
+        if (!playcanvas.projectId) {
+          setValidationError('Project ID is required for iframe integration');
+        } else {
+          setValidationError(null);
+        }
+        break;
+      case 'self-hosted':
+        if (!playcanvas.buildPath) {
+          setValidationError('Build path is required for self-hosted integration');
+        } else {
+          setValidationError(null);
+        }
+        break;
+      case 'engine':
+        setValidationError(null);
+        break;
+      default:
+        setError(`Unknown PlayCanvas integration type: ${playcanvas.type}`);
+        setValidationError(null);
+        break;
+    }
+  }, [playcanvas.type, playcanvas.projectId, playcanvas.buildPath]);
 
   // Handle messaging from iframe with enhanced security validation
   const handleMessage = useCallback((event: MessageEvent) => {
@@ -277,11 +405,16 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
           onSceneReady?.();
           break;
         case 'playcanvas:error':
-          setError(message.data?.message || 'PlayCanvas error');
-          onError?.(new Error(message.data?.message || 'PlayCanvas error'));
+          let errorMessage = 'PlayCanvas error';
+          if (message.data && typeof message.data === 'object' && 'message' in message.data) {
+            const msg = (message.data as { message?: unknown }).message;
+            if (msg != null) errorMessage = String(msg);
+          }
+          setError(errorMessage);
+          onError?.(new Error(errorMessage));
           break;
         case 'playcanvas:interaction':
-          onUserInteraction?.(message.data);
+          onUserInteraction?.(message.data || {});
           break;
         case 'api:response':
           // Handle API method responses
@@ -334,7 +467,7 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
       return;
     }
 
-    let app: any = null;
+    let app: PlayCanvasApp | null = null;
     let canvas: HTMLCanvasElement | null = null;
 
     const initializeEngine = async () => {
@@ -345,33 +478,35 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
         containerRef.current.innerHTML = '';
         
         // Dynamic import to avoid SSR issues
-        const pc = await import('playcanvas');
+        const pc = (await import('playcanvas')) as unknown as PlayCanvasModule;
         
         canvas = document.createElement('canvas');
         containerRef.current.appendChild(canvas);
 
-        app = new (pc as any).Application(canvas, {
-          mouse: new (pc as any).Mouse(canvas),
-          touch: new (pc as any).TouchDevice(canvas),
-          keyboard: new (pc as any).Keyboard(window),
+        app = new pc.Application(canvas, {
+          mouse: new pc.Mouse(canvas),
+          touch: new pc.TouchDevice(canvas),
+          keyboard: new pc.Keyboard(window),
           graphicsDeviceOptions: {
             alpha: playcanvas.transparency || false
           }
         });
 
         // Configure canvas
-        app.setCanvasFillMode(
-          playcanvas.fillMode === 'KEEP_ASPECT' 
-            ? (pc as any).FILLMODE_KEEP_ASPECT 
-            : (pc as any).FILLMODE_FILL_WINDOW
-        );
-        app.setCanvasResolution((pc as any).RESOLUTION_AUTO);
+        if (app) {
+          app.setCanvasFillMode(
+            playcanvas.fillMode === 'KEEP_ASPECT' 
+              ? pc.FILLMODE_KEEP_ASPECT 
+              : pc.FILLMODE_FILL_WINDOW
+          );
+          app.setCanvasResolution(pc.RESOLUTION_AUTO);
+        }
 
         // Setup camera
-        if (playcanvas.sceneConfig?.camera) {
-          const camera = new (pc as any).Entity('camera');
+        if (playcanvas.sceneConfig?.camera && app) {
+          const camera = new pc.Entity('camera');
           camera.addComponent('camera', {
-            clearColor: new (pc as any).Color(0.1, 0.1, 0.1),
+            clearColor: new pc.Color(0.1, 0.1, 0.1),
             fov: playcanvas.sceneConfig.camera.fov || 45
           });
           camera.setPosition(...playcanvas.sceneConfig.camera.position);
@@ -382,7 +517,7 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
         }
 
         // Setup lighting
-        if (playcanvas.sceneConfig?.lighting) {
+        if (playcanvas.sceneConfig?.lighting && app) {
           const lighting = playcanvas.sceneConfig.lighting;
           
           if (lighting.ambientColor) {
@@ -390,10 +525,10 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
           }
 
           if (lighting.directionalLight) {
-            const light = new (pc as any).Entity('directionalLight');
+            const light = new pc.Entity('directionalLight');
             light.addComponent('light', {
               type: 'directional',
-              color: new (pc as any).Color(...lighting.directionalLight.color),
+              color: new pc.Color(...lighting.directionalLight.color),
               intensity: 1
             });
             if (lighting.directionalLight.direction) {
@@ -404,12 +539,14 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
         }
 
         // Load assets and create entities
-        if (playcanvas.sceneConfig?.assets && playcanvas.sceneConfig.assets.length > 0) {
+        if (playcanvas.sceneConfig?.assets && playcanvas.sceneConfig.assets.length > 0 && app) {
           await loadSceneAssets(app, pc, playcanvas.sceneConfig.assets);
         }
 
-        engineAppRef.current = app;
-        app.start();
+        if (app) {
+          engineAppRef.current = app;
+          app.start();
+        }
         
         setEngineInitialized(true);
         setLoading(false);
@@ -440,11 +577,11 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
   // Expose API methods with proper cleanup and promise support
   useEffect(() => {
     if (playcanvas.messaging?.exposedMethods) {
-      const api: Record<string, Function> = {};
+      const api: Record<string, (...args: unknown[]) => Promise<unknown>> = {};
       let callIdCounter = 0;
       
       playcanvas.messaging.exposedMethods.forEach(method => {
-        api[method] = (...args: any[]) => {
+        api[method] = (...args: unknown[]) => {
           return new Promise((resolve, reject) => {
             const callId = ++callIdCounter;
             const timeoutId = setTimeout(() => {
@@ -455,10 +592,10 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
             }, 10000); // 10 second timeout
             
             if (!apiRef.current) apiRef.current = {};
-            apiRef.current[`callback_${callId}`] = (result: any, error: any) => {
+            (apiRef.current as any)[`callback_${callId}`] = (result: unknown, error: string | Error | null) => {
               clearTimeout(timeoutId);
               if (error) {
-                reject(new Error(error));
+                reject(new Error(typeof error === 'string' ? error : (error as Error)?.message || 'Unknown error'));
               } else {
                 resolve(result);
               }
@@ -474,8 +611,8 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
       });
 
       // Store API reference for cleanup
-      apiRef.current = api;
-      apiInstanceRef.current = api;
+      apiRef.current = api as any;
+      apiInstanceRef.current = api as any;
       
       // No longer expose global API to prevent pollution
       // API is now instance-scoped and accessed via ref
@@ -505,13 +642,13 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
     playcanvas.interactions.forEach(interaction => {
       switch (interaction.trigger) {
         case 'timer':
-          const delay = interaction.params?.delay || 1000;
+          const delay = (interaction.params as Record<string, unknown>)?.delay as number || 1000;
           const timer = setTimeout(() => {
             sendMessage({
               type: 'interaction',
               action: interaction.action,
               target: interaction.target,
-              data: interaction.params
+              data: interaction.params || {}
             });
           }, delay);
           cleanupRef.current.push(() => clearTimeout(timer));
@@ -560,6 +697,18 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
     );
   }
 
+  // Validation error state
+  if (validationError) {
+    return (
+      <div className={`flex items-center justify-center w-full h-full bg-gray-900 text-white ${className}`}>
+        <div className="text-center">
+          <div className="text-red-400 mb-2">⚠ Configuration Error</div>
+          <div className="text-sm opacity-70">{validationError}</div>
+        </div>
+      </div>
+    );
+  }
+
   // Loading state
   if (loading && playcanvas.type !== 'engine') {
     return (
@@ -575,28 +724,6 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
   // Render based on integration type
   switch (playcanvas.type) {
     case 'iframe': {
-      // Use useEffect for validation to prevent render loops
-      const [hasValidationError, setHasValidationError] = useState<string | null>(null);
-      
-      useEffect(() => {
-        if (!playcanvas.projectId) {
-          setHasValidationError('Project ID is required for iframe integration');
-        } else {
-          setHasValidationError(null);
-        }
-      }, [playcanvas.projectId]);
-      
-      if (hasValidationError) {
-        return (
-          <div className={`flex items-center justify-center w-full h-full bg-gray-900 text-white ${className}`}>
-            <div className="text-center">
-              <div className="text-red-400 mb-2">⚠ Configuration Error</div>
-              <div className="text-sm opacity-70">{hasValidationError}</div>
-            </div>
-          </div>
-        );
-      }
-
       const params = new URLSearchParams();
       if (playcanvas.autoPlay === false) params.append('autoplay', 'false');
       if (playcanvas.transparency) params.append('transparent', 'true');
@@ -640,28 +767,6 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
       );
 
     case 'self-hosted': {
-      // Use useEffect for validation to prevent render loops
-      const [hasValidationError, setHasValidationError] = useState<string | null>(null);
-      
-      useEffect(() => {
-        if (!playcanvas.buildPath) {
-          setHasValidationError('Build path is required for self-hosted integration');
-        } else {
-          setHasValidationError(null);
-        }
-      }, [playcanvas.buildPath]);
-      
-      if (hasValidationError) {
-        return (
-          <div className={`flex items-center justify-center w-full h-full bg-gray-900 text-white ${className}`}>
-            <div className="text-center">
-              <div className="text-red-400 mb-2">⚠ Configuration Error</div>
-              <div className="text-sm opacity-70">{hasValidationError}</div>
-            </div>
-          </div>
-        );
-      }
-
       return (
         <iframe
           ref={iframeRef}
@@ -687,11 +792,6 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
     }
 
     default: {
-      // Use useEffect for validation to prevent render loops
-      useEffect(() => {
-        setError(`Unknown PlayCanvas integration type: ${playcanvas.type}`);
-      }, [playcanvas.type]);
-      
       return null;
     }
   }
