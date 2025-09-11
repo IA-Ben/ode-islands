@@ -78,6 +78,7 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
                 width: video.width,
                 height: video.height,
                 audio: video.audio,
+                audioMuted: video.audioMuted,
               }}
               active={active && playing}
               className={`absolute ${
