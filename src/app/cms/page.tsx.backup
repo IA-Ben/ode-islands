@@ -226,8 +226,7 @@ export default function CMSPage() {
     );
   }
 
-  // Filter out sub-chapters from main navigation (only show chapter-X format)
-  const chapterKeys = Object.keys(chapters).filter(id => /^chapter-\d+$/.test(id)).sort();
+  const chapterKeys = Object.keys(chapters).sort();
   const currentChapterCards = chapters[selectedChapter] || [];
 
   return (
@@ -288,8 +287,9 @@ export default function CMSPage() {
                     className="bg-gray-800 p-4 rounded-lg border border-gray-600 cursor-pointer hover:bg-gray-700 transition-colors"
                     onClick={() => window.location.href = `/cms/edit/${selectedChapter}/${index}`}
                   >
-                    <div className="text-sm text-gray-400 mb-2">Card {index + 1} - Click to Edit</div>
+                    <div className="text-sm text-gray-400 mb-2">Card {index + 1}</div>
                     
+                    {/* Card Content Preview */}
                     {card.text?.title && (
                       <div className="font-bold text-lg mb-2" style={{ color: card.theme?.title || '#white' }}>
                         {card.text.title}
@@ -308,10 +308,12 @@ export default function CMSPage() {
                       </div>
                     )}
 
+                    {/* Media Info */}
                     {card.video && (
                       <div className="flex items-center gap-2 mb-2">
                         <span className="bg-red-600 text-xs px-2 py-1 rounded">VIDEO</span>
                         <span className="text-xs text-gray-400">{card.video.url}</span>
+                        {card.video.audio && <span className="text-xs bg-blue-600 px-1 rounded">AUDIO</span>}
                       </div>
                     )}
                     
@@ -322,15 +324,46 @@ export default function CMSPage() {
                       </div>
                     )}
 
+                    {/* CTA Info */}
                     {card.cta && (
                       <div className="flex items-center gap-2 mb-2">
                         <span className="bg-purple-600 text-xs px-2 py-1 rounded">CTA</span>
                         <span className="text-xs text-gray-400">{card.cta.title}</span>
                       </div>
                     )}
+
+                    {card.ctaStart && (
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="bg-purple-600 text-xs px-2 py-1 rounded">START</span>
+                        <span className="text-xs text-gray-400">{card.ctaStart}</span>
+                      </div>
+                    )}
+
+                    {/* Theme Info */}
+                    {card.theme && (
+                      <div className="mt-3 pt-2 border-t border-gray-700">
+                        <div className="text-xs text-gray-500">Theme:</div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {card.theme.background && (
+                            <span 
+                              className="text-xs px-2 py-1 rounded border"
+                              style={{ backgroundColor: card.theme.background, color: '#000' }}
+                            >
+                              BG
+                            </span>
+                          )}
+                          {card.theme.mix && (
+                            <span className="text-xs bg-gray-600 px-2 py-1 rounded">
+                              {card.theme.mix}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 
+                {/* Add New Card Button */}
                 <div 
                   className="bg-gray-700 p-4 rounded-lg border border-gray-500 border-dashed cursor-pointer hover:bg-gray-600 transition-colors flex items-center justify-center"
                   onClick={() => window.location.href = `/cms/edit/${selectedChapter}/new`}
@@ -349,23 +382,16 @@ export default function CMSPage() {
         {/* Quick Actions */}
         <div className="flex gap-4">
           <Button 
-            onClick={() => {
-              const chapterId = prompt('Enter new chapter ID (e.g., chapter-4):');
-              if (chapterId && chapterId.match(/^chapter-\d+$/)) {
-                window.location.href = `/cms/edit/${chapterId}/new`;
-              } else if (chapterId) {
-                alert('Chapter ID must be in format: chapter-X (e.g., chapter-4)');
-              }
-            }}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            ➕ Add New Chapter
-          </Button>
-          <Button 
-            onClick={() => alert('Media upload feature coming soon!')}
+            onClick={() => alert('Media upload feature coming next!')}
             className="bg-blue-600 hover:bg-blue-700"
           >
             📹 Upload Media
+          </Button>
+          <Button 
+            onClick={() => alert('Visual editor coming next!')}
+            className="bg-green-600 hover:bg-green-700"
+          >
+            ✏️ Edit Chapter
           </Button>
           <Button 
             onClick={() => fetchChapters()}
