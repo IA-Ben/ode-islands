@@ -89,8 +89,18 @@ export async function setupAuth(app: Express) {
     verified(null, user);
   };
 
-  for (const domain of process.env
-    .REPLIT_DOMAINS!.split(",")) {
+  // Support multiple domains and create strategies for each
+  const domains = process.env.REPLIT_DOMAINS!.split(",");
+  
+  // Also add common deployment domain patterns
+  const additionalDomains = [
+    'theodeislands-ben673.replit.app',
+    'ode-island-ben673.replit.app'
+  ];
+  
+  const allDomains = [...domains, ...additionalDomains];
+
+  for (const domain of allDomains) {
     const strategy = new Strategy(
       {
         name: `replitauth:${domain}`,
@@ -106,19 +116,40 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb) => cb(null, user));
 
-  // Get the first domain from REPLIT_DOMAINS as the primary strategy
-  const primaryDomain = process.env.REPLIT_DOMAINS!.split(",")[0];
-  
   app.get("/api/login", (req, res, next) => {
-    passport.authenticate(`replitauth:${primaryDomain}`, {
+    // Dynamically detect which domain strategy to use based on the request
+    const requestHost = req.get('host') || req.hostname;
+    console.log('Login request from host:', requestHost);
+    
+    // Find matching strategy or fall back to primary domain
+    let strategyDomain = domains[0]; // fallback
+    if (allDomains.includes(requestHost)) {
+      strategyDomain = requestHost;
+    }
+    
+    console.log('Using authentication strategy for domain:', strategyDomain);
+    
+    passport.authenticate(`replitauth:${strategyDomain}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${primaryDomain}`, {
-      successReturnToOrRedirect: "/",
+    // Dynamically detect which domain strategy to use based on the request
+    const requestHost = req.get('host') || req.hostname;
+    console.log('Callback request from host:', requestHost);
+    
+    // Find matching strategy or fall back to primary domain
+    let strategyDomain = domains[0]; // fallback
+    if (allDomains.includes(requestHost)) {
+      strategyDomain = requestHost;
+    }
+    
+    console.log('Using callback strategy for domain:', strategyDomain);
+    
+    passport.authenticate(`replitauth:${strategyDomain}`, {
+      successReturnToOrRedirect: "/cms",
       failureRedirect: "/api/login",
     })(req, res, next);
   });
