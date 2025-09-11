@@ -18,6 +18,7 @@ type User = {
 };
 
 export default function CMSPage() {
+  console.log('CMS Page component loaded - debugging active');
   const [chapters, setChapters] = useState<ChapterData>({});
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
@@ -36,13 +37,20 @@ export default function CMSPage() {
 
   const checkAuthStatus = async () => {
     try {
+      console.log('Checking authentication status...');
       const response = await fetch('/api/auth/user');
+      console.log('Auth status response:', response.status, response.statusText);
       if (response.ok) {
         const userData = await response.json();
+        console.log('User data received:', userData);
         setUser(userData);
+      } else {
+        console.log('User not authenticated');
+        setUser(null);
       }
     } catch (error) {
       console.error('Error checking auth status:', error);
+      setUser(null);
     } finally {
       setAuthLoading(false);
     }
@@ -65,7 +73,13 @@ export default function CMSPage() {
   };
 
   const handleLogin = () => {
-    window.location.href = '/api/login';
+    console.log('Login button clicked - redirecting to /api/login');
+    try {
+      window.location.href = '/api/login';
+    } catch (error) {
+      console.error('Error during login redirect:', error);
+      alert('Error during login redirect: ' + error);
+    }
   };
 
   const handleLogout = () => {
