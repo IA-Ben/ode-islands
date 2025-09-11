@@ -10,7 +10,7 @@ interface CardProps {
   active: boolean;
 }
 
-const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || "";
+const cdnUrl = process.env.NEXT_PUBLIC_CDN_URL || "https://storage.googleapis.com/ode-island";
 
 export const Card: React.FC<CardProps> = ({ data, active }) => {
   const router = useRouter();
