@@ -26,6 +26,13 @@ function isAdmin(req: any, res: any, next: any) {
 export { isAuthenticated, isAdmin };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Enforce required SESSION_SECRET
+  const SESSION_SECRET = process.env.SESSION_SECRET;
+  if (!SESSION_SECRET) {
+    console.error('FATAL: SESSION_SECRET environment variable is required');
+    process.exit(1);
+  }
+
   // Setup session middleware
   const pgStore = connectPg(session);
   const sessionStore = new pgStore({
@@ -36,13 +43,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.use(session({
-    secret: process.env.SESSION_SECRET || 'dev-secret-change-in-production',
+    secret: SESSION_SECRET,
     store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
+      sameSite: 'lax', // CSRF protection
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
     },
   }));
@@ -50,22 +58,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Setup simple auth routes
   setupSimpleAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
-    try {
-      // For simple auth, just return basic admin user info
-      res.json({ 
-        id: 'admin',
-        email: 'admin@theodeislands.com',
-        first_name: 'Admin',
-        last_name: 'User',
-        is_admin: true
-      });
-    } catch (error) {
-      console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
-    }
-  });
+  // Note: /api/auth/user endpoint is now in simpleAuth.ts with correct camelCase schema
 
   // CMS API Routes - all require admin access
   app.get("/api/cms/chapters", isAdmin, async (req, res) => {
