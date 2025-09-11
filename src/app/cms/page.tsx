@@ -139,7 +139,7 @@ export default function CMSPage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="scroll-container bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Loading...</h1>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
@@ -151,7 +151,7 @@ export default function CMSPage() {
   // Show login screen if not authenticated
   if (!user) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="scroll-container bg-black text-white flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <h1 className="text-4xl font-bold mb-6">The Ode Islands</h1>
           <h2 className="text-2xl font-semibold mb-4">Admin Login</h2>
@@ -192,7 +192,7 @@ export default function CMSPage() {
   // Show access denied if not admin
   if (!user.isAdmin) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="scroll-container bg-black text-white flex items-center justify-center">
         <div className="text-center max-w-md mx-auto p-8">
           <h1 className="text-4xl font-bold mb-6">Access Denied</h1>
           <p className="text-gray-400 mb-8">
@@ -217,7 +217,7 @@ export default function CMSPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="scroll-container bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">CMS Loading...</h1>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
@@ -230,7 +230,7 @@ export default function CMSPage() {
   const currentChapterCards = chapters[selectedChapter] || [];
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className="scroll-container bg-black text-white">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8 flex justify-between items-start">
