@@ -165,7 +165,7 @@ const loadSceneAssets = async (app: PlayCanvasApp, pc: PlayCanvasModule, assets:
 };
 
 // Load GLB/model assets
-const loadModel = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, PlayCanvasAsset | PlayCanvasEntity | PlayCanvasMaterial>) => {
+const loadModel = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, LoadedAsset>) => {
   return new Promise((resolve, reject) => {
     const asset = new pc.Asset(assetConfig.name, 'model', {
       url: assetConfig.url
@@ -205,14 +205,14 @@ const loadModel = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: 
 };
 
 // Load texture assets
-const loadTexture = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, PlayCanvasAsset | PlayCanvasEntity | PlayCanvasMaterial>) => {
+const loadTexture = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, LoadedAsset>) => {
   return new Promise((resolve, reject) => {
     const asset = new pc.Asset(assetConfig.name, 'texture', {
       url: assetConfig.url
     });
     
     asset.ready(() => {
-      loadedAssets.set(assetConfig.name, asset);
+      loadedAssets.set(assetConfig.name, { asset });
       resolve(asset);
     });
     
@@ -226,7 +226,7 @@ const loadTexture = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig
 };
 
 // Load material assets
-const loadMaterial = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, PlayCanvasAsset | PlayCanvasEntity | PlayCanvasMaterial>) => {
+const loadMaterial = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig: AssetConfig, loadedAssets: Map<string, LoadedAsset>) => {
   const material = new pc.StandardMaterial();
   
   if (assetConfig.diffuseColor) {
@@ -251,11 +251,14 @@ const loadMaterial = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfi
   
   // Load texture maps if specified
   if (assetConfig.diffuseMap && loadedAssets.has(assetConfig.diffuseMap)) {
-    material.diffuseMap = loadedAssets.get(assetConfig.diffuseMap).resource;
+    const textureAsset = loadedAssets.get(assetConfig.diffuseMap);
+    if (textureAsset?.asset && 'resource' in textureAsset.asset) {
+      material.diffuseMap = (textureAsset.asset as { resource: unknown }).resource;
+    }
   }
   
   material.update();
-  loadedAssets.set(assetConfig.name, material);
+  loadedAssets.set(assetConfig.name, { material });
   
   return material;
 };
@@ -303,7 +306,7 @@ const loadScript = async (app: PlayCanvasApp, pc: PlayCanvasModule, assetConfig:
     });
     
     asset.ready(() => {
-      loadedAssets.set(assetConfig.name, asset);
+      loadedAssets.set(assetConfig.name, { asset });
       resolve(asset);
     });
     
@@ -327,7 +330,7 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const engineAppRef = useRef<PlayCanvasApp | null>(null);
-  const apiRef = useRef<Record<string, (...args: unknown[]) => Promise<unknown>> | null>(null);
+  const apiRef = useRef<ApiStore | null>(null);
   const cleanupRef = useRef<Array<() => void>>([]);
   
   const [loading, setLoading] = useState(true);
@@ -419,10 +422,11 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
         case 'api:response':
           // Handle API method responses
           if (message.data?.callId && apiRef.current) {
-            const callback = apiRef.current[`callback_${message.data.callId}`];
+            const callback = apiRef.current.callbacks[`callback_${message.data.callId}`];
             if (callback) {
-              callback(message.data.result, message.data.error);
-              delete apiRef.current[`callback_${message.data.callId}`];
+              const error = message.data.error as string | Error | null;
+              callback(message.data.result, error);
+              delete apiRef.current.callbacks[`callback_${message.data.callId}`];
             }
           }
           break;
@@ -587,12 +591,12 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
             const timeoutId = setTimeout(() => {
               reject(new Error(`Method ${method} timed out`));
               if (apiRef.current) {
-                delete apiRef.current[`callback_${callId}`];
+                delete apiRef.current.callbacks[`callback_${callId}`];
               }
             }, 10000); // 10 second timeout
             
-            if (!apiRef.current) apiRef.current = {};
-            (apiRef.current as any)[`callback_${callId}`] = (result: unknown, error: string | Error | null) => {
+            if (!apiRef.current) apiRef.current = { methods: {}, callbacks: {} };
+            apiRef.current.callbacks[`callback_${callId}`] = (result: unknown, error: string | Error | null) => {
               clearTimeout(timeoutId);
               if (error) {
                 reject(new Error(typeof error === 'string' ? error : (error as Error)?.message || 'Unknown error'));
@@ -611,8 +615,8 @@ const PlayCanvasViewer: React.FC<PlayCanvasViewerProps> = ({
       });
 
       // Store API reference for cleanup
-      apiRef.current = api as any;
-      apiInstanceRef.current = api as any;
+      apiRef.current = { methods: api, callbacks: apiRef.current?.callbacks ?? {} };
+      apiInstanceRef.current = api;
       
       // No longer expose global API to prevent pollution
       // API is now instance-scoped and accessed via ref
