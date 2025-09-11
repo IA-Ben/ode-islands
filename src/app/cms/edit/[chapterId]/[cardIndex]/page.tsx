@@ -43,7 +43,6 @@ export default function CardEditorPage() {
     if (user?.isAdmin) {
       fetchChapters();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
   useEffect(() => {
