@@ -254,5 +254,218 @@
         "cta": "#E9F3E6"
       }
     }
+  ],
+  "chapter-playcanvas": [
+    {
+      "text": {
+        "title": "PLAYCANVAS",
+        "subtitle": "Interactive 3D Experiences",
+        "description": "Explore immersive PlayCanvas scenes with different integration methods"
+      },
+      "theme": {
+        "background": "#1a1a2e",
+        "title": "#37ffce",
+        "subtitle": "#ffffff",
+        "description": "#cccccc"
+      }
+    },
+    {
+      "text": {
+        "title": "IFRAME DEMO",
+        "subtitle": "PlayCanvas via iframe",
+        "description": "A simple PlayCanvas scene embedded using iframe integration"
+      },
+      "playcanvas": {
+        "type": "iframe",
+        "projectId": "example-project-id",
+        "width": 800,
+        "height": 600,
+        "autoPlay": true,
+        "messaging": {
+          "enableApi": true,
+          "exposedMethods": ["rotateObject", "changeColor"],
+          "eventHandlers": [
+            {
+              "event": "objectClicked",
+              "handler": "handleObjectClick"
+            }
+          ]
+        }
+      },
+      "cta": {
+        "title": "Interact with Scene",
+        "url": "#playcanvas-interaction"
+      },
+      "theme": {
+        "background": "transparent",
+        "overlay": "rgba(0, 0, 0, 0.2)",
+        "title": "#ffffff",
+        "subtitle": "#37ffce"
+      }
+    },
+    {
+      "text": {
+        "title": "ENGINE DEMO",
+        "subtitle": "Direct PlayCanvas Engine",
+        "description": "Custom 3D scene built with PlayCanvas engine integration"
+      },
+      "playcanvas": {
+        "type": "engine",
+        "fillMode": "FILL_WINDOW",
+        "transparency": false,
+        "sceneConfig": {
+          "camera": {
+            "position": [0, 2, 5],
+            "target": [0, 0, 0],
+            "fov": 45
+          },
+          "lighting": {
+            "ambientColor": [0.2, 0.2, 0.3],
+            "directionalLight": {
+              "color": [1, 1, 0.9],
+              "direction": [-0.5, -1, -0.5]
+            }
+          },
+          "assets": [
+            {
+              "name": "ornModel",
+              "type": "model",
+              "url": "/models/orn-character.glb"
+            },
+            {
+              "name": "islandTexture",
+              "type": "texture",
+              "url": "/textures/island-ground.jpg"
+            }
+          ]
+        },
+        "interactions": [
+          {
+            "trigger": "timer",
+            "target": "ornModel",
+            "action": "startAnimation",
+            "params": { "delay": 2000, "animation": "wave" }
+          },
+          {
+            "trigger": "click",
+            "target": "ornModel",
+            "action": "changeColor",
+            "params": { "color": "#37ffce" }
+          }
+        ]
+      },
+      "theme": {
+        "background": "transparent",
+        "title": "#ffffff",
+        "subtitle": "#37ffce",
+        "shadow": true
+      }
+    },
+    {
+      "text": {
+        "title": "SELF-HOSTED",
+        "subtitle": "Custom PlayCanvas Build",
+        "description": "A self-hosted PlayCanvas application with custom features"
+      },
+      "playcanvas": {
+        "type": "self-hosted",
+        "buildPath": "/playcanvas-builds/orn-village/index.html",
+        "width": 1200,
+        "height": 800,
+        "fillMode": "KEEP_ASPECT",
+        "transparency": true,
+        "messaging": {
+          "enableApi": true,
+          "exposedMethods": ["enterVillage", "collectOrn", "transformNor"],
+          "eventHandlers": [
+            {
+              "event": "villageEntered",
+              "handler": "onVillageEnter"
+            },
+            {
+              "event": "ornCollected",
+              "handler": "onOrnCollected"
+            }
+          ]
+        }
+      },
+      "cta": {
+        "title": "Enter Orn Village",
+        "url": "#enter-village"
+      },
+      "theme": {
+        "background": "#0f0f23",
+        "overlay": "linear-gradient(45deg, rgba(55,255,206,0.1), rgba(251,186,224,0.1))",
+        "title": "#ffffff",
+        "subtitle": "#37ffce"
+      }
+    },
+    {
+      "text": {
+        "title": "INTERACTIVE STORY",
+        "subtitle": "The Orn's Journey",
+        "description": "Experience the transformation scene in interactive 3D"
+      },
+      "playcanvas": {
+        "type": "iframe",
+        "projectId": "transformation-scene-id",
+        "autoPlay": false,
+        "interactions": [
+          {
+            "trigger": "message",
+            "target": "storyController",
+            "action": "startChapter",
+            "params": { "chapter": "transformation" }
+          },
+          {
+            "trigger": "timer",
+            "target": "norCharacter",
+            "action": "beginTransformation",
+            "params": { "delay": 5000, "duration": 3000 }
+          }
+        ],
+        "messaging": {
+          "enableApi": true,
+          "exposedMethods": ["pauseStory", "resumeStory", "skipToEnd"],
+          "eventHandlers": [
+            {
+              "event": "transformationComplete",
+              "handler": "onTransformationComplete"
+            },
+            {
+              "event": "storyPaused",
+              "handler": "onStoryPaused"
+            }
+          ]
+        }
+      },
+      "cta": {
+        "title": "Watch Transformation",
+        "url": "#start-transformation"
+      },
+      "theme": {
+        "background": "transparent",
+        "overlay": "rgba(0, 0, 0, 0.3)",
+        "title": "#FBBAE0",
+        "subtitle": "#ffffff",
+        "shadow": true
+      }
+    },
+    {
+      "text": {
+        "subtitle": "PLAYCANVAS INTEGRATION",
+        "description": "Complete implementation with iframe, engine, and self-hosted methods"
+      },
+      "cta": {
+        "title": "Back to Story",
+        "url": "/chapter-1"
+      },
+      "theme": {
+        "background": "#37ffce",
+        "subtitle": "#000",
+        "description": "#333",
+        "cta": "#ffffff"
+      }
+    }
   ]
 }

@@ -5,6 +5,7 @@ import type { CardData } from '@/@typings';
 
 import AnimateText from "./AnimateText";
 import Player from "./Player";
+import PlayCanvasViewer from "./PlayCanvasViewer";
 
 interface CardProps {
   data: CardData;
@@ -19,7 +20,9 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
   const [playing, setPlaying] = useState(true);
   const [imageLoad, setImageLoad] = useState(false);
   const [imageActive, setImageActive] = useState(false);
-  const { text, cta, video, image, theme } = data;
+  const [playcanvasReady, setPlaycanvasReady] = useState(false);
+  const [playcanvasError, setPlaycanvasError] = useState<string | null>(null);
+  const { text, cta, video, image, playcanvas, theme } = data;
   const title = text?.title;
   const subtitle = text?.subtitle;
   const description = text?.description;
@@ -124,6 +127,24 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
               </div>
             )}
           </>
+        )}
+        {/* PlayCanvas */}
+        {playcanvas && (
+          <PlayCanvasViewer
+            playcanvas={playcanvas}
+            active={active}
+            className="absolute w-full h-full"
+            onSceneReady={() => {
+              setPlaycanvasReady(true);
+            }}
+            onUserInteraction={(event) => {
+              console.log('PlayCanvas interaction:', event);
+            }}
+            onError={(error) => {
+              setPlaycanvasError(error.message);
+              console.error('PlayCanvas error:', error);
+            }}
+          />
         )}
       </div>
 
