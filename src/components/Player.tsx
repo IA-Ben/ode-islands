@@ -7,6 +7,7 @@ interface PlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
     width: number;
     height: number;
     audio?: boolean;
+    audioMuted?: boolean;
     controls?: boolean;
   };
   active?: boolean;
@@ -107,6 +108,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       ref={videoRef}
       // poster={posterUrl}
       playsInline
+      muted={video?.audioMuted || !video?.audio}
       width={video?.width}
       height={video?.height}
       {...props}
