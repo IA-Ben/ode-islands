@@ -78,6 +78,7 @@ export default function CMSPage() {
       .catch(error => console.error('Error logging out:', error));
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const saveChapter = async (chapterId: string, cards: CardData[]) => {
     try {
       const response = await fetch('/api/cms/chapters', {
@@ -139,7 +140,7 @@ export default function CMSPage() {
         <div className="text-center max-w-md mx-auto p-8">
           <h1 className="text-4xl font-bold mb-6">Access Denied</h1>
           <p className="text-gray-400 mb-8">
-            You don't have admin privileges to access the CMS.
+            You don&apos;t have admin privileges to access the CMS.
           </p>
           <div className="space-y-4">
             <div className="text-sm text-gray-500">
