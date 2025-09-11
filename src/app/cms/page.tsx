@@ -9,25 +9,73 @@ type ChapterData = {
   [key: string]: CardData[];
 };
 
+type User = {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  isAdmin: boolean;
+};
+
 export default function CMSPage() {
   const [chapters, setChapters] = useState<ChapterData>({});
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [user, setUser] = useState<User | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<string>('chapter-1');
 
   useEffect(() => {
-    fetchChapters();
+    checkAuthStatus();
   }, []);
+
+  useEffect(() => {
+    if (user?.isAdmin) {
+      fetchChapters();
+    }
+  }, [user]);
+
+  const checkAuthStatus = async () => {
+    try {
+      const response = await fetch('/api/auth/user');
+      if (response.ok) {
+        const userData = await response.json();
+        setUser(userData);
+      }
+    } catch (error) {
+      console.error('Error checking auth status:', error);
+    } finally {
+      setAuthLoading(false);
+    }
+  };
 
   const fetchChapters = async () => {
     try {
       const response = await fetch('/api/cms/chapters');
-      const data = await response.json();
-      setChapters(data);
+      if (response.ok) {
+        const data = await response.json();
+        setChapters(data);
+      } else {
+        console.error('Failed to fetch chapters');
+      }
     } catch (error) {
       console.error('Error fetching chapters:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogin = () => {
+    window.location.href = '/api/login';
+  };
+
+  const handleLogout = () => {
+    // Clear user session and redirect
+    fetch('/api/logout', { method: 'POST' })
+      .then(() => {
+        setUser(null);
+        window.location.reload();
+      })
+      .catch(error => console.error('Error logging out:', error));
   };
 
   const saveChapter = async (chapterId: string, cards: CardData[]) => {
@@ -52,6 +100,64 @@ export default function CMSPage() {
     }
   };
 
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Loading...</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <h1 className="text-4xl font-bold mb-6">The Ode Islands</h1>
+          <h2 className="text-2xl font-semibold mb-4">Admin Login</h2>
+          <p className="text-gray-400 mb-8">
+            Sign in with your Replit account to access the content management system.
+          </p>
+          <Button 
+            onClick={handleLogin}
+            className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg"
+          >
+            🔐 Login with Replit
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show access denied if not admin
+  if (!user.isAdmin) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center max-w-md mx-auto p-8">
+          <h1 className="text-4xl font-bold mb-6">Access Denied</h1>
+          <p className="text-gray-400 mb-8">
+            You don't have admin privileges to access the CMS.
+          </p>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-500">
+              Logged in as: {user.email}
+            </div>
+            <Button 
+              onClick={handleLogout}
+              variant="outline"
+              className="w-full"
+            >
+              🚪 Logout
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
@@ -70,9 +176,26 @@ export default function CMSPage() {
     <div className="min-h-screen bg-black text-white">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">The Ode Islands CMS</h1>
-          <p className="text-gray-400">Content Management System for your immersive storytelling experience</p>
+        <div className="mb-8 flex justify-between items-start">
+          <div>
+            <h1 className="text-4xl font-bold mb-2">The Ode Islands CMS</h1>
+            <p className="text-gray-400">Content Management System for your immersive storytelling experience</p>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-gray-400 mb-2">
+              Welcome, {user.firstName} {user.lastName}
+            </div>
+            <div className="text-xs text-gray-500 mb-3">
+              {user.email}
+            </div>
+            <Button 
+              onClick={handleLogout}
+              variant="outline"
+              size="sm"
+            >
+              🚪 Logout
+            </Button>
+          </div>
         </div>
 
         {/* Chapter Navigation */}
@@ -226,7 +349,7 @@ export default function CMSPage() {
             </div>
             <div>
               <span className="text-gray-400">Auth Status:</span>
-              <span className="ml-2 text-yellow-400">🔧 Setup Mode</span>
+              <span className="ml-2 text-green-400">✅ Admin Logged In</span>
             </div>
           </div>
         </div>
