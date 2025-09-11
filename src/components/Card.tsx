@@ -36,6 +36,10 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
     if (active && !anim) {
       setAnim(true);
     }
+    // Reset video playing state when card becomes active
+    if (active) {
+      setPlaying(true);
+    }
   }, [active, anim, imageLoad]);
 
   return (
