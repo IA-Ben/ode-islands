@@ -114,6 +114,62 @@ export default function CardEditorPage() {
           [chapterId]: updatedCards
         }));
         
+        // Check if we need to create a sub-chapter
+        const ctaUrl = cardData.cta?.url;
+        if (ctaUrl && ctaUrl.startsWith('/') && ctaUrl.match(/^\/chapter-\d+-sub-\d+$/)) {
+          const subChapterId = ctaUrl.substring(1); // Remove leading slash
+          
+          // Check if sub-chapter already exists
+          const checkResponse = await fetch('/api/cms/chapters');
+          const allChapters = await checkResponse.json();
+          
+          if (!allChapters[subChapterId]) {
+            // Create the sub-chapter with a starter card
+            const createSubResponse = await fetch('/api/cms/chapters', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                id: subChapterId, 
+                cards: [{
+                  text: {
+                    title: "New Sub-Chapter",
+                    subtitle: "Edit this card to customize your sub-chapter",
+                    description: "This is a sub-chapter created automatically. Click to edit and customize the content."
+                  },
+                  theme: {
+                    background: "#1a1a2e",
+                    title: "#ffffff",
+                    subtitle: "#cccccc"
+                  }
+                }]
+              }),
+            });
+
+            if (createSubResponse.ok) {
+              // Update local state with new sub-chapter
+              setChapters(prev => ({
+                ...prev,
+                [subChapterId]: [{
+                  text: {
+                    title: "New Sub-Chapter",
+                    subtitle: "Edit this card to customize your sub-chapter",
+                    description: "This is a sub-chapter created automatically. Click to edit and customize the content."
+                  },
+                  theme: {
+                    background: "#1a1a2e",
+                    title: "#ffffff",
+                    subtitle: "#cccccc"
+                  }
+                }]
+              }));
+              
+              alert(`Sub-chapter "${subChapterId}" created successfully! You can edit it by going to /cms/edit/${subChapterId}/0`);
+            } else {
+              console.error('Failed to create sub-chapter');
+            }
+          }
+        }
+        
         // If it was a new card, redirect to its permanent URL
         if (isNewCard) {
           const newIndex = updatedCards.length - 1;
