@@ -36,10 +36,14 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
 
   // Load HLS video once when url updates
   useEffect(() => {
-    if (!active || videoUrl === videoUrlRef.current) return;
-    videoUrlRef.current = videoUrl || "";
+    if (!active) return;
     const videoEl = videoRef.current;
     if (!videoEl || !videoUrl) return;
+    
+    // Only skip if the same video is already loaded and playing
+    if (videoUrl === videoUrlRef.current && !videoEl.paused && !videoEl.ended) return;
+    
+    videoUrlRef.current = videoUrl || "";
     
     // Clear any existing source first
     videoEl.src = "";
