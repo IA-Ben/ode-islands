@@ -19,10 +19,7 @@ app.prepare().then(async () => {
   const { registerRoutes, isAuthenticated, isAdmin } = await import('./server/routes.ts');
   await registerRoutes(server);
 
-  // Protect CMS routes - require admin authentication
-  server.use('/cms', isAdmin, (req, res, next) => {
-    next();
-  });
+  // Note: CMS page now handles authentication on the client side
 
   // Handle Next.js requests (except API routes which are handled by Express)
   server.use((req, res) => {
