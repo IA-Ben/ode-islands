@@ -1,4 +1,4 @@
-type CardData = {
+export type CardData = {
   text?: {
     title?: string
     subtitle?: string

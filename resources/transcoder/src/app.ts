@@ -5,6 +5,16 @@ import path from 'node:path';
 const inputDir = './in';
 const outputDir = './out';
 
+interface QualityProfile {
+  name: string;
+  width: number;
+  height: number;
+  videoBitrate: string;
+  audioBitrate: string;
+  maxrate: string;
+  bufsize: string;
+}
+
 interface VideoConfig {
   '-profile:v': string;
   '-level': string;
@@ -22,55 +32,165 @@ interface VideoConfig {
   '-hls_segment_filename': string;
 }
 
-const createVideoConfig = (segmentOutputDir: string): VideoConfig => ({
+// Define quality profiles for adaptive streaming
+const qualityProfiles: QualityProfile[] = [
+  {
+    name: '240p',
+    width: 426,
+    height: 240,
+    videoBitrate: '400k',
+    audioBitrate: '64k',
+    maxrate: '400k',
+    bufsize: '800k'
+  },
+  {
+    name: '480p',
+    width: 854,
+    height: 480,
+    videoBitrate: '1000k',
+    audioBitrate: '96k',
+    maxrate: '1000k',
+    bufsize: '2000k'
+  },
+  {
+    name: '720p',
+    width: 1280,
+    height: 720,
+    videoBitrate: '2500k',
+    audioBitrate: '128k',
+    maxrate: '2500k',
+    bufsize: '5000k'
+  },
+  {
+    name: '1080p',
+    width: 1920,
+    height: 1080,
+    videoBitrate: '5000k',
+    audioBitrate: '128k',
+    maxrate: '5000k',
+    bufsize: '10000k'
+  }
+];
+
+const createVideoConfig = (segmentOutputDir: string, profile: QualityProfile): VideoConfig => ({
   '-profile:v': 'high',
   '-level': '4.0',
   '-x264-params': 'nal-hrd=cbr:force-cfr=1',
-  '-b:v': '2984k',
-  '-maxrate': '2984k',
-  '-bufsize': '5968k',
+  '-b:v': profile.videoBitrate,
+  '-maxrate': profile.maxrate,
+  '-bufsize': profile.bufsize,
   '-hls_time': '6',
   '-hls_playlist_type': 'vod',
   '-hls_flags': 'independent_segments',
   '-hls_list_size': '0',
   '-ac': '2',
   '-ar': '48000',
-  '-b:a': '128k',
-  '-hls_segment_filename': `${segmentOutputDir}/segment-%03d.ts`,
+  '-b:a': profile.audioBitrate,
+  '-hls_segment_filename': `${segmentOutputDir}/segment_%v_%03d.ts`,
 });
 
-const generateVideo = (
+// Generate individual quality stream
+const generateQualityStream = (
   inputFile: string,
   videoOutputDir: string,
-  dim: { width: number; height: number },
+  profile: QualityProfile,
+  variantIndex: number
 ): Promise<boolean> => {
   try {
     return new Promise((resolve, reject) => {
+      const qualityDir = path.join(videoOutputDir, profile.name);
       const config = Object.entries(
-        createVideoConfig(videoOutputDir),
+        createVideoConfig(qualityDir, profile),
       ).flat() as string[];
+      
       ffmpeg(inputFile)
         .addOption('-preset', 'fast')
         .videoCodec('libx264')
         .audioCodec('aac')
-        .size(`${dim.width}x${dim.height}`)
-        .videoBitrate(2800)
-        .audioBitrate(128)
+        .size(`${profile.width}x${profile.height}`)
+        .videoBitrate(profile.videoBitrate.replace('k', ''))
+        .audioBitrate(profile.audioBitrate.replace('k', ''))
         .outputOptions(config)
-        .output(`${videoOutputDir}/master.m3u8`)
+        .output(`${qualityDir}/playlist.m3u8`)
         .on('end', () => {
-          console.log('- HLS stream generated');
+          console.log(`- ${profile.name} stream generated`);
           resolve(true);
         })
-        .on('error', err => {
-          console.error('❌ Error processing HLS:', err.message);
+        .on('error', (err: any) => {
+          console.error(`❌ Error processing ${profile.name}:`, err.message);
           reject(err);
         })
         .run();
     });
-  } catch (err) {
-    console.error('Error creating video', err);
+  } catch (err: any) {
+    console.error(`Error creating ${profile.name} stream:`, err);
     return Promise.resolve(false);
+  }
+};
+
+// Generate master playlist for adaptive streaming
+const generateMasterPlaylist = async (
+  videoOutputDir: string,
+  originalDimensions: { width: number; height: number }
+): Promise<void> => {
+  const fs = await import('fs/promises');
+  
+  // Filter profiles that fit within original dimensions
+  const applicableProfiles = qualityProfiles.filter(
+    profile => profile.width <= originalDimensions.width && profile.height <= originalDimensions.height
+  );
+  
+  let masterContent = '#EXTM3U\n#EXT-X-VERSION:6\n\n';
+  
+  for (const profile of applicableProfiles) {
+    const bandwidth = parseInt(profile.videoBitrate.replace('k', '')) * 1000 + 
+                     parseInt(profile.audioBitrate.replace('k', '')) * 1000;
+    
+    masterContent += `#EXT-X-STREAM-INF:BANDWIDTH=${bandwidth},RESOLUTION=${profile.width}x${profile.height}\n`;
+    masterContent += `${profile.name}/playlist.m3u8\n\n`;
+  }
+  
+  await fs.writeFile(path.join(videoOutputDir, 'master.m3u8'), masterContent);
+  console.log('- Master playlist generated');
+};
+
+// Generate adaptive streaming with multiple qualities
+const generateAdaptiveVideo = async (
+  inputFile: string,
+  videoOutputDir: string,
+  originalDimensions: { width: number; height: number },
+): Promise<boolean> => {
+  try {
+    // Filter profiles that fit within original dimensions
+    const applicableProfiles = qualityProfiles.filter(
+      profile => profile.width <= originalDimensions.width && profile.height <= originalDimensions.height
+    );
+    
+    console.log(`- Generating ${applicableProfiles.length} quality streams`);
+    
+    // Create directories for each quality
+    for (const profile of applicableProfiles) {
+      await ensureDirectoryExists(path.join(videoOutputDir, profile.name));
+    }
+    
+    // Generate all quality streams in parallel
+    const streamPromises = applicableProfiles.map((profile, index) => 
+      generateQualityStream(inputFile, videoOutputDir, profile, index)
+    );
+    
+    const results = await Promise.all(streamPromises);
+    
+    if (results.some(result => !result)) {
+      throw new Error('One or more quality streams failed to generate');
+    }
+    
+    // Generate master playlist
+    await generateMasterPlaylist(videoOutputDir, originalDimensions);
+    
+    return true;
+  } catch (err: any) {
+    console.error('Error creating adaptive video:', err);
+    return false;
   }
 };
 
@@ -90,7 +210,7 @@ const generateImage = (
           console.log('- Poster frame generated');
           resolve(true);
         })
-        .on('error', err => {
+        .on('error', (err: any) => {
           console.error('❌ Error generating poster:', err.message);
           reject(err);
         })
@@ -104,13 +224,13 @@ const generateImage = (
 
 const getVideoDimensions = (filePath: string): Promise<{ width: number; height: number }> => {
   return new Promise((resolve, reject) => {
-    ffmpeg.ffprobe(filePath, (err, metadata) => {
+    ffmpeg.ffprobe(filePath, (err: any, metadata: any) => {
       if (err) {
         reject(err);
         return;
       }
       
-      const videoStream = metadata.streams.find(stream => stream.codec_type === 'video');
+      const videoStream = metadata.streams.find((stream: any) => stream.codec_type === 'video');
       if (!videoStream || !videoStream.width || !videoStream.height) {
         reject(new Error('Could not get video dimensions'));
         return;
@@ -154,9 +274,9 @@ const processVideo = async (videoFile: string): Promise<void> => {
     const dimensions = await getVideoDimensions(inputPath);
     console.log(`- Dimensions: ${dimensions.width}x${dimensions.height}`);
     
-    // Generate HLS video
+    // Generate adaptive HLS video with multiple qualities
     const videoStart = Date.now();
-    const videoSuccess = await generateVideo(inputPath, videoOutputDir, dimensions);
+    const videoSuccess = await generateAdaptiveVideo(inputPath, videoOutputDir, dimensions);
     const videoTime = ((Date.now() - videoStart) / 1000).toFixed(1);
     
     if (!videoSuccess) {
