@@ -47,7 +47,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "SESSION_SECRET=dev-secret-please-change-in-production npm run dev -- --port 5000"
+args = "SESSION_SECRET=dev-secret-please-change-in-production npm run dev"
 waitForPort = 5000
 
 [agent]
