@@ -11,6 +11,9 @@ const handle = app.getRequestHandler();
 app.prepare().then(async () => {
   const server = express();
 
+  // Trust proxy for production deployments (required for secure cookies behind proxy)
+  server.set('trust proxy', 1);
+
   // Add JSON body parsing middleware
   server.use(express.json());
   server.use(express.urlencoded({ extended: true }));

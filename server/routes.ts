@@ -33,14 +33,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     process.exit(1);
   }
 
-  // Setup session middleware
-  const pgStore = connectPg(session);
-  const sessionStore = new pgStore({
-    conString: process.env.DATABASE_URL,
-    createTableIfMissing: true,
-    ttl: 7 * 24 * 60 * 60, // 1 week in seconds
-    tableName: "sessions",
-  });
+  // Setup session middleware with fallback store
+  let sessionStore;
+  if (process.env.DATABASE_URL) {
+    // Use PostgreSQL store if DATABASE_URL is available
+    const pgStore = connectPg(session);
+    sessionStore = new pgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+      ttl: 7 * 24 * 60 * 60, // 1 week in seconds
+      tableName: "sessions",
+    });
+    console.log('Using PostgreSQL session store');
+  } else {
+    // Fallback to memory store (note: sessions won't persist across restarts)
+    console.log('Using memory session store (sessions won\'t persist across restarts)');
+    sessionStore = new session.MemoryStore();
+  }
 
   app.use(session({
     secret: SESSION_SECRET,
@@ -48,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: 'auto', // Automatically set secure based on connection type
       httpOnly: true,
       sameSite: 'lax', // CSRF protection
       maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
