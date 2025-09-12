@@ -124,6 +124,43 @@ export type CardData = {
     enableLighting?: boolean
     enableOcclusion?: boolean
   }
+  customButtons?: Array<{
+    id: string                    // Unique identifier
+    text: string                  // Button text
+    position: {
+      x: number                   // X position (percentage or pixels)
+      y: number                   // Y position (percentage or pixels)
+      unit: 'percent' | 'px'      // Position unit
+    }
+    timing: {
+      visibleFrom: number         // Show after X seconds
+      animationDelay?: number     // Optional animation delay after visible
+    }
+    animation?: {
+      type: 'fadeIn' | 'slideUp' | 'slideDown' | 'slideLeft' | 'slideRight' | 'bounce' | 'scale'
+      duration?: number           // Animation duration in seconds
+      easing?: string             // CSS easing function
+    }
+    link: {
+      type: 'iframe' | 'external' | 'chapter' | 'subchapter'
+      url?: string                // For iframe/external
+      target?: string             // For chapter/subchapter (e.g., "chapter-1", "chapter-2-sub-1")
+      iframeConfig?: {            // For iframe type
+        width?: number
+        height?: number
+        allowFullscreen?: boolean
+      }
+    }
+    styling?: {
+      backgroundColor?: string
+      textColor?: string
+      borderColor?: string
+      borderRadius?: string
+      fontSize?: string
+      padding?: string
+      opacity?: number
+    }
+  }>
   theme?: {
     mix?: CSSProperties['mixBlendMode']
     shadow?: boolean
