@@ -6,6 +6,7 @@ import type { CardData } from '@/@typings';
 import AnimateText from "./AnimateText";
 import Player from "./Player";
 import PlayCanvasViewer from "./PlayCanvasViewer";
+import ARViewer from "./ARViewer";
 
 interface CardProps {
   data: CardData;
@@ -22,7 +23,8 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
   const [imageActive, setImageActive] = useState(false);
   const [playcanvasReady, setPlaycanvasReady] = useState(false);
   const [playcanvasError, setPlaycanvasError] = useState<string | null>(null);
-  const { text, cta, video, image, playcanvas, theme } = data;
+  const [isAROpen, setIsAROpen] = useState(false);
+  const { text, cta, video, image, playcanvas, ar, theme } = data;
   const title = text?.title;
   const subtitle = text?.subtitle;
   const description = text?.description;
@@ -43,7 +45,12 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
     if (active) {
       setPlaying(true);
     }
-  }, [active, anim, imageLoad]);
+    
+    // Close AR when card becomes inactive
+    if (!active && isAROpen) {
+      setIsAROpen(false);
+    }
+  }, [active, anim, imageLoad, isAROpen]);
 
   return (
     <div
@@ -199,33 +206,88 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
             </AnimateText>
           </p>
         )}
-        {cta && (
-          <button
-            onClick={() => {
-              const isExternal = cta.url.startsWith("http");
-              if (isExternal) {
-                window.open(cta.url, "_blank");
-              } else {
-                router.push(cta.url);
-              }
-            }}
-            className={`flex items-center justify-center mt-6 h-14 px-6 rounded-full cursor-pointer text-base font-semibold ${
-              theme?.invert
-                ? "bg-black hover:bg-black/80 text-white"
-                : "bg-white hover:bg-white/80 text-black"
-            }`}
-            style={{
-              backgroundColor: theme?.cta || undefined,
-              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
-              opacity: 0,
-              animation: active ? "animButtonIn 0.6s 1s ease forwards" : "none",
-            }}
-            aria-label={theme?.title}
-          >
-            {cta?.title}
-          </button>
-        )}
+        {/* Action Buttons Container */}
+        <div className="flex flex-col items-center space-y-4 mt-6">
+          {/* AR Button */}
+          {ar && (ar.glbUrl || ar.usdzUrl) && (
+            <button
+              onClick={() => {
+                setPlaying(false); // Pause video when opening AR
+                setIsAROpen(true);
+              }}
+              className={`flex items-center justify-center h-14 px-6 rounded-full cursor-pointer text-base font-semibold ${
+                theme?.invert
+                  ? "bg-black hover:bg-black/80 text-white"
+                  : "bg-white hover:bg-white/80 text-black"
+              }`}
+              style={{
+                backgroundColor: theme?.cta || undefined,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                opacity: 0,
+                animation: active ? "animButtonIn 0.6s 0.8s ease forwards" : "none",
+              }}
+              aria-label="View in AR"
+            >
+              <svg 
+                className="w-5 h-5 mr-2" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" 
+                />
+              </svg>
+              View in AR
+            </button>
+          )}
+
+          {/* Regular CTA Button */}
+          {cta && (
+            <button
+              onClick={() => {
+                const isExternal = cta.url.startsWith("http");
+                if (isExternal) {
+                  window.open(cta.url, "_blank");
+                } else {
+                  router.push(cta.url);
+                }
+              }}
+              className={`flex items-center justify-center h-14 px-6 rounded-full cursor-pointer text-base font-semibold ${
+                theme?.invert
+                  ? "bg-black hover:bg-black/80 text-white"
+                  : "bg-white hover:bg-white/80 text-black"
+              }`}
+              style={{
+                backgroundColor: theme?.cta || undefined,
+                boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+                opacity: 0,
+                animation: active ? `animButtonIn 0.6s ${ar ? '1.2s' : '1s'} ease forwards` : "none",
+              }}
+              aria-label={cta.title}
+            >
+              {cta.title}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* AR Viewer Modal */}
+      {ar && (ar.glbUrl || ar.usdzUrl) && (
+        <ARViewer 
+          ar={ar}
+          isOpen={isAROpen}
+          onClose={() => {
+            setIsAROpen(false);
+            if (active) {
+              setPlaying(true); // Resume video when closing AR
+            }
+          }}
+        />
+      )}
     </div>
   );
 };

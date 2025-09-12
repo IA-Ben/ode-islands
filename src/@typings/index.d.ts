@@ -71,6 +71,16 @@ export type CardData = {
       }>
     }
   }
+  ar?: {
+    glbUrl?: string        // 3D model for Android Scene Viewer
+    usdzUrl?: string       // 3D model for iOS Quick Look
+    title?: string         // AR experience title
+    poster?: string        // Preview image before AR
+    scale?: string         // Initial scale (e.g., "0.5 0.5 0.5")
+    placement?: 'floor' | 'wall'  // AR placement mode
+    cameraControls?: boolean      // Enable camera controls
+    autoRotate?: boolean         // Auto-rotate when not in AR
+  }
   theme?: {
     mix?: CSSProperties['mixBlendMode']
     shadow?: boolean
