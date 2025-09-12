@@ -17,14 +17,6 @@ externalPort = 80
 localPort = 5000
 externalPort = 80
 
-[[ports]]
-localPort = 33415
-externalPort = 3001
-
-[[ports]]
-localPort = 46119
-externalPort = 3000
-
 [workflows]
 runButton = "Project"
 
@@ -55,7 +47,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "ADMIN_PASSWORD=admin123 SESSION_SECRET=dev-secret-please-change-in-production npm run dev -- --port 5000"
+args = "SESSION_SECRET=dev-secret-please-change-in-production npm run dev -- --port 5000"
 waitForPort = 5000
 
 [agent]
