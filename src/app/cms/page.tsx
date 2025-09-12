@@ -79,10 +79,12 @@ export default function CMSPage() {
   };
 
   const handleLogin = async (e: React.FormEvent) => {
+    console.log('handleLogin called - form submitted');
     e.preventDefault();
     setLoginError('');
     
     try {
+      console.log('Making login request with password:', password ? 'PRESENT' : 'MISSING');
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -91,11 +93,13 @@ export default function CMSPage() {
         body: JSON.stringify({ password }),
       });
 
+      console.log('Login response status:', response.status);
       if (response.ok) {
         console.log('Login successful');
         checkAuthStatus(); // Refresh auth status
       } else {
         const data = await response.json();
+        console.log('Login failed:', data);
         setLoginError(data.message || 'Invalid password');
       }
     } catch (error) {
@@ -177,12 +181,16 @@ export default function CMSPage() {
               </div>
             )}
             
-            <Button 
+            <button 
               type="submit"
-              className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg"
+              className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg rounded-md font-medium transition-colors"
+              onClick={(e) => {
+                console.log('Button clicked!');
+                handleLogin(e);
+              }}
             >
               🔐 Login
-            </Button>
+            </button>
           </form>
         </div>
       </div>
