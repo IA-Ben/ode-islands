@@ -163,7 +163,7 @@ export default function CMSPage() {
             Enter the admin password to access the content management system.
           </p>
           
-          <form onSubmit={handleLogin} className="space-y-4">
+          <div className="space-y-4">
             <div>
               <input
                 type="password"
@@ -171,7 +171,11 @@ export default function CMSPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Admin password"
                 className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
-                required
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleLogin(e);
+                  }
+                }}
               />
             </div>
             
@@ -182,16 +186,17 @@ export default function CMSPage() {
             )}
             
             <button 
-              type="submit"
+              type="button"
               className="w-full bg-blue-600 hover:bg-blue-700 py-3 text-lg rounded-md font-medium transition-colors"
-              onClick={(e) => {
+              onClick={async (e) => {
                 console.log('Button clicked!');
-                handleLogin(e);
+                e.preventDefault();
+                await handleLogin(e);
               }}
             >
               🔐 Login
             </button>
-          </form>
+          </div>
         </div>
       </div>
     );
