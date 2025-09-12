@@ -76,9 +76,8 @@ const detectARMode = (ar: NonNullable<CardData['ar']>, capabilities: ARCapabilit
   return 'disabled';
 };
 
-export default function AROrchestrator({ ar, isOpen: _isOpen, onClose, onVideoStateChange }: AROrchestratorProps) {
-  // _isOpen is intentionally unused - AR state is managed internally
-  void _isOpen; // Mark as used to suppress warnings
+export default function AROrchestrator({ ar, isOpen, onClose, onVideoStateChange }: AROrchestratorProps) {
+  // Only initialize AR functionality when actually opened to prevent premature library loading
   const [capabilities, setCapabilities] = useState<ARCapabilities>({
     hasCamera: false,
     hasGeolocation: false,
@@ -142,9 +141,9 @@ export default function AROrchestrator({ ar, isOpen: _isOpen, onClose, onVideoSt
     setSelectedMode(mode);
   }, [ar, capabilities, isInitializing]);
 
-  // Load required libraries based on selected mode
+  // Load required libraries based on selected mode and open state
   useEffect(() => {
-    if (selectedMode === 'disabled' || selectedMode === 'object') {
+    if (!isOpen || selectedMode === 'disabled' || selectedMode === 'object') {
       setLibrariesLoaded(true);
       return;
     }
@@ -181,7 +180,7 @@ export default function AROrchestrator({ ar, isOpen: _isOpen, onClose, onVideoSt
           // TODO: Add real SRI integrity hashes for production security
           await Promise.all([
             loadScript({
-              src: 'https://cdn.jsdelivr.net/npm/aframe@1.4.0/dist/aframe-master.min.js',
+              src: 'https://cdn.jsdelivr.net/npm/aframe@1.4.0/dist/aframe.min.js',
               crossorigin: 'anonymous'
             }),
             loadScript({
@@ -208,7 +207,7 @@ export default function AROrchestrator({ ar, isOpen: _isOpen, onClose, onVideoSt
     };
 
     loadLibraries();
-  }, [selectedMode]);
+  }, [selectedMode, isOpen]);
 
   // Request permissions based on AR mode
   const requestPermissions = useCallback(async () => {
