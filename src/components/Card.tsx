@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
@@ -250,10 +252,10 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
           {cta && (
             <button
               onClick={() => {
-                const isExternal = cta.url.startsWith("http");
+                const isExternal = cta.url.startsWith("http://") || cta.url.startsWith("https://");
                 if (isExternal) {
-                  window.open(cta.url, "_blank");
-                } else {
+                  window.open(cta.url, "_blank", "noopener,noreferrer");
+                } else if (cta.url.startsWith("/")) {
                   router.push(cta.url);
                 }
               }}

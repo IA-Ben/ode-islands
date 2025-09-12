@@ -83,22 +83,22 @@ export const CustomButton: React.FC<CustomButtonProps> = ({ button, active, card
     
     switch (link.type) {
       case 'external':
-        if (link.url) {
-          window.open(link.url, '_blank');
+        if (link.url && (link.url.startsWith('http://') || link.url.startsWith('https://'))) {
+          window.open(link.url, '_blank', 'noopener,noreferrer');
         }
         break;
       case 'chapter':
-        if (link.target) {
+        if (link.target && link.target.match(/^[a-zA-Z0-9\-_]+$/)) {
           router.push(`/${link.target}`);
         }
         break;
       case 'subchapter':
-        if (link.target) {
+        if (link.target && link.target.match(/^[a-zA-Z0-9\-_]+$/)) {
           router.push(`/${link.target}`);
         }
         break;
       case 'iframe':
-        if (link.url) {
+        if (link.url && (link.url.startsWith('http://') || link.url.startsWith('https://'))) {
           // Create a modal with iframe
           const modal = document.createElement('div');
           modal.style.cssText = `
@@ -116,6 +116,8 @@ export const CustomButton: React.FC<CustomButtonProps> = ({ button, active, card
           
           const iframe = document.createElement('iframe');
           iframe.src = link.url;
+          iframe.sandbox = 'allow-scripts';
+          iframe.referrerPolicy = 'no-referrer';
           iframe.style.cssText = `
             width: ${link.iframeConfig?.width || 800}px;
             height: ${link.iframeConfig?.height || 600}px;
@@ -127,6 +129,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({ button, active, card
           
           if (link.iframeConfig?.allowFullscreen) {
             iframe.allowFullscreen = true;
+            iframe.allow = 'fullscreen';
           }
           
           const closeButton = document.createElement('button');
@@ -218,7 +221,7 @@ export const CustomButton: React.FC<CustomButtonProps> = ({ button, active, card
     borderRadius: button.styling?.borderRadius || '9999px',
     fontSize: button.styling?.fontSize || '16px',
     padding: button.styling?.padding || '12px 24px',
-    opacity: button.styling?.opacity || 1,
+    opacity: button.styling?.opacity ?? 1,
     border: `2px solid ${button.styling?.borderColor || 'transparent'}`,
     cursor: 'pointer',
     fontWeight: '600',
