@@ -64,6 +64,17 @@ export default function CardEditorPage() {
             title: '#ffffff',
             subtitle: '#ffffff',
             description: '#ffffff'
+          },
+          ar: {
+            mode: 'auto',
+            markers: [],
+            locations: []
+          },
+          playcanvas: {
+            type: 'iframe',
+            fillMode: 'KEEP_ASPECT',
+            transparency: false,
+            autoPlay: false
           }
         });
       } else if (cards[cardIndexNum]) {
@@ -152,6 +163,17 @@ export default function CardEditorPage() {
                     background: "#1a1a2e",
                     title: "#ffffff",
                     subtitle: "#cccccc"
+                  },
+                  ar: {
+                    mode: 'auto',
+                    markers: [],
+                    locations: []
+                  },
+                  playcanvas: {
+                    type: 'iframe',
+                    fillMode: 'KEEP_ASPECT',
+                    transparency: false,
+                    autoPlay: false
                   }
                 }]
               }),
@@ -171,6 +193,17 @@ export default function CardEditorPage() {
                     background: "#1a1a2e",
                     title: "#ffffff",
                     subtitle: "#cccccc"
+                  },
+                  ar: {
+                    mode: 'auto',
+                    markers: [],
+                    locations: []
+                  },
+                  playcanvas: {
+                    type: 'iframe',
+                    fillMode: 'KEEP_ASPECT',
+                    transparency: false,
+                    autoPlay: false
                   }
                 }]
               }));
@@ -763,6 +796,752 @@ export default function CardEditorPage() {
                       />
                       <span className="text-sm">Invert CTA</span>
                     </label>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* AR Configuration Section */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white text-base">🥽 AR Configuration</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">AR Mode</label>
+                    <select
+                      value={cardData.ar?.mode || 'auto'}
+                      onChange={(e) => setCardData(prev => ({
+                        ...prev,
+                        ar: { ...(prev.ar || {}), mode: e.target.value as 'auto' | 'object' | 'marker' | 'location' }
+                      }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                    >
+                      <option value="auto">Auto (Smart Detection)</option>
+                      <option value="object">Object AR (iOS/Android)</option>
+                      <option value="marker">Marker AR (Image Tracking)</option>
+                      <option value="location">Location AR (GPS-based)</option>
+                    </select>
+                  </div>
+
+                  {/* Object AR Configuration */}
+                  {(!cardData.ar?.mode || cardData.ar?.mode === 'auto' || cardData.ar?.mode === 'object') && (
+                    <div className="space-y-4 border-t border-gray-600 pt-4">
+                      <h4 className="text-sm font-semibold text-blue-400">Object AR Settings</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Android Model (.glb)</label>
+                          <input
+                            type="text"
+                            value={cardData.ar?.glbUrl || ''}
+                            onChange={(e) => setCardData(prev => ({
+                              ...prev,
+                              ar: { ...(prev.ar || {}), glbUrl: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                            placeholder="model.glb"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">iOS Model (.usdz)</label>
+                          <input
+                            type="text"
+                            value={cardData.ar?.usdzUrl || ''}
+                            onChange={(e) => setCardData(prev => ({
+                              ...prev,
+                              ar: { ...(prev.ar || {}), usdzUrl: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                            placeholder="model.usdz"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Preview Image</label>
+                          <input
+                            type="text"
+                            value={cardData.ar?.poster || ''}
+                            onChange={(e) => setCardData(prev => ({
+                              ...prev,
+                              ar: { ...(prev.ar || {}), poster: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                            placeholder="preview.jpg"
+                          />
+                        </div>
+                        
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Scale</label>
+                          <input
+                            type="text"
+                            value={cardData.ar?.scale || ''}
+                            onChange={(e) => setCardData(prev => ({
+                              ...prev,
+                              ar: { ...(prev.ar || {}), scale: e.target.value }
+                            }))}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                            placeholder="1 1 1"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-2">Placement</label>
+                          <select
+                            value={cardData.ar?.placement || 'floor'}
+                            onChange={(e) => setCardData(prev => ({
+                              ...prev,
+                              ar: { ...(prev.ar || {}), placement: e.target.value as 'floor' | 'wall' }
+                            }))}
+                            className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                          >
+                            <option value="floor">Floor</option>
+                            <option value="wall">Wall</option>
+                          </select>
+                        </div>
+                        
+                        <label className="flex items-center pt-6">
+                          <input
+                            type="checkbox"
+                            checked={cardData.ar?.cameraControls || false}
+                            onChange={(e) => setCardData(prev => ({
+                              ...prev,
+                              ar: { ...(prev.ar || {}), cameraControls: e.target.checked }
+                            }))}
+                            className="mr-2"
+                          />
+                          <span className="text-sm">Camera Controls</span>
+                        </label>
+                        
+                        <label className="flex items-center pt-6">
+                          <input
+                            type="checkbox"
+                            checked={cardData.ar?.autoRotate || false}
+                            onChange={(e) => setCardData(prev => ({
+                              ...prev,
+                              ar: { ...(prev.ar || {}), autoRotate: e.target.checked }
+                            }))}
+                            className="mr-2"
+                          />
+                          <span className="text-sm">Auto Rotate</span>
+                        </label>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Marker AR Configuration */}
+                  {cardData.ar?.mode === 'marker' && (
+                    <div className="space-y-4 border-t border-gray-600 pt-4">
+                      <h4 className="text-sm font-semibold text-green-400">Marker AR Settings</h4>
+                      <p className="text-xs text-gray-400">Configure image markers and associated 3D models</p>
+                      
+                      {cardData.ar?.markers?.map((marker, index) => (
+                        <div key={index} className="space-y-4 border border-gray-600 rounded p-4">
+                          <div className="flex justify-between items-center">
+                            <h5 className="text-sm font-medium">Marker {index + 1}</h5>
+                            <Button
+                              onClick={() => setCardData(prev => ({
+                                ...prev,
+                                ar: {
+                                  ...(prev.ar || {}),
+                                  markers: prev.ar?.markers?.filter((_, i) => i !== index)
+                                }
+                              }))}
+                              className="bg-red-600 hover:bg-red-700 text-xs px-2 py-1"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Marker ID</label>
+                              <input
+                                type="text"
+                                value={marker.id}
+                                onChange={(e) => {
+                                  const newMarkers = [...(cardData.ar?.markers || [])];
+                                  newMarkers[index] = { ...marker, id: e.target.value };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), markers: newMarkers }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="marker-1"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Physical Width (meters)</label>
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={marker.physicalWidthM}
+                                onChange={(e) => {
+                                  const newMarkers = [...(cardData.ar?.markers || [])];
+                                  newMarkers[index] = { ...marker, physicalWidthM: parseFloat(e.target.value) || 0.1 };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), markers: newMarkers }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="0.1"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">MindAR Target File (.mind)</label>
+                              <input
+                                type="text"
+                                value={marker.mindFileUrl || ''}
+                                onChange={(e) => {
+                                  const newMarkers = [...(cardData.ar?.markers || [])];
+                                  newMarkers[index] = { ...marker, mindFileUrl: e.target.value };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), markers: newMarkers }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="marker.mind"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Preview Image</label>
+                              <input
+                                type="text"
+                                value={marker.previewImageUrl || ''}
+                                onChange={(e) => {
+                                  const newMarkers = [...(cardData.ar?.markers || [])];
+                                  newMarkers[index] = { ...marker, previewImageUrl: e.target.value };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), markers: newMarkers }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="marker-preview.jpg"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">3D Model (.glb)</label>
+                            <input
+                              type="text"
+                              value={marker.model.glbUrl}
+                              onChange={(e) => {
+                                const newMarkers = [...(cardData.ar?.markers || [])];
+                                newMarkers[index] = { ...marker, model: { ...marker.model, glbUrl: e.target.value } };
+                                setCardData(prev => ({
+                                  ...prev,
+                                  ar: { ...(prev.ar || {}), markers: newMarkers }
+                                }));
+                              }}
+                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                              placeholder="model.glb"
+                            />
+                          </div>
+                        </div>
+                      )) || <p className="text-gray-400 text-sm">No markers configured</p>}
+                      
+                      <Button
+                        onClick={() => setCardData(prev => ({
+                          ...prev,
+                          ar: {
+                            ...(prev.ar || {}),
+                            markers: [
+                              ...(prev.ar?.markers || []),
+                              {
+                                id: `marker-${(prev.ar?.markers?.length || 0) + 1}`,
+                                physicalWidthM: 0.1,
+                                model: { glbUrl: '' }
+                              }
+                            ]
+                          }
+                        }))}
+                        className="bg-green-600 hover:bg-green-700 text-sm"
+                      >
+                        + Add Marker
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Location AR Configuration */}
+                  {cardData.ar?.mode === 'location' && (
+                    <div className="space-y-4 border-t border-gray-600 pt-4">
+                      <h4 className="text-sm font-semibold text-purple-400">Location AR Settings</h4>
+                      <p className="text-xs text-gray-400">Configure GPS-based AR experiences</p>
+                      
+                      {cardData.ar?.locations?.map((location, index) => (
+                        <div key={index} className="space-y-4 border border-gray-600 rounded p-4">
+                          <div className="flex justify-between items-center">
+                            <h5 className="text-sm font-medium">Location {index + 1}</h5>
+                            <Button
+                              onClick={() => setCardData(prev => ({
+                                ...prev,
+                                ar: {
+                                  ...(prev.ar || {}),
+                                  locations: prev.ar?.locations?.filter((_, i) => i !== index)
+                                }
+                              }))}
+                              className="bg-red-600 hover:bg-red-700 text-xs px-2 py-1"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                          
+                          <div className="grid grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Location ID</label>
+                              <input
+                                type="text"
+                                value={location.id}
+                                onChange={(e) => {
+                                  const newLocations = [...(cardData.ar?.locations || [])];
+                                  newLocations[index] = { ...location, id: e.target.value };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), locations: newLocations }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="location-1"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Detection Radius (meters)</label>
+                              <input
+                                type="number"
+                                value={location.radiusM}
+                                onChange={(e) => {
+                                  const newLocations = [...(cardData.ar?.locations || [])];
+                                  newLocations[index] = { ...location, radiusM: parseInt(e.target.value) || 10 };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), locations: newLocations }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="10"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div className="grid grid-cols-3 gap-4">
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Latitude</label>
+                              <input
+                                type="number"
+                                step="0.000001"
+                                value={location.lat}
+                                onChange={(e) => {
+                                  const newLocations = [...(cardData.ar?.locations || [])];
+                                  newLocations[index] = { ...location, lat: parseFloat(e.target.value) || 0 };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), locations: newLocations }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="40.7128"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Longitude</label>
+                              <input
+                                type="number"
+                                step="0.000001"
+                                value={location.lng}
+                                onChange={(e) => {
+                                  const newLocations = [...(cardData.ar?.locations || [])];
+                                  newLocations[index] = { ...location, lng: parseFloat(e.target.value) || 0 };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), locations: newLocations }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="-74.0060"
+                              />
+                            </div>
+                            
+                            <div>
+                              <label className="block text-sm font-medium mb-2">Altitude (optional)</label>
+                              <input
+                                type="number"
+                                value={location.altitude || ''}
+                                onChange={(e) => {
+                                  const newLocations = [...(cardData.ar?.locations || [])];
+                                  newLocations[index] = { ...location, altitude: e.target.value ? parseFloat(e.target.value) : undefined };
+                                  setCardData(prev => ({
+                                    ...prev,
+                                    ar: { ...(prev.ar || {}), locations: newLocations }
+                                  }));
+                                }}
+                                className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                                placeholder="10"
+                              />
+                            </div>
+                          </div>
+                          
+                          <div>
+                            <label className="block text-sm font-medium mb-2">3D Model (.glb)</label>
+                            <input
+                              type="text"
+                              value={location.model.glbUrl}
+                              onChange={(e) => {
+                                const newLocations = [...(cardData.ar?.locations || [])];
+                                newLocations[index] = { ...location, model: { ...location.model, glbUrl: e.target.value } };
+                                setCardData(prev => ({
+                                  ...prev,
+                                  ar: { ...(prev.ar || {}), locations: newLocations }
+                                }));
+                              }}
+                              className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                              placeholder="model.glb"
+                            />
+                          </div>
+                        </div>
+                      )) || <p className="text-gray-400 text-sm">No locations configured</p>}
+                      
+                      <Button
+                        onClick={() => setCardData(prev => ({
+                          ...prev,
+                          ar: {
+                            ...(prev.ar || {}),
+                            locations: [
+                              ...(prev.ar?.locations || []),
+                              {
+                                id: `location-${(prev.ar?.locations?.length || 0) + 1}`,
+                                lat: 0,
+                                lng: 0,
+                                radiusM: 10,
+                                model: { glbUrl: '' }
+                              }
+                            ]
+                          }
+                        }))}
+                        className="bg-purple-600 hover:bg-purple-700 text-sm"
+                      >
+                        + Add Location
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* PlayCanvas Configuration Section */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white text-base">🎮 PlayCanvas Configuration</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Integration Type</label>
+                    <select
+                      value={cardData.playcanvas?.type || 'iframe'}
+                      onChange={(e) => setCardData(prev => ({
+                        ...prev,
+                        playcanvas: { ...(prev.playcanvas || {}), type: e.target.value as 'iframe' | 'engine' | 'self-hosted' }
+                      }))}
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                    >
+                      <option value="iframe">Iframe (Embedded Project)</option>
+                      <option value="engine">Engine (Custom Scene)</option>
+                      <option value="self-hosted">Self-Hosted Build</option>
+                    </select>
+                  </div>
+
+                  {/* Basic Configuration */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {cardData.playcanvas?.type === 'iframe' && (
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Project ID</label>
+                        <input
+                          type="text"
+                          value={cardData.playcanvas?.projectId || ''}
+                          onChange={(e) => setCardData(prev => ({
+                            ...prev,
+                            playcanvas: { ...(prev.playcanvas || {}), projectId: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                          placeholder="your-project-id"
+                        />
+                      </div>
+                    )}
+                    
+                    {cardData.playcanvas?.type === 'self-hosted' && (
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Build Path</label>
+                        <input
+                          type="text"
+                          value={cardData.playcanvas?.buildPath || ''}
+                          onChange={(e) => setCardData(prev => ({
+                            ...prev,
+                            playcanvas: { ...(prev.playcanvas || {}), buildPath: e.target.value }
+                          }))}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                          placeholder="/path/to/build/"
+                        />
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Fill Mode</label>
+                      <select
+                        value={cardData.playcanvas?.fillMode || 'KEEP_ASPECT'}
+                        onChange={(e) => setCardData(prev => ({
+                          ...prev,
+                          playcanvas: { ...(prev.playcanvas || {}), fillMode: e.target.value as 'FILL_WINDOW' | 'KEEP_ASPECT' }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                      >
+                        <option value="KEEP_ASPECT">Keep Aspect</option>
+                        <option value="FILL_WINDOW">Fill Window</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Width</label>
+                      <input
+                        type="number"
+                        value={cardData.playcanvas?.width || ''}
+                        onChange={(e) => setCardData(prev => ({
+                          ...prev,
+                          playcanvas: { ...(prev.playcanvas || {}), width: e.target.value ? parseInt(e.target.value) : undefined }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                        placeholder="800"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium mb-2">Height</label>
+                      <input
+                        type="number"
+                        value={cardData.playcanvas?.height || ''}
+                        onChange={(e) => setCardData(prev => ({
+                          ...prev,
+                          playcanvas: { ...(prev.playcanvas || {}), height: e.target.value ? parseInt(e.target.value) : undefined }
+                        }))}
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                        placeholder="600"
+                      />
+                    </div>
+                    
+                    <div className="flex flex-col justify-end space-y-2">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={cardData.playcanvas?.transparency || false}
+                          onChange={(e) => setCardData(prev => ({
+                            ...prev,
+                            playcanvas: { ...(prev.playcanvas || {}), transparency: e.target.checked }
+                          }))}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Transparency</span>
+                      </label>
+                      
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={cardData.playcanvas?.autoPlay || false}
+                          onChange={(e) => setCardData(prev => ({
+                            ...prev,
+                            playcanvas: { ...(prev.playcanvas || {}), autoPlay: e.target.checked }
+                          }))}
+                          className="mr-2"
+                        />
+                        <span className="text-sm">Auto Play</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  {/* Engine Scene Configuration */}
+                  {cardData.playcanvas?.type === 'engine' && (
+                    <div className="space-y-4 border-t border-gray-600 pt-4">
+                      <h4 className="text-sm font-semibold text-indigo-400">Scene Configuration</h4>
+                      
+                      {/* Camera Settings */}
+                      <div className="space-y-3">
+                        <h5 className="text-sm font-medium text-gray-300">Camera</h5>
+                        <div className="grid grid-cols-4 gap-3">
+                          <div className="col-span-3">
+                            <label className="block text-xs font-medium mb-1">Position (x, y, z)</label>
+                            <input
+                              type="text"
+                              value={cardData.playcanvas?.sceneConfig?.camera?.position?.join(', ') || ''}
+                              onChange={(e) => {
+                                const values = e.target.value.split(',').map(v => parseFloat(v.trim()) || 0);
+                                setCardData(prev => ({
+                                  ...prev,
+                                  playcanvas: {
+                                    ...(prev.playcanvas || {}),
+                                    sceneConfig: {
+                                      ...(prev.playcanvas?.sceneConfig || {}),
+                                      camera: {
+                                        ...(prev.playcanvas?.sceneConfig?.camera || {}),
+                                        position: [values[0] || 0, values[1] || 0, values[2] || 0] as [number, number, number],
+                                        target: prev.playcanvas?.sceneConfig?.camera?.target || [0, 0, 0]
+                                      }
+                                    }
+                                  }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                              placeholder="0, 5, 10"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs font-medium mb-1">FOV</label>
+                            <input
+                              type="number"
+                              value={cardData.playcanvas?.sceneConfig?.camera?.fov || ''}
+                              onChange={(e) => setCardData(prev => ({
+                                ...prev,
+                                playcanvas: {
+                                  ...(prev.playcanvas || {}),
+                                  sceneConfig: {
+                                    ...(prev.playcanvas?.sceneConfig || {}),
+                                    camera: {
+                                      ...(prev.playcanvas?.sceneConfig?.camera || {}),
+                                      fov: e.target.value ? parseFloat(e.target.value) : undefined,
+                                      position: prev.playcanvas?.sceneConfig?.camera?.position || [0, 0, 0],
+                                      target: prev.playcanvas?.sceneConfig?.camera?.target || [0, 0, 0]
+                                    }
+                                  }
+                                }
+                              }))}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                              placeholder="45"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Lighting Settings */}
+                      <div className="space-y-3">
+                        <h5 className="text-sm font-medium text-gray-300">Lighting</h5>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium mb-1">Ambient Color (r, g, b)</label>
+                            <input
+                              type="text"
+                              value={cardData.playcanvas?.sceneConfig?.lighting?.ambientColor?.join(', ') || ''}
+                              onChange={(e) => {
+                                const values = e.target.value.split(',').map(v => parseFloat(v.trim()) || 0);
+                                setCardData(prev => ({
+                                  ...prev,
+                                  playcanvas: {
+                                    ...(prev.playcanvas || {}),
+                                    sceneConfig: {
+                                      ...(prev.playcanvas?.sceneConfig || {}),
+                                      lighting: {
+                                        ...(prev.playcanvas?.sceneConfig?.lighting || {}),
+                                        ambientColor: [values[0] || 0.2, values[1] || 0.2, values[2] || 0.2] as [number, number, number]
+                                      }
+                                    }
+                                  }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                              placeholder="0.2, 0.2, 0.2"
+                            />
+                          </div>
+                          
+                          <div>
+                            <label className="block text-xs font-medium mb-1">Directional Light Color</label>
+                            <input
+                              type="text"
+                              value={cardData.playcanvas?.sceneConfig?.lighting?.directionalLight?.color?.join(', ') || ''}
+                              onChange={(e) => {
+                                const values = e.target.value.split(',').map(v => parseFloat(v.trim()) || 0);
+                                setCardData(prev => ({
+                                  ...prev,
+                                  playcanvas: {
+                                    ...(prev.playcanvas || {}),
+                                    sceneConfig: {
+                                      ...(prev.playcanvas?.sceneConfig || {}),
+                                      lighting: {
+                                        ...(prev.playcanvas?.sceneConfig?.lighting || {}),
+                                        directionalLight: {
+                                          color: [values[0] || 1, values[1] || 1, values[2] || 1] as [number, number, number],
+                                          direction: prev.playcanvas?.sceneConfig?.lighting?.directionalLight?.direction || [0, -1, 0]
+                                        }
+                                      }
+                                    }
+                                  }
+                                }));
+                              }}
+                              className="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm"
+                              placeholder="1, 1, 1"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Messaging Configuration */}
+                  <div className="space-y-4 border-t border-gray-600 pt-4">
+                    <h4 className="text-sm font-semibold text-yellow-400">Advanced Settings</h4>
+                    
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={cardData.playcanvas?.messaging?.enableApi || false}
+                        onChange={(e) => setCardData(prev => ({
+                          ...prev,
+                          playcanvas: {
+                            ...(prev.playcanvas || {}),
+                            messaging: {
+                              ...prev.playcanvas?.messaging,
+                              enableApi: e.target.checked
+                            }
+                          }
+                        }))}
+                        className="mr-2"
+                      />
+                      <span className="text-sm">Enable API Communication</span>
+                    </label>
+                    
+                    {cardData.playcanvas?.messaging?.enableApi && (
+                      <div>
+                        <label className="block text-sm font-medium mb-2">Exposed Methods (comma-separated)</label>
+                        <input
+                          type="text"
+                          value={cardData.playcanvas?.messaging?.exposedMethods?.join(', ') || ''}
+                          onChange={(e) => setCardData(prev => ({
+                            ...prev,
+                            playcanvas: {
+                              ...(prev.playcanvas || {}),
+                              messaging: {
+                                ...prev.playcanvas?.messaging,
+                                exposedMethods: e.target.value.split(',').map(m => m.trim()).filter(m => m)
+                              }
+                            }
+                          }))}
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white"
+                          placeholder="playAnimation, changeColor, resetScene"
+                        />
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
