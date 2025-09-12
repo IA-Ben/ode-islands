@@ -7,6 +7,7 @@ import AnimateText from "./AnimateText";
 import Player from "./Player";
 import PlayCanvasViewer from "./PlayCanvasViewer";
 import ARViewer from "./ARViewer";
+import CustomButton from "./CustomButton";
 
 interface CardProps {
   data: CardData;
@@ -274,6 +275,16 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
           )}
         </div>
       </div>
+
+      {/* Custom Buttons */}
+      {data.customButtons?.map((button) => (
+        <CustomButton
+          key={button.id}
+          button={button}
+          active={active}
+          cardTheme={theme}
+        />
+      ))}
 
       {/* AR Viewer Modal */}
       {ar && (ar.glbUrl || ar.usdzUrl) && (
