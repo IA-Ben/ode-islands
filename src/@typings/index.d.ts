@@ -72,6 +72,7 @@ export type CardData = {
     }
   }
   ar?: {
+    // Object placement AR (existing - iOS Quick Look / Android Scene Viewer)
     glbUrl?: string        // 3D model for Android Scene Viewer
     usdzUrl?: string       // 3D model for iOS Quick Look
     title?: string         // AR experience title
@@ -80,6 +81,48 @@ export type CardData = {
     placement?: 'floor' | 'wall'  // AR placement mode
     cameraControls?: boolean      // Enable camera controls
     autoRotate?: boolean         // Auto-rotate when not in AR
+    
+    // AR mode selection
+    mode?: 'auto' | 'object' | 'marker' | 'location'
+    
+    // Marker-based AR configuration
+    markers?: Array<{
+      id: string
+      // MindAR target file - use EITHER mindFileUrl (precompiled) OR imageUrl (runtime compilation)
+      mindFileUrl?: string   // Precompiled .mind target file (recommended for production)
+      imageUrl?: string      // Raw marker image for runtime compilation (dev/testing only)
+      previewImageUrl?: string // Optional preview image for UI
+      physicalWidthM: number // Physical width in meters for scale calibration
+      model: {
+        glbUrl: string
+        scale?: string
+        offset?: { x: number; y: number; z: number } // Position offset from marker center
+        rotation?: { x: number; y: number; z: number } // Rotation in degrees
+      }
+    }>
+    
+    // Location-based AR configuration
+    locations?: Array<{
+      id: string
+      lat: number
+      lng: number
+      altitude?: number
+      radiusM: number        // Detection radius in meters
+      headingOffset?: number // Compass heading offset in degrees
+      model: {
+        glbUrl: string
+        scale?: string
+        rotation?: { x: number; y: number; z: number }
+      }
+      title?: string
+      description?: string
+    }>
+    
+    // WebAR performance settings
+    performanceProfile?: 'low' | 'high'
+    maxFPS?: number
+    enableLighting?: boolean
+    enableOcclusion?: boolean
   }
   theme?: {
     mix?: CSSProperties['mixBlendMode']

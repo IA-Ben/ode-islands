@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, forwardRef } from 'react';
 import { CardData } from '../@typings';
+import AROrchestrator from './AROrchestrator';
 
 // Type-safe ModelViewer wrapper component
 type ModelViewerProps = React.HTMLAttributes<HTMLElement> & {
@@ -51,10 +52,12 @@ interface ARViewerProps {
   ar: NonNullable<CardData['ar']>;
   isOpen: boolean;
   onClose: () => void;
+  onVideoStateChange: (playing: boolean) => void;
 }
 
 
-const ARViewer: React.FC<ARViewerProps> = ({ ar, isOpen, onClose }) => {
+const ARViewer: React.FC<ARViewerProps> = ({ ar, isOpen, onClose, onVideoStateChange }) => {
+  // All hooks must be called before any conditional logic
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [isARSupported, setIsARSupported] = useState<boolean | null>(null);
@@ -111,6 +114,21 @@ const ARViewer: React.FC<ARViewerProps> = ({ ar, isOpen, onClose }) => {
       // Don't remove script on unmount as it might be used by other components
     };
   }, []);
+
+  // Check if we should use the new AR orchestrator or fall back to simple object AR
+  // Object mode should always use the ModelViewer implementation to prevent regression
+  const useOrchestrator = (ar.mode && ar.mode !== 'object' && ar.mode !== 'auto') || ar.markers || ar.locations;
+
+  if (useOrchestrator) {
+    return (
+      <AROrchestrator
+        ar={ar}
+        isOpen={isOpen}
+        onClose={onClose}
+        onVideoStateChange={onVideoStateChange}
+      />
+    );
+  }
 
 
   // Validate and sanitize input values to prevent XSS

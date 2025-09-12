@@ -286,6 +286,7 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
               setPlaying(true); // Resume video when closing AR
             }
           }}
+          onVideoStateChange={setPlaying}
         />
       )}
     </div>
