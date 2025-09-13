@@ -1,8 +1,14 @@
 # Overview
 
-The Ode Islands is a mixed reality storytelling experience built as a Next.js web application. The project presents an immersive, chapter-based narrative with video content, text overlays, and interactive elements. The application features a card-based interface where users can navigate through different chapters of the story, each containing multiple cards with video backgrounds, animated text, and thematic styling.
+The Ode Islands is a comprehensive event companion app built as a Next.js web application, designed to accompany live events through three distinct phases:
 
-The project includes a separate video transcoding system that converts video files into HLS (HTTP Live Streaming) format for optimized web delivery, with support for uploading processed content to Google Cloud Storage.
+**Before Phase**: Pre-event content delivery featuring an immersive, chapter-based storytelling experience with AR cards, video content, text overlays, and interactive elements. Users navigate through different chapters using a card-based interface with video backgrounds, animated text, and thematic styling.
+
+**Event Phase**: Live event supplementation providing real-time AR experiences, live polling, synchronized content delivery, and interactive features during the actual event.
+
+**After Phase**: Post-event content including event memories, sharing tools, continued engagement opportunities, and community connection features.
+
+The application features a unified phase navigation system that allows seamless transitions between the three phases, with comprehensive CMS management, theme editor capabilities, and custom button systems. The project includes a separate video transcoding system that converts video files into HLS (HTTP Live Streaming) format for optimized web delivery, with support for uploading processed content to Google Cloud Storage.
 
 # User Preferences
 
@@ -11,11 +17,18 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend Architecture
-The application uses Next.js 15 with the App Router pattern, implementing a client-side rendered experience for optimal performance with video content. The main architectural components include:
+The application uses Next.js 15 with the App Router pattern, implementing a three-phase event companion system with client-side rendered experiences for optimal performance with video content. The main architectural components include:
+
+**Phase Navigation System**: A comprehensive navigation component that provides seamless transitions between Before, Event, and After phases. The PhaseNavigation component integrates with the theme system and provides contextual descriptions for each phase.
 
 **Component Structure**: A modular component system with specialized components for video playback (Player), text animations (AnimateText), card displays (Card/ClientCard), and navigation (Footer). The ClientCard component uses dynamic imports to ensure client-side only rendering, preventing hydration issues with video content.
 
-**Routing Strategy**: Dynamic routing with `[id]` parameter for chapter navigation, with automatic redirection from the root to chapter-1. The routing system supports URL-based chapter access while maintaining state management for card progression within chapters.
+**Routing Strategy**: Three-tier routing system:
+- **Before Phase**: Dynamic routing `/before/[id]` for chapter-based storytelling content (chapter-1, chapter-2, etc.)
+- **Event Phase**: Static route `/event` for live event supplementation features
+- **After Phase**: Static route `/after` for post-event content and community features
+- **Legacy Support**: Automatic redirects from old single-segment routes to the Before phase
+- Root path redirects to `/before/chapter-1` as the default entry point
 
 **State Management**: Local React state using hooks for managing user interaction state, current card index, and video playback status. The application tracks user progression through cards and chapters without external state management libraries.
 
