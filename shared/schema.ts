@@ -163,6 +163,74 @@ export const eventMemories = pgTable("event_memories", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Memory Wallet - Personal collection of memories from cards, chapters, and events
+export const userMemoryWallet = pgTable("user_memory_wallet", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  
+  // Memory content
+  title: varchar("title").notNull(),
+  description: text("description"),
+  mediaUrl: varchar("media_url"),
+  mediaType: varchar("media_type"), // 'image', 'video', 'audio', 'text', 'achievement'
+  thumbnail: varchar("thumbnail"), // Thumbnail/preview URL
+  
+  // Source information
+  sourceType: varchar("source_type").notNull(), // 'card', 'chapter', 'event', 'poll', 'quiz', 'manual'
+  sourceId: varchar("source_id"), // ID of the source content
+  sourceMetadata: jsonb("source_metadata"), // Additional context about the source
+  
+  // Event/Chapter context
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  chapterId: varchar("chapter_id"),
+  cardIndex: integer("card_index"),
+  
+  // Collection details
+  collectedAt: timestamp("collected_at").defaultNow(),
+  collectionTrigger: varchar("collection_trigger"), // 'auto', 'manual', 'completion', 'achievement'
+  collectionContext: jsonb("collection_context"), // Details about how it was collected
+  
+  // User customization
+  userNotes: text("user_notes"), // Personal notes added by user
+  isFavorite: boolean("is_favorite").default(false),
+  tags: jsonb("tags"), // User-added tags
+  
+  // Metadata and organization
+  memoryCategory: varchar("memory_category"), // 'milestone', 'learning', 'interaction', 'achievement', 'moment'
+  emotionalTone: varchar("emotional_tone"), // 'positive', 'neutral', 'reflective', 'exciting'
+  displayOrder: integer("display_order"), // For custom ordering
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Memory Wallet Collections - For organizing memories into themed groups
+export const memoryWalletCollections = pgTable("memory_wallet_collections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  
+  name: varchar("name").notNull(),
+  description: text("description"),
+  color: varchar("color"), // Hex color for theming
+  icon: varchar("icon"), // Icon identifier
+  
+  isDefault: boolean("is_default").default(false), // Default collections like "Favorites", "Achievements"
+  displayOrder: integer("display_order"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Junction table for memories in collections
+export const memoryWalletItems = pgTable("memory_wallet_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: varchar("collection_id").references(() => memoryWalletCollections.id).notNull(),
+  memoryId: varchar("memory_id").references(() => userMemoryWallet.id).notNull(),
+  
+  addedAt: timestamp("added_at").defaultNow(),
+  displayOrder: integer("display_order"),
+});
+
 export const certificates = pgTable("certificates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
