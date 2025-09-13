@@ -74,6 +74,16 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 
+/* Auth pages need proper contrast - override global body color */
+body:has([data-auth-page]) {
+  background: #f9fafb;
+  color: #111827;
+}
+
+[data-auth-page] * {
+  color: inherit;
+}
+
 /* Fix for iOS Safari bounce scroll */
 .scroll-container {
   height: 100vh;
