@@ -2,17 +2,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { userProgress, users } from '../../../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
+import { withUserAuth, withUserAuthAndCSRF } from '../../../../server/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
     const chapterId = searchParams.get('chapterId');
+
+    // Get authenticated user ID from session (prevents IDOR vulnerability)
+    const session = (request as any).session;
+    const userId = session.userId;
 
     if (!userId) {
       return NextResponse.json(
-        { success: false, message: 'User ID is required' },
-        { status: 400 }
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
       );
     }
 
@@ -43,15 +47,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { userId, chapterId, cardIndex, timeSpent } = body;
+    const body = (request as any).parsedBody || await request.json();
+    const { chapterId, cardIndex, timeSpent } = body;
+
+    // Get authenticated user ID from session (prevents spoofing)
+    const session = (request as any).session;
+    const userId = session.userId;
 
     // Validate required fields
-    if (!userId || !chapterId || cardIndex === undefined) {
+    if (!chapterId || cardIndex === undefined) {
       return NextResponse.json(
-        { success: false, message: 'User ID, chapter ID, and card index are required' },
+        { success: false, message: 'Chapter ID and card index are required' },
         { status: 400 }
       );
     }
@@ -114,3 +122,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply authentication middleware
+export const GET = withUserAuth(handleGET);
+export const POST = withUserAuthAndCSRF(handlePOST); // CSRF protection for state-changing operations

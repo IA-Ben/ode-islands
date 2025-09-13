@@ -2,19 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { notifications } from '../../../../shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { withAuth, withUserAuth, withUserAuthAndCSRF, withAuthAndCSRF } from '../../../../server/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
     const isRead = searchParams.get('isRead');
     const type = searchParams.get('type');
     const limit = parseInt(searchParams.get('limit') || '20');
 
+    // Get authenticated user ID from session (prevents IDOR vulnerability)
+    const session = (request as any).session;
+    const userId = session.userId;
+
     if (!userId) {
       return NextResponse.json(
-        { success: false, message: 'User ID is required' },
-        { status: 400 }
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
       );
     }
 
@@ -45,9 +49,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (request as any).parsedBody || await request.json();
     const { userId, title, message, type, actionUrl, metadata } = body;
 
     // Validate required fields
@@ -87,10 +91,14 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+async function handlePATCH(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (request as any).parsedBody || await request.json();
     const { notificationId, isRead } = body;
+
+    // Get authenticated user ID from session (prevents IDOR vulnerability)
+    const session = (request as any).session;
+    const userId = session.userId;
 
     if (!notificationId) {
       return NextResponse.json(
@@ -99,14 +107,17 @@ export async function PATCH(request: NextRequest) {
       );
     }
 
-    // Update notification
+    // Update notification - only if it belongs to the authenticated user
     const updatedNotification = await db
       .update(notifications)
       .set({
         isRead: isRead,
         readAt: isRead ? new Date() : null,
       })
-      .where(eq(notifications.id, notificationId))
+      .where(and(
+        eq(notifications.id, notificationId),
+        eq(notifications.userId, userId)
+      ))
       .returning();
 
     if (updatedNotification.length === 0) {
@@ -130,3 +141,8 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+// Apply authentication middleware
+export const GET = withUserAuth(handleGET); // Users can only access their own notifications
+export const POST = withAuthAndCSRF(handlePOST, { requireAdmin: true }); // Only admins can create notifications + CSRF protection
+export const PATCH = withUserAuthAndCSRF(handlePATCH); // Users can only update their own notifications + CSRF protection

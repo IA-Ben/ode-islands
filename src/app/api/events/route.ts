@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { liveEvents } from '../../../../shared/schema';
 import { eq, desc, and, gte, lte } from 'drizzle-orm';
+import { withAuth, withAuthAndCSRF } from '../../../../server/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const isActive = searchParams.get('isActive');
@@ -37,9 +38,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (request as any).parsedBody || await request.json();
     const { title, description, startTime, endTime, settings, createdBy } = body;
 
     // Validate required fields
@@ -88,3 +89,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply authentication middleware
+export const GET = withAuth(handleGET); // Events can be viewed by authenticated users
+export const POST = withAuthAndCSRF(handlePOST, { requireAdmin: true }); // Only admins can create events + CSRF protection

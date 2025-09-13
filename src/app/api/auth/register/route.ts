@@ -3,6 +3,7 @@ import { db } from '../../../../../server/db';
 import { users } from '../../../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { createAuthResponse } from '../../../../../server/auth';
 // Simple in-memory rate limiting for registration
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
 
@@ -90,21 +91,8 @@ export async function POST(request: NextRequest) {
       })
       .returning();
 
-    // Remove sensitive data from response
-    const userResponse = {
-      id: newUser[0].id,
-      email: newUser[0].email,
-      firstName: newUser[0].firstName,
-      lastName: newUser[0].lastName,
-      isAdmin: newUser[0].isAdmin,
-      createdAt: newUser[0].createdAt,
-    };
-
-    return NextResponse.json({
-      success: true,
-      message: 'Account created successfully',
-      user: userResponse,
-    });
+    // Create authenticated response with secure JWT cookie (auto-login after registration)
+    return await createAuthResponse(newUser[0], true, 'Account created successfully');
 
   } catch (error) {
     console.error('Registration error:', error instanceof Error ? error.message : String(error));

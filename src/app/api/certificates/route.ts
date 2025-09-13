@@ -2,18 +2,23 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { certificates, users } from '../../../../shared/schema';
 import { eq, and } from 'drizzle-orm';
+import { withAuth, withUserAuth, withAuthAndCSRF } from '../../../../server/auth';
+import crypto from 'crypto';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
     const eventId = searchParams.get('eventId');
     const certificateType = searchParams.get('certificateType');
 
+    // Get authenticated user ID from session (prevents IDOR vulnerability)
+    const session = (request as any).session;
+    const userId = session.userId;
+
     if (!userId) {
       return NextResponse.json(
-        { success: false, message: 'User ID is required' },
-        { status: 400 }
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
       );
     }
 
@@ -43,9 +48,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (request as any).parsedBody || await request.json();
     const { userId, eventId, chapterId, certificateType, title, description } = body;
 
     // Validate required fields
@@ -110,3 +115,7 @@ and(
     );
   }
 }
+
+// Apply authentication middleware
+export const GET = withUserAuth(handleGET); // Users can only access their own certificates
+export const POST = withAuthAndCSRF(handlePOST, { requireAdmin: true }); // Only admins can issue certificates + CSRF protection

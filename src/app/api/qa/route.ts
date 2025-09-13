@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { qaSessions } from '../../../../shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { withAuth, withUserAuth, withUserAuthAndCSRF, withAuthAndCSRF, validateUserIdentifierFields, setUserIdentifierFields } from '../../../../server/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('eventId');
@@ -37,15 +38,35 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { eventId, question, askedBy } = body;
+    const body = (request as any).parsedBody || await request.json();
+    const session = (request as any).session;
+    
+    // Validate user identifier fields to prevent spoofing
+    const validation = validateUserIdentifierFields(session, body, {
+      userIdFields: ['askedBy'],
+      requireMatchingUser: true
+    });
+    
+    if (!validation.isValid) {
+      return NextResponse.json(
+        { success: false, message: validation.errorMessage },
+        { status: 403 }
+      );
+    }
+    
+    // Automatically set user identifier fields based on session
+    const validatedBody = setUserIdentifierFields(session, body, {
+      askedBy: session.userId
+    });
+    
+    const { eventId, question, askedBy } = validatedBody;
 
     // Validate required fields
-    if (!eventId || !question || !askedBy) {
+    if (!eventId || !question) {
       return NextResponse.json(
-        { success: false, message: 'Event ID, question, and askedBy are required' },
+        { success: false, message: 'Event ID and question are required' },
         { status: 400 }
       );
     }
@@ -78,9 +99,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PATCH(request: NextRequest) {
+async function handlePATCH(request: NextRequest) {
   try {
-    const body = await request.json();
+    const body = (request as any).parsedBody || await request.json();
     const { questionId, answer, answeredBy, isModerated, upvotes } = body;
 
     if (!questionId) {
@@ -129,3 +150,8 @@ export async function PATCH(request: NextRequest) {
     );
   }
 }
+
+// Apply authentication middleware
+export const GET = withAuth(handleGET);
+export const POST = withUserAuthAndCSRF(handlePOST); // Users can only submit questions as themselves + CSRF protection
+export const PATCH = withAuthAndCSRF(handlePATCH, { requireAdmin: true }); // Only admins can moderate questions + CSRF protection

@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { liveChatMessages } from '../../../../shared/schema';
 import { eq, desc, and, gte } from 'drizzle-orm';
+import { withAuth, withUserAuth, withUserAuthAndCSRF } from '../../../../server/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('eventId');
@@ -48,15 +49,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { eventId, userId, message, messageType } = body;
+    const body = (request as any).parsedBody || await request.json();
+    const { eventId, message, messageType } = body;
+
+    // Get authenticated user ID from session (prevents spoofing)
+    const session = (request as any).session;
+    const userId = session.userId;
 
     // Validate required fields
-    if (!eventId || !userId || !message) {
+    if (!eventId || !message) {
       return NextResponse.json(
-        { success: false, message: 'Event ID, user ID, and message are required' },
+        { success: false, message: 'Event ID and message are required' },
         { status: 400 }
       );
     }
@@ -96,3 +101,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply authentication middleware
+export const GET = withAuth(handleGET);
+export const POST = withUserAuthAndCSRF(handlePOST); // Users can only send messages as themselves + CSRF protection

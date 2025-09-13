@@ -3,6 +3,7 @@ import { db } from '../../../../../server/db';
 import { users } from '../../../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
+import { createAuthResponse } from '../../../../../server/auth';
 
 // Simple rate limiting for login attempts
 const loginAttempts = new Map<string, { count: number; resetTime: number }>();
@@ -88,22 +89,8 @@ export async function POST(request: NextRequest) {
       })
       .where(eq(users.id, foundUser.id));
 
-    // Remove sensitive data from response
-    const userResponse = {
-      id: foundUser.id,
-      email: foundUser.email,
-      firstName: foundUser.firstName,
-      lastName: foundUser.lastName,
-      isAdmin: foundUser.isAdmin,
-      emailVerified: foundUser.emailVerified,
-      createdAt: foundUser.createdAt,
-    };
-
-    return NextResponse.json({
-      success: true,
-      message: 'Login successful',
-      user: userResponse,
-    });
+    // Create authenticated response with secure JWT cookie
+    return await createAuthResponse(foundUser, true, 'Login successful');
 
   } catch (error) {
     console.error('Login error:', error instanceof Error ? error.message : String(error));

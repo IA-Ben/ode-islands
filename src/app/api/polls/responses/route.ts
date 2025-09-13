@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../../server/db';
 import { polls, pollResponses } from '../../../../../shared/schema';
 import { eq, and, count, sql } from 'drizzle-orm';
+import { withAuth, withUserAuthAndCSRF } from '../../../../../server/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const pollId = searchParams.get('pollId');
@@ -16,7 +17,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // Get poll responses with aggregated results
+    // Get session information for authorization
+    const session = (request as any).session;
+    if (!session || !session.isAuthenticated) {
+      return NextResponse.json(
+        { success: false, message: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+
+    // Get poll responses with aggregated results (always allowed for authenticated users)
     const responseQuery = db
       .select({
         selectedOption: pollResponses.selectedOption,
@@ -28,21 +38,29 @@ export async function GET(request: NextRequest) {
 
     const responses = await responseQuery;
 
-    // If userId provided, get user's specific response
+    // If userId provided, get user's specific response WITH AUTHORIZATION CHECK
     let userResponse = null;
     if (userId) {
-      const userResponseQuery = await db
-        .select()
-        .from(pollResponses)
-        .where(
-          and(
-            eq(pollResponses.pollId, pollId),
-            eq(pollResponses.userId, userId)
+      // SECURITY FIX: Users can only view their own responses or admins can view any
+      if (session.isAdmin || session.userId === userId) {
+        const userResponseQuery = await db
+          .select()
+          .from(pollResponses)
+          .where(
+            and(
+              eq(pollResponses.pollId, pollId),
+              eq(pollResponses.userId, userId)
+            )
           )
-        )
-        .limit(1);
+          .limit(1);
 
-      userResponse = userResponseQuery[0] || null;
+        userResponse = userResponseQuery[0] || null;
+      } else {
+        return NextResponse.json(
+          { success: false, message: 'Access denied. You can only view your own poll responses.' },
+          { status: 403 }
+        );
+      }
     }
 
     return NextResponse.json({
@@ -61,15 +79,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { pollId, userId, selectedOption } = body;
+    const body = (request as any).parsedBody || await request.json();
+    const { pollId, selectedOption } = body;
+
+    // Get authenticated user ID from session (prevents spoofing)
+    const session = (request as any).session;
+    const userId = session.userId;
 
     // Validate required fields
-    if (!pollId || !userId || !selectedOption) {
+    if (!pollId || !selectedOption) {
       return NextResponse.json(
-        { success: false, message: 'Poll ID, user ID, and selected option are required' },
+        { success: false, message: 'Poll ID and selected option are required' },
         { status: 400 }
       );
     }
@@ -137,3 +159,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply authentication middleware
+export const GET = withAuth(handleGET);
+export const POST = withUserAuthAndCSRF(handlePOST); // Users can only submit their own responses + CSRF protection

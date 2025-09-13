@@ -2,8 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { polls, pollResponses } from '../../../../shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
+import { withAuth, withAuthAndCSRF } from '../../../../server/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const chapterId = searchParams.get('chapterId');
@@ -37,10 +38,20 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { chapterId, cardIndex, question, options, pollType, correctAnswer, isLive, expiresAt, createdBy } = body;
+    const body = (request as any).parsedBody || await request.json();
+    const { chapterId, cardIndex, question, options, pollType, correctAnswer, isLive, expiresAt } = body;
+
+    // Get session data for user identification (set by withAuthAndCSRF middleware)
+    const session = (request as any).session;
+    
+    if (!session || !session.userId) {
+      return NextResponse.json(
+        { success: false, message: 'Session data required' },
+        { status: 401 }
+      );
+    }
 
     // Validate required fields
     if (!question || !options || !pollType) {
@@ -58,7 +69,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create new poll
+    // Create new poll with session-based user identification
     const newPoll = await db
       .insert(polls)
       .values({
@@ -70,7 +81,7 @@ export async function POST(request: NextRequest) {
         correctAnswer,
         isLive: isLive || false,
         expiresAt: expiresAt ? new Date(expiresAt) : null,
-        createdBy,
+        createdBy: session.userId, // Use session user ID for security
       })
       .returning();
 
@@ -88,3 +99,7 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Apply authentication middleware
+export const GET = withAuth(handleGET);
+export const POST = withAuthAndCSRF(handlePOST, { requireAdmin: true }); // Only admins can create polls with CSRF protection
