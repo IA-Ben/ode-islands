@@ -342,4 +342,14 @@ export type CardData = {
     cta?: string
     ctaStart?: string
   }
+  memory?: {
+    enabled?: boolean
+    title?: string
+    description?: string
+    category?: string
+    tags?: string[]
+    autoCollect?: boolean
+    collectOnInteraction?: boolean
+    sourceMetadata?: Record<string, any>
+  }
 }

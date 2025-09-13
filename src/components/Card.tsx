@@ -12,15 +12,18 @@ import ARViewer from "./ARViewer";
 import CustomButton from "./CustomButton";
 import PollCard from "./PollCard";
 import QuizCard from "./QuizCard";
+import MemoryCollectionButton from "./MemoryCollectionButton";
 
 interface CardProps {
   data: CardData;
   active: boolean;
+  cardId?: string;
+  chapterId?: string;
 }
 
 const cdnUrl = "https://storage.googleapis.com/odeislands";
 
-export const Card: React.FC<CardProps> = ({ data, active }) => {
+export const Card: React.FC<CardProps> = ({ data, active, cardId, chapterId }) => {
   const router = useRouter();
   const [anim, setAnim] = useState(false);
   const [playing, setPlaying] = useState(true);
@@ -43,6 +46,8 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
       <PollCard
         data={poll}
         active={active}
+        cardId={cardId}
+        chapterId={chapterId}
         theme={theme}
       />
     );
@@ -53,6 +58,8 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
       <QuizCard
         data={quiz}
         active={active}
+        cardId={cardId}
+        chapterId={chapterId}
         theme={theme}
       />
     );
@@ -298,6 +305,15 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
               {cta.title}
             </button>
           )}
+
+          {/* Memory Collection Button */}
+          <MemoryCollectionButton
+            cardData={data}
+            cardId={cardId}
+            chapterId={chapterId}
+            active={active}
+            theme={theme}
+          />
         </div>
       </div>
 

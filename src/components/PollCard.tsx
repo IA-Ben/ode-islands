@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import AnimateText from './AnimateText';
 import CustomButton from './CustomButton';
+import MemoryCollectionButton from './MemoryCollectionButton';
+import type { CardData } from '@/@typings';
 
 interface PollOption {
   text: string;
@@ -26,6 +28,8 @@ interface PollData {
 interface PollCardProps {
   data: PollData;
   active: boolean;
+  cardId?: string;
+  chapterId?: string;
   theme?: {
     background?: string;
     title?: string;
@@ -46,7 +50,7 @@ interface UserResponse {
   isCorrect?: boolean;
 }
 
-const PollCard: React.FC<PollCardProps> = ({ data, active, theme }) => {
+const PollCard: React.FC<PollCardProps> = ({ data, active, cardId, chapterId, theme }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasVoted, setHasVoted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -472,6 +476,34 @@ const PollCard: React.FC<PollCardProps> = ({ data, active, theme }) => {
                 {`Total votes: ${totalVotes} • Thank you for participating!`}
               </AnimateText>
             </p>
+          </div>
+        )}
+
+        {/* Memory Collection Button */}
+        {cardId && hasVoted && (
+          <div
+            style={{
+              opacity: anim ? 1 : 0,
+              transform: anim ? 'translateY(0)' : 'translateY(20px)',
+              transition: `all 0.5s ease ${data.options.length * 150 + 1800}ms`,
+            }}
+          >
+            <MemoryCollectionButton
+              cardData={{
+                poll: data,
+                memory: {
+                  enabled: true,
+                  title: `Poll: ${data.question}`,
+                  description: `You participated in a poll about "${data.question}". Your answer: ${userResponse?.selectedOption}`,
+                  category: 'Poll',
+                  tags: ['poll', 'participation', data.pollType],
+                }
+              } as CardData}
+              cardId={cardId}
+              chapterId={chapterId}
+              active={active}
+              theme={theme}
+            />
           </div>
         )}
       </div>

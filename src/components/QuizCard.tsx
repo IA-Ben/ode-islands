@@ -3,6 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import AnimateText from './AnimateText';
 import CustomButton from './CustomButton';
+import MemoryCollectionButton from './MemoryCollectionButton';
+import type { CardData } from '@/@typings';
 
 interface QuizData {
   id?: string;
@@ -20,6 +22,8 @@ interface QuizData {
 interface QuizCardProps {
   data: QuizData;
   active: boolean;
+  cardId?: string;
+  chapterId?: string;
   theme?: {
     background?: string;
     title?: string;
@@ -36,7 +40,7 @@ interface QuizResponse {
   submittedAt: string;
 }
 
-const QuizCard: React.FC<QuizCardProps> = ({ data, active, theme }) => {
+const QuizCard: React.FC<QuizCardProps> = ({ data, active, cardId, chapterId, theme }) => {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [hasAnswered, setHasAnswered] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -524,6 +528,34 @@ const QuizCard: React.FC<QuizCardProps> = ({ data, active, theme }) => {
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Memory Collection Button */}
+        {cardId && hasAnswered && (
+          <div
+            style={{
+              opacity: anim ? 1 : 0,
+              transform: anim ? 'translateY(0)' : 'translateY(20px)',
+              transition: `all 0.5s ease ${data.options.length * 150 + 2100}ms`,
+            }}
+          >
+            <MemoryCollectionButton
+              cardData={{
+                quiz: data,
+                memory: {
+                  enabled: true,
+                  title: `Quiz: ${data.question}`,
+                  description: `You ${isCorrect ? 'correctly answered' : 'attempted'} a quiz about "${data.question}". Your answer: ${userResponse?.selectedOption}${isCorrect && data.points ? ` (+${data.points} points)` : ''}`,
+                  category: 'Quiz',
+                  tags: ['quiz', 'learning', isCorrect ? 'correct' : 'attempt'],
+                }
+              } as CardData}
+              cardId={cardId}
+              chapterId={chapterId}
+              active={active}
+              theme={theme}
+            />
           </div>
         )}
       </div>
