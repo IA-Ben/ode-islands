@@ -7,12 +7,14 @@ import { withAuth, withAuthAndCSRF } from '../../../../server/auth';
 async function handleGET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
+    const eventId = searchParams.get('eventId');
     const chapterId = searchParams.get('chapterId');
     const cardIndex = searchParams.get('cardIndex');
     const isLive = searchParams.get('isLive');
 
     // Build query conditions
     const conditions = [];
+    if (eventId) conditions.push(eq(polls.eventId, eventId));
     if (chapterId) conditions.push(eq(polls.chapterId, chapterId));
     if (cardIndex) conditions.push(eq(polls.cardIndex, parseInt(cardIndex)));
     if (isLive) conditions.push(eq(polls.isLive, isLive === 'true'));
@@ -41,7 +43,7 @@ async function handleGET(request: NextRequest) {
 async function handlePOST(request: NextRequest) {
   try {
     const body = (request as any).parsedBody || await request.json();
-    const { chapterId, cardIndex, question, options, pollType, correctAnswer, isLive, expiresAt } = body;
+    const { eventId, chapterId, cardIndex, question, options, pollType, correctAnswer, isLive, expiresAt } = body;
 
     // Get session data for user identification (set by withAuthAndCSRF middleware)
     const session = (request as any).session;
@@ -95,6 +97,7 @@ async function handlePOST(request: NextRequest) {
     const newPoll = await db
       .insert(polls)
       .values({
+        eventId,
         chapterId,
         cardIndex,
         question,

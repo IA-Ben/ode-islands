@@ -90,6 +90,62 @@ async function handlePOST(request: NextRequest) {
   }
 }
 
+async function handlePATCH(request: NextRequest) {
+  try {
+    const body = (request as any).parsedBody || await request.json();
+    const { eventId, isActive } = body;
+
+    // Validate required fields
+    if (!eventId) {
+      return NextResponse.json(
+        { success: false, message: 'Event ID is required' },
+        { status: 400 }
+      );
+    }
+
+    // Check if event exists
+    const existingEvent = await db
+      .select()
+      .from(liveEvents)
+      .where(eq(liveEvents.id, eventId))
+      .limit(1);
+
+    if (existingEvent.length === 0) {
+      return NextResponse.json(
+        { success: false, message: 'Event not found' },
+        { status: 404 }
+      );
+    }
+
+    // Prepare update data - only update fields that are provided
+    const updateData: any = {};
+    if (typeof isActive === 'boolean') {
+      updateData.isActive = isActive;
+    }
+
+    // Update the event
+    const updatedEvent = await db
+      .update(liveEvents)
+      .set(updateData)
+      .where(eq(liveEvents.id, eventId))
+      .returning();
+
+    return NextResponse.json({
+      success: true,
+      message: `Event ${isActive ? 'activated' : 'deactivated'} successfully`,
+      event: updatedEvent[0],
+    });
+
+  } catch (error) {
+    console.error('Event update error:', error instanceof Error ? error.message : String(error));
+    return NextResponse.json(
+      { success: false, message: 'Failed to update event' },
+      { status: 500 }
+    );
+  }
+}
+
 // Apply authentication middleware
 export const GET = withAuth(handleGET); // Events can be viewed by authenticated users
 export const POST = withAuthAndCSRF(handlePOST, { requireAdmin: true }); // Only admins can create events + CSRF protection
+export const PATCH = withAuthAndCSRF(handlePATCH, { requireAdmin: true }); // Only admins can update events + CSRF protection

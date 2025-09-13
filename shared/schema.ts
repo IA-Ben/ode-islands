@@ -75,6 +75,7 @@ export const userProgress = pgTable("user_progress", {
 // Interactive Polls and Quizzes
 export const polls = pgTable("polls", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id), // Link polls to events
   chapterId: varchar("chapter_id"),
   cardIndex: integer("card_index"),
   question: text("question").notNull(),
