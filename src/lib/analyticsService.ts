@@ -478,7 +478,7 @@ export class AnalyticsService {
       currentEvents: eventsResult.map(event => ({
         id: event.id,
         title: event.title,
-        isActive: event.isActive,
+        isActive: event.isActive ?? false,
         participantCount: event.participantCount,
         startTime: event.startTime.toISOString(),
         endTime: event.endTime.toISOString()
@@ -514,7 +514,7 @@ export class AnalyticsService {
   }
 
   // Export data utilities
-  static async exportAnalytics(type: string, format: 'csv' | 'json', filter: AnalyticsFilter): Promise<string> {
+  static async exportAnalytics(type: string, format: 'csv' | 'json' | 'pdf', filter: AnalyticsFilter): Promise<string> {
     let data: any;
     
     switch (type) {
@@ -533,6 +533,9 @@ export class AnalyticsService {
 
     if (format === 'csv') {
       return this.convertToCSV(data);
+    } else if (format === 'pdf') {
+      // PDF generation would be handled elsewhere - return JSON for now
+      return JSON.stringify(data, null, 2);
     } else {
       return JSON.stringify(data, null, 2);
     }

@@ -133,7 +133,7 @@ export default function AdvancedAnalytics({ dateRange, eventId, realTimeEnabled 
     loadAllAnalytics();
   }, [dataLoaded, dateRange, eventId]);
 
-  const handleExport = async (format: 'csv' | 'json') => {
+  const handleExport = async (format: 'csv' | 'json' | 'pdf') => {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -368,6 +368,7 @@ export default function AdvancedAnalytics({ dateRange, eventId, realTimeEnabled 
                   </div>
                 ))}
               </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -392,7 +393,7 @@ export default function AdvancedAnalytics({ dateRange, eventId, realTimeEnabled 
                         <span className="text-lg font-bold text-white">
                           {typeof prediction.current === 'number' && prediction.current > 100 
                             ? formatNumber(prediction.current)
-                            : prediction.current + (prediction.metric.includes('Rate') || prediction.metric.includes('Duration') ? (prediction.metric.includes('Duration') ? 'm' : '%') : '')
+                            : `${prediction.current}${prediction.metric.includes('Rate') || prediction.metric.includes('Duration') ? (prediction.metric.includes('Duration') ? 'm' : '%') : ''}`
                           }
                         </span>
                       </div>
@@ -402,7 +403,7 @@ export default function AdvancedAnalytics({ dateRange, eventId, realTimeEnabled 
                         <span className="text-lg font-bold text-blue-400">
                           {typeof prediction.predicted === 'number' && prediction.predicted > 100 
                             ? formatNumber(prediction.predicted)
-                            : prediction.predicted + (prediction.metric.includes('Rate') || prediction.metric.includes('Duration') ? (prediction.metric.includes('Duration') ? 'm' : '%') : '')
+                            : `${prediction.predicted}${prediction.metric.includes('Rate') || prediction.metric.includes('Duration') ? (prediction.metric.includes('Duration') ? 'm' : '%') : ''}`
                           }
                         </span>
                       </div>
