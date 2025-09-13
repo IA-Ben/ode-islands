@@ -16,16 +16,16 @@ export interface AnalyticsFilter {
 }
 
 export class AnalyticsService {
-  private static cache = new Map<string, { data: any; expiry: number }>();
+  private static cache = new Map<string, { data: unknown; expiry: number }>();
   private static readonly CACHE_TTL = 2 * 60 * 1000; // 2 minutes for real-time data
   private static readonly CACHE_TTL_LONG = 15 * 60 * 1000; // 15 minutes for historical data
 
   // Cache management
-  private static getCacheKey(method: string, params: any): string {
+  private static getCacheKey(method: string, params: AnalyticsFilter): string {
     return `${method}:${JSON.stringify(params)}`;
   }
 
-  private static getCachedData(key: string): any | null {
+  private static getCachedData(key: string): unknown | null {
     const cached = this.cache.get(key);
     if (cached && cached.expiry > Date.now()) {
       return cached.data;
@@ -33,7 +33,7 @@ export class AnalyticsService {
     return null;
   }
 
-  private static setCachedData(key: string, data: any, ttl: number = this.CACHE_TTL): void {
+  private static setCachedData(key: string, data: unknown, ttl: number = this.CACHE_TTL): void {
     this.cache.set(key, { data, expiry: Date.now() + ttl });
   }
 
@@ -515,7 +515,7 @@ export class AnalyticsService {
 
   // Export data utilities
   static async exportAnalytics(type: string, format: 'csv' | 'json' | 'pdf', filter: AnalyticsFilter): Promise<string> {
-    let data: any;
+    let data: unknown;
     
     switch (type) {
       case 'user_engagement':
@@ -532,7 +532,7 @@ export class AnalyticsService {
     }
 
     if (format === 'csv') {
-      return this.convertToCSV(data);
+      return this.convertToCSV(data as Record<string, unknown>);
     } else if (format === 'pdf') {
       // PDF generation would be handled elsewhere - return JSON for now
       return JSON.stringify(data, null, 2);
@@ -541,13 +541,13 @@ export class AnalyticsService {
     }
   }
 
-  private static convertToCSV(data: any): string {
+  private static convertToCSV(data: Record<string, unknown>): string {
     // Simple CSV conversion - would need more sophisticated handling for complex nested objects
-    const flattenObject = (obj: any, prefix = ''): any => {
-      const flattened: any = {};
+    const flattenObject = (obj: Record<string, unknown>, prefix = ''): Record<string, unknown> => {
+      const flattened: Record<string, unknown> = {};
       for (const key in obj) {
         if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
-          Object.assign(flattened, flattenObject(obj[key], `${prefix}${key}_`));
+          Object.assign(flattened, flattenObject(obj[key] as Record<string, unknown>, `${prefix}${key}_`));
         } else {
           flattened[`${prefix}${key}`] = obj[key];
         }

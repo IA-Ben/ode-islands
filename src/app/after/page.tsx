@@ -113,8 +113,8 @@ export default function AfterPage() {
               </h2>
               
               <p className="text-lg text-white/60 mb-12 leading-relaxed">
-                Your Ode Islands experience doesn't end here. Explore your memories, 
-                share your journey, and stay connected with the community you've built.
+                Your Ode Islands experience doesn&apos;t end here. Explore your memories, 
+                share your journey, and stay connected with the community you&apos;ve built.
               </p>
               
               {/* Feature preview cards */}
