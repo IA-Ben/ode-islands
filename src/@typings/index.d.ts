@@ -1,3 +1,148 @@
+export type AppTheme = {
+  colors: {
+    // Primary brand colors
+    primary: string
+    primaryLight: string
+    primaryDark: string
+    
+    // Secondary colors
+    secondary: string
+    secondaryLight: string
+    secondaryDark: string
+    
+    // Background colors
+    background: string
+    backgroundLight: string
+    backgroundDark: string
+    surface: string
+    
+    // Text colors
+    textPrimary: string
+    textSecondary: string
+    textMuted: string
+    textInverse: string
+    
+    // Accent colors
+    accent: string
+    accentLight: string
+    accentDark: string
+    
+    // Status colors
+    success: string
+    warning: string
+    error: string
+    info: string
+    
+    // Saved colors palette (user customizable)
+    savedColors: string[]
+  }
+  
+  typography: {
+    // Font families
+    fontPrimary: string
+    fontSecondary: string
+    
+    // Font sizes
+    fontSize: {
+      xs: string
+      sm: string
+      base: string
+      lg: string
+      xl: string
+      '2xl': string
+      '3xl': string
+      '4xl': string
+      '5xl': string
+      '6xl': string
+      '7xl': string
+    }
+    
+    // Font weights
+    fontWeight: {
+      light: number
+      normal: number
+      medium: number
+      semibold: number
+      bold: number
+      extrabold: number
+    }
+    
+    // Line heights
+    lineHeight: {
+      tight: number
+      normal: number
+      relaxed: number
+      loose: number
+    }
+    
+    // Letter spacing
+    letterSpacing: {
+      tight: string
+      normal: string
+      wide: string
+    }
+  }
+  
+  spacing: {
+    // Base unit (typically 4px or 8px)
+    base: number
+    
+    // Spacing scale
+    xs: string
+    sm: string
+    md: string
+    lg: string
+    xl: string
+    '2xl': string
+    '3xl': string
+    '4xl': string
+    '5xl': string
+    '6xl': string
+  }
+  
+  visual: {
+    // Border radius scale
+    borderRadius: {
+      none: string
+      sm: string
+      md: string
+      lg: string
+      xl: string
+      full: string
+    }
+    
+    // Shadow definitions
+    shadows: {
+      none: string
+      sm: string
+      md: string
+      lg: string
+      xl: string
+    }
+    
+    // Opacity levels
+    opacity: {
+      disabled: number
+      hover: number
+      focus: number
+    }
+  }
+  
+  // Theme metadata
+  name: string
+  version: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ColorPickerProps {
+  value: string
+  onChange: (color: string) => void
+  label?: string
+  className?: string
+  showSavedColors?: boolean
+}
+
 export type CardData = {
   text?: {
     title?: string
