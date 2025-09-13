@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm';
 import {
   index,
+  uniqueIndex,
   jsonb,
   pgTable,
   timestamp,
@@ -508,6 +509,83 @@ export const surveyResponses = pgTable("survey_responses", {
   submittedAt: timestamp("submitted_at").defaultNow(),
 });
 
+// Fan Score System
+export const fanScoringRules = pgTable("fan_scoring_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  activityType: varchar("activity_type").notNull(), // 'card_completion', 'poll_participation', 'quiz_correct', 'memory_collection', etc.
+  points: integer("points").notNull(),
+  phase: varchar("phase"), // Optional phase filtering
+  eventId: varchar("event_id").references(() => liveEvents.id), // Optional event filtering
+  chapterId: varchar("chapter_id"), // Optional chapter filtering
+  cardIndex: integer("card_index"), // Optional card filtering
+  maxPerDay: integer("max_per_day"), // Daily limit for earning points from this activity
+  isActive: boolean("is_active").default(true),
+  metadata: jsonb("metadata"), // Additional configuration
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("idx_fan_scoring_rules_lookup").on(table.isActive, table.activityType, table.eventId, table.phase, table.chapterId, table.cardIndex),
+]);
+
+export const fanScoreEvents = pgTable("fan_score_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  activityType: varchar("activity_type").notNull(), // 'card_completion', 'poll_participation', 'quiz_correct', etc.
+  points: integer("points").notNull(),
+  referenceType: varchar("reference_type").notNull(), // 'card', 'poll', 'quiz', 'memory', 'achievement'
+  referenceId: varchar("reference_id").notNull(), // ID of the referenced content
+  eventId: varchar("event_id").references(() => liveEvents.id), // Context: which event
+  chapterId: varchar("chapter_id"), // Context: which chapter
+  cardIndex: integer("card_index"), // Context: which card
+  phase: varchar("phase"), // Context: which phase ('before', 'during', 'after')
+  idempotencyKey: varchar("idempotency_key").notNull(), // Prevent duplicate scoring
+  metadata: jsonb("metadata"), // Additional context about the scoring event
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("idx_fan_score_events_user_created").on(table.userId, table.createdAt),
+  uniqueIndex("idx_fan_score_events_idempotency").on(table.userId, table.activityType, table.referenceType, table.referenceId),
+  uniqueIndex("idx_fan_score_events_idempotency_key").on(table.userId, table.idempotencyKey),
+  index("idx_fan_score_events_event_created").on(table.eventId, table.createdAt),
+  index("idx_fan_score_events_reference").on(table.referenceType, table.referenceId),
+]);
+
+export const userFanScores = pgTable("user_fan_scores", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  scopeType: varchar("scope_type").notNull(), // 'global', 'event', 'phase'
+  scopeId: varchar("scope_id").notNull().default('global'), // 'global' for global scope, eventId for 'event' scope, phase name for 'phase' scope
+  totalScore: integer("total_score").default(0),
+  level: integer("level").default(1), // Calculated based on total score
+  stats: jsonb("stats"), // Additional statistics like achievements count, streak days, etc.
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("idx_user_fan_scores_unique").on(table.userId, table.scopeType, table.scopeId),
+  index("idx_user_fan_scores_total").on(table.totalScore),
+  index("idx_user_fan_scores_leaderboard").on(table.scopeType, table.scopeId, table.totalScore.desc()),
+]);
+
+export const achievementDefinitions = pgTable("achievement_definitions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code").notNull().unique(), // Unique identifier for the achievement
+  name: varchar("name").notNull(),
+  description: text("description").notNull(),
+  icon: varchar("icon"), // Icon identifier or URL
+  criteria: jsonb("criteria").notNull(), // JSON defining the criteria to unlock this achievement
+  pointsBonus: integer("points_bonus").default(0), // Bonus points awarded when achievement is unlocked
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const userAchievements = pgTable("user_achievements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  achievementId: varchar("achievement_id").references(() => achievementDefinitions.id).notNull(),
+  awardedAt: timestamp("awarded_at").defaultNow(),
+}, (table) => [
+  uniqueIndex("idx_user_achievements_unique").on(table.userId, table.achievementId),
+]);
+
 // Export all types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -536,3 +614,13 @@ export type ForumPost = typeof forumPosts.$inferSelect;
 export type ForumReply = typeof forumReplies.$inferSelect;
 export type FeedbackSurvey = typeof feedbackSurveys.$inferSelect;
 export type SurveyResponse = typeof surveyResponses.$inferSelect;
+export type FanScoringRule = typeof fanScoringRules.$inferSelect;
+export type UpsertFanScoringRule = typeof fanScoringRules.$inferInsert;
+export type FanScoreEvent = typeof fanScoreEvents.$inferSelect;
+export type UpsertFanScoreEvent = typeof fanScoreEvents.$inferInsert;
+export type UserFanScore = typeof userFanScores.$inferSelect;
+export type UpsertUserFanScore = typeof userFanScores.$inferInsert;
+export type AchievementDefinition = typeof achievementDefinitions.$inferSelect;
+export type UpsertAchievementDefinition = typeof achievementDefinitions.$inferInsert;
+export type UserAchievement = typeof userAchievements.$inferSelect;
+export type UpsertUserAchievement = typeof userAchievements.$inferInsert;
