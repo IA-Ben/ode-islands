@@ -24,6 +24,7 @@ export default function CMSPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [user, setUser] = useState<User | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<string>('chapter-1');
+  const [selectedPhase, setSelectedPhase] = useState<string>('before');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
@@ -250,7 +251,7 @@ export default function CMSPage() {
         <div className="mb-8 flex justify-between items-start">
           <div>
             <h1 className="text-4xl font-bold mb-2">The Ode Islands CMS</h1>
-            <p className="text-gray-400">Content Management System for your immersive storytelling experience</p>
+            <p className="text-gray-400">Content Management System for your three-phase event companion app</p>
           </div>
           <div className="text-right">
             <div className="text-sm text-gray-400 mb-2">
@@ -277,117 +278,289 @@ export default function CMSPage() {
           </div>
         </div>
 
-        {/* Chapter Navigation */}
-        <div className="mb-6">
-          <div className="flex space-x-2">
-            {chapterKeys.map((chapterId) => (
-              <Button
-                key={chapterId}
-                variant={selectedChapter === chapterId ? "default" : "outline"}
-                onClick={() => setSelectedChapter(chapterId)}
-                className="capitalize"
-              >
-                {chapterId.replace('-', ' ')}
-              </Button>
-            ))}
+        {/* Phase Navigation */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Phase Management</h2>
+          <div className="flex space-x-2 mb-6">
+            <Button
+              variant={selectedPhase === 'before' ? "default" : "outline"}
+              onClick={() => setSelectedPhase('before')}
+              className="px-6 py-3"
+            >
+              📖 Before Phase
+            </Button>
+            <Button
+              variant={selectedPhase === 'event' ? "default" : "outline"}
+              onClick={() => setSelectedPhase('event')}
+              className="px-6 py-3"
+            >
+              🎪 Event Phase
+            </Button>
+            <Button
+              variant={selectedPhase === 'after' ? "default" : "outline"}
+              onClick={() => setSelectedPhase('after')}
+              className="px-6 py-3"
+            >
+              🎊 After Phase
+            </Button>
           </div>
         </div>
 
-        {/* Chapter Overview */}
-        <div className="mb-8">
-          <Card className="bg-gray-900 border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white">
-                {selectedChapter.replace('-', ' ').toUpperCase()} - {currentChapterCards.length} Cards
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {currentChapterCards.map((card, index) => (
-                  <div 
-                    key={index} 
-                    className="bg-gray-800 p-4 rounded-lg border border-gray-600 cursor-pointer hover:bg-gray-700 transition-colors"
-                    onClick={() => window.location.href = `/cms/edit/${selectedChapter}/${index}`}
+        {/* Before Phase Content */}
+        {selectedPhase === 'before' && (
+          <>
+            {/* Chapter Navigation */}
+            <div className="mb-6">
+              <h3 className="text-lg font-medium mb-3">Before Phase - Storytelling Chapters</h3>
+              <div className="flex space-x-2">
+                {chapterKeys.map((chapterId) => (
+                  <Button
+                    key={chapterId}
+                    variant={selectedChapter === chapterId ? "default" : "outline"}
+                    onClick={() => setSelectedChapter(chapterId)}
+                    className="capitalize"
                   >
-                    <div className="text-sm text-gray-400 mb-2">Card {index + 1} - Click to Edit</div>
-                    
-                    {card.text?.title && (
-                      <div className="font-bold text-lg mb-2" style={{ color: card.theme?.title || '#white' }}>
-                        {card.text.title}
-                      </div>
-                    )}
-                    
-                    {card.text?.subtitle && (
-                      <div className="font-medium mb-2" style={{ color: card.theme?.subtitle || '#gray' }}>
-                        {card.text.subtitle}
-                      </div>
-                    )}
-                    
-                    {card.text?.description && (
-                      <div className="text-sm text-gray-300 mb-3 line-clamp-3">
-                        {card.text.description.substring(0, 100)}...
-                      </div>
-                    )}
-
-                    {card.video && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-red-600 text-xs px-2 py-1 rounded">VIDEO</span>
-                        <span className="text-xs text-gray-400">{card.video.url}</span>
-                      </div>
-                    )}
-                    
-                    {card.image && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-green-600 text-xs px-2 py-1 rounded">IMAGE</span>
-                        <span className="text-xs text-gray-400">{card.image.url}</span>
-                      </div>
-                    )}
-
-                    {card.cta && (
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="bg-purple-600 text-xs px-2 py-1 rounded">CTA</span>
-                        <span className="text-xs text-gray-400">{card.cta.title}</span>
-                      </div>
-                    )}
-                  </div>
+                    {chapterId.replace('-', ' ')}
+                  </Button>
                 ))}
-                
-                <div 
-                  className="bg-gray-700 p-4 rounded-lg border border-gray-500 border-dashed cursor-pointer hover:bg-gray-600 transition-colors flex items-center justify-center"
-                  onClick={() => window.location.href = `/cms/edit/${selectedChapter}/new`}
-                >
-                  <div className="text-center">
-                    <div className="text-4xl mb-2">➕</div>
-                    <div className="font-semibold">Add New Card</div>
-                    <div className="text-sm text-gray-400">Click to create</div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* Phase-specific Content */}
+        {selectedPhase === 'before' && (
+          <>
+            {/* Chapter Overview */}
+            <div className="mb-8">
+              <Card className="bg-gray-900 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white">
+                    {selectedChapter.replace('-', ' ').toUpperCase()} - {currentChapterCards.length} Cards
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {currentChapterCards.map((card, index) => (
+                      <div 
+                        key={index} 
+                        className="bg-gray-800 p-4 rounded-lg border border-gray-600 cursor-pointer hover:bg-gray-700 transition-colors"
+                        onClick={() => window.location.href = `/cms/edit/${selectedChapter}/${index}`}
+                      >
+                        <div className="text-sm text-gray-400 mb-2">Card {index + 1} - Click to Edit</div>
+                        
+                        {card.text?.title && (
+                          <div className="font-bold text-lg mb-2" style={{ color: card.theme?.title || '#white' }}>
+                            {card.text.title}
+                          </div>
+                        )}
+                        
+                        {card.text?.subtitle && (
+                          <div className="font-medium mb-2" style={{ color: card.theme?.subtitle || '#gray' }}>
+                            {card.text.subtitle}
+                          </div>
+                        )}
+                        
+                        {card.text?.description && (
+                          <div className="text-sm text-gray-300 mb-3 line-clamp-3">
+                            {card.text.description.substring(0, 100)}...
+                          </div>
+                        )}
+
+                        {card.video && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="bg-red-600 text-xs px-2 py-1 rounded">VIDEO</span>
+                            <span className="text-xs text-gray-400">{card.video.url}</span>
+                          </div>
+                        )}
+                        
+                        {card.image && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="bg-green-600 text-xs px-2 py-1 rounded">IMAGE</span>
+                            <span className="text-xs text-gray-400">{card.image.url}</span>
+                          </div>
+                        )}
+
+                        {card.cta && (
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="bg-purple-600 text-xs px-2 py-1 rounded">CTA</span>
+                            <span className="text-xs text-gray-400">{card.cta.title}</span>
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    <div 
+                      className="bg-gray-700 p-4 rounded-lg border border-gray-500 border-dashed cursor-pointer hover:bg-gray-600 transition-colors flex items-center justify-center"
+                      onClick={() => window.location.href = `/cms/edit/${selectedChapter}/new`}
+                    >
+                      <div className="text-center">
+                        <div className="text-4xl mb-2">➕</div>
+                        <div className="font-semibold">Add New Card</div>
+                        <div className="text-sm text-gray-400">Click to create</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </>
+        )}
+
+        {/* Event Phase Content */}
+        {selectedPhase === 'event' && (
+          <div className="mb-8">
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">Event Phase Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🎪</div>
+                  <h3 className="text-2xl font-semibold mb-4">Live Event Features</h3>
+                  <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
+                    Manage real-time content, live polling, AR experiences, and interactive features 
+                    that supplement your live event. These tools will be developed based on your specific event needs.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3">🎯 Live Polls & Q&A</h4>
+                      <p className="text-gray-400 text-sm mb-4">Real-time audience interaction tools</p>
+                      <Button variant="outline" disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    </div>
+                    
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3">📱 Live AR Content</h4>
+                      <p className="text-gray-400 text-sm mb-4">Synchronized AR experiences</p>
+                      <Button variant="outline" disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    </div>
+                    
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3">⏱️ Event Timeline</h4>
+                      <p className="text-gray-400 text-sm mb-4">Timed content delivery system</p>
+                      <Button variant="outline" disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    </div>
+                    
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3">📊 Live Data</h4>
+                      <p className="text-gray-400 text-sm mb-4">Real-time event metrics</p>
+                      <Button variant="outline" disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* After Phase Content */}
+        {selectedPhase === 'after' && (
+          <div className="mb-8">
+            <Card className="bg-gray-900 border-gray-700">
+              <CardHeader>
+                <CardTitle className="text-white">After Phase Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">🎊</div>
+                  <h3 className="text-2xl font-semibold mb-4">Post-Event Content</h3>
+                  <p className="text-gray-400 mb-8 max-w-2xl mx-auto">
+                    Manage post-event experiences including memories, sharing tools, community features, 
+                    and continued engagement opportunities. These features will be developed to extend your event impact.
+                  </p>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3">📸 Event Memories</h4>
+                      <p className="text-gray-400 text-sm mb-4">Curated highlights and moments</p>
+                      <Button variant="outline" disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    </div>
+                    
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3">💬 Share & Reflect</h4>
+                      <p className="text-gray-400 text-sm mb-4">Social sharing and reflection tools</p>
+                      <Button variant="outline" disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    </div>
+                    
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3">🚀 Continued Journey</h4>
+                      <p className="text-gray-400 text-sm mb-4">Extended content and experiences</p>
+                      <Button variant="outline" disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    </div>
+                    
+                    <div className="bg-gray-800 p-6 rounded-lg">
+                      <h4 className="text-lg font-semibold mb-3">🤝 Community</h4>
+                      <p className="text-gray-400 text-sm mb-4">Participant connections</p>
+                      <Button variant="outline" disabled className="w-full">
+                        Coming Soon
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
 
         {/* Quick Actions */}
-        <div className="flex gap-4">
-          <Button 
-            onClick={() => {
-              const chapterId = prompt('Enter new chapter ID (e.g., chapter-4):');
-              if (chapterId && chapterId.match(/^chapter-\d+$/)) {
-                window.location.href = `/cms/edit/${chapterId}/new`;
-              } else if (chapterId) {
-                alert('Chapter ID must be in format: chapter-X (e.g., chapter-4)');
-              }
-            }}
-            className="bg-purple-600 hover:bg-purple-700"
-          >
-            ➕ Add New Chapter
-          </Button>
-          <Button 
-            onClick={() => alert('Media upload feature coming soon!')}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            📹 Upload Media
-          </Button>
+        <div className="flex gap-4 flex-wrap">
+          {selectedPhase === 'before' && (
+            <>
+              <Button 
+                onClick={() => {
+                  const chapterId = prompt('Enter new chapter ID (e.g., chapter-4):');
+                  if (chapterId && chapterId.match(/^chapter-\d+$/)) {
+                    window.location.href = `/cms/edit/${chapterId}/new`;
+                  } else if (chapterId) {
+                    alert('Chapter ID must be in format: chapter-X (e.g., chapter-4)');
+                  }
+                }}
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                ➕ Add New Chapter
+              </Button>
+              <Button 
+                onClick={() => alert('Media upload feature coming soon!')}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                📹 Upload Media
+              </Button>
+            </>
+          )}
+          
+          {selectedPhase === 'event' && (
+            <Button 
+              onClick={() => alert('Event phase features will be developed based on your specific event requirements. Contact support to discuss your needs.')}
+              className="bg-orange-600 hover:bg-orange-700"
+            >
+              🎪 Configure Event Features
+            </Button>
+          )}
+          
+          {selectedPhase === 'after' && (
+            <Button 
+              onClick={() => alert('After phase features will be developed based on your post-event engagement goals. Contact support to discuss your needs.')}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              🎊 Configure After Features
+            </Button>
+          )}
+          
           <Button 
             onClick={() => fetchChapters()}
             variant="outline"
@@ -399,7 +572,11 @@ export default function CMSPage() {
         {/* System Status */}
         <div className="mt-8 p-4 bg-gray-900 rounded-lg">
           <h3 className="text-lg font-semibold mb-2">System Status</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div>
+              <span className="text-gray-400">Current Phase:</span>
+              <span className="ml-2 font-mono capitalize">{selectedPhase}</span>
+            </div>
             <div>
               <span className="text-gray-400">Total Chapters:</span>
               <span className="ml-2 font-mono">{chapterKeys.length}</span>
