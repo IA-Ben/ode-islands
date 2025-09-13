@@ -10,6 +10,8 @@ import Player from "./Player";
 import PlayCanvasViewer from "./PlayCanvasViewer";
 import ARViewer from "./ARViewer";
 import CustomButton from "./CustomButton";
+import PollCard from "./PollCard";
+import QuizCard from "./QuizCard";
 
 interface CardProps {
   data: CardData;
@@ -27,13 +29,34 @@ export const Card: React.FC<CardProps> = ({ data, active }) => {
   const [playcanvasReady, setPlaycanvasReady] = useState(false);
   const [playcanvasError, setPlaycanvasError] = useState<string | null>(null);
   const [isAROpen, setIsAROpen] = useState(false);
-  const { text, cta, video, image, playcanvas, ar, theme } = data;
+  const { text, cta, video, image, playcanvas, ar, poll, quiz, theme } = data;
   const title = text?.title;
   const subtitle = text?.subtitle;
   const description = text?.description;
   const imageUrl = image?.url ? `${cdnUrl}/img/${image.url}` : "";
   const videoImmersive = video && video?.type === "immersive" ? true : false;
   const textShadow = theme?.shadow ? "0 4px 16px rgba(0,0,0,0.4)" : undefined;
+
+  // Handle poll and quiz cards separately
+  if (poll) {
+    return (
+      <PollCard
+        data={poll}
+        active={active}
+        theme={theme}
+      />
+    );
+  }
+
+  if (quiz) {
+    return (
+      <QuizCard
+        data={quiz}
+        active={active}
+        theme={theme}
+      />
+    );
+  }
 
   useEffect(() => {
     // Image

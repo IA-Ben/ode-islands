@@ -69,6 +69,28 @@ async function handlePOST(request: NextRequest) {
       );
     }
 
+    // Check if this is a content-driven poll that already exists
+    if (chapterId && cardIndex !== undefined) {
+      const existingPoll = await db
+        .select()
+        .from(polls)
+        .where(
+          and(
+            eq(polls.chapterId, chapterId),
+            eq(polls.cardIndex, cardIndex)
+          )
+        )
+        .limit(1);
+
+      if (existingPoll.length > 0) {
+        return NextResponse.json({
+          success: true,
+          message: 'Poll already exists',
+          poll: existingPoll[0],
+        });
+      }
+    }
+
     // Create new poll with session-based user identification
     const newPoll = await db
       .insert(polls)
@@ -102,4 +124,4 @@ async function handlePOST(request: NextRequest) {
 
 // Apply authentication middleware
 export const GET = withAuth(handleGET);
-export const POST = withAuthAndCSRF(handlePOST, { requireAdmin: true }); // Only admins can create polls with CSRF protection
+export const POST = withAuthAndCSRF(handlePOST); // All authenticated users can create content-driven polls

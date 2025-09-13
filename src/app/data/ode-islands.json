@@ -85,6 +85,50 @@
       }
     },
     {
+      "poll": {
+        "chapterId": "chapter-1",
+        "cardIndex": 5,
+        "question": "What do you think was the most important factor in restoring balance to the island?",
+        "options": [
+          "The girl's inner light and happiness",
+          "The cooperation between Orns and Nors",
+          "The power of positive thinking",
+          "The magic of the island itself"
+        ],
+        "pollType": "poll",
+        "showResults": true
+      },
+      "theme": {
+        "background": "#1a1a2e",
+        "title": "#37ffce",
+        "subtitle": "#FBBAE0",
+        "shadow": true
+      }
+    },
+    {
+      "quiz": {
+        "chapterId": "chapter-1",
+        "cardIndex": 6,
+        "question": "According to the story, what happened when the girl arrived on the island?",
+        "options": [
+          "She immediately fixed everything with magic",
+          "The Nors around her began transforming back into Orns",
+          "She fought against the Nors to save the Orns",
+          "She became the new ruler of the island"
+        ],
+        "correctAnswer": "The Nors around her began transforming back into Orns",
+        "explanation": "The story mentions that the girl's presence and inner light caused the Nors around her to transform back into Orns, restoring hope to the island.",
+        "showFeedback": true,
+        "points": 10
+      },
+      "theme": {
+        "background": "#2d1b69",
+        "title": "#ffffff",
+        "subtitle": "#37ffce",
+        "shadow": true
+      }
+    },
+    {
       "text": {
         "subtitle": "NEXT UP"
       },
@@ -226,6 +270,27 @@
       }
     },
     {
+      "poll": {
+        "chapterId": "chapter-3",
+        "cardIndex": 7,
+        "question": "Which aspect of the Ode Islands experience interests you most?",
+        "options": [
+          "The immersive storytelling",
+          "The mixed reality technology",
+          "The artistic visuals and cinematography",
+          "The interactive elements"
+        ],
+        "pollType": "survey",
+        "showResults": true
+      },
+      "theme": {
+        "background": "#0f172a",
+        "title": "#37ffce",
+        "subtitle": "#ffffff",
+        "shadow": true
+      }
+    },
+    {
       "text": {
         "subtitle": "Behind-the-Scenes of the Ode Islands"
       },
@@ -242,6 +307,30 @@
         "width": 1080,
         "height": 1920,
         "audio": true
+      }
+    },
+    {
+      "quiz": {
+        "chapterId": "chapter-3",
+        "cardIndex": 9,
+        "question": "What technology is showcased in the behind-the-scenes content?",
+        "options": [
+          "Virtual Reality headsets",
+          "Motion capture (mocap) technology",
+          "3D printing",
+          "Artificial Intelligence"
+        ],
+        "correctAnswer": "Motion capture (mocap) technology",
+        "explanation": "The behind-the-scenes video shows motion capture (mocap) technology being used to create the immersive performances in the Ode Islands.",
+        "showFeedback": true,
+        "timeLimit": 30,
+        "points": 15
+      },
+      "theme": {
+        "background": "#1e293b",
+        "title": "#fbbf24",
+        "subtitle": "#37ffce",
+        "shadow": true
       }
     },
     {

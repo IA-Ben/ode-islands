@@ -306,6 +306,30 @@ export type CardData = {
       opacity?: number
     }
   }>
+  poll?: {
+    id?: string              // Poll ID if editing existing poll
+    chapterId?: string       // Chapter context
+    cardIndex?: number       // Card context
+    question: string         // Poll question
+    options: string[]        // Poll options
+    pollType: 'poll' | 'survey'  // Type of poll
+    isLive?: boolean         // Live poll feature
+    expiresAt?: string       // Poll expiration
+    showResults?: boolean    // Show results after voting
+    allowMultiple?: boolean  // Allow multiple responses
+  }
+  quiz?: {
+    id?: string              // Quiz ID if editing existing quiz
+    chapterId?: string       // Chapter context
+    cardIndex?: number       // Card context
+    question: string         // Quiz question
+    options: string[]        // Quiz options
+    correctAnswer: string    // Correct answer
+    explanation?: string     // Explanation for correct answer
+    showFeedback?: boolean   // Show immediate feedback
+    timeLimit?: number       // Time limit in seconds
+    points?: number          // Points for correct answer
+  }
   theme?: {
     mix?: CSSProperties['mixBlendMode']
     shadow?: boolean
