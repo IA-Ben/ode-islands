@@ -547,6 +547,7 @@ export const fanScoreEvents = pgTable("fan_score_events", {
   uniqueIndex("idx_fan_score_events_idempotency_key").on(table.userId, table.idempotencyKey),
   index("idx_fan_score_events_event_created").on(table.eventId, table.createdAt),
   index("idx_fan_score_events_reference").on(table.referenceType, table.referenceId),
+  index("idx_fan_score_events_daily_cap").on(table.userId, table.activityType, table.createdAt),
 ]);
 
 export const userFanScores = pgTable("user_fan_scores", {

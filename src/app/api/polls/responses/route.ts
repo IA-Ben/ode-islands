@@ -3,6 +3,7 @@ import { db } from '../../../../../server/db';
 import { polls, pollResponses } from '../../../../../shared/schema';
 import { eq, and, count, sql } from 'drizzle-orm';
 import { withAuth, withUserAuthAndCSRF } from '../../../../../server/auth';
+import { ScoringService } from '../../../../../server/scoringService';
 
 async function handleGET(request: NextRequest) {
   try {
@@ -143,6 +144,53 @@ async function handlePOST(request: NextRequest) {
         submittedAt: new Date(),
       })
       .returning();
+
+    // Award fan scoring points after successful response
+    const scoringService = new ScoringService();
+    
+    // Always award poll participation points
+    try {
+      await scoringService.award(userId, {
+        activityType: 'poll_participation',
+        referenceType: 'poll',
+        referenceId: pollId,
+        eventId: pollData.eventId || undefined,
+        chapterId: pollData.chapterId || undefined,
+        cardIndex: pollData.cardIndex || undefined,
+        phase: undefined, // phase property doesn't exist in poll schema
+        metadata: {
+          selectedOption,
+          pollTitle: pollData.question, // use question as title since title doesn't exist
+          isQuiz: !!pollData.correctAnswer
+        }
+      });
+    } catch (scoringError) {
+      console.error('Poll participation scoring error:', scoringError);
+      // Don't fail the main operation due to scoring errors
+    }
+
+    // Award quiz correct points if this is a quiz and answer is correct
+    if (isCorrect === true) {
+      try {
+        await scoringService.award(userId, {
+          activityType: 'quiz_correct',
+          referenceType: 'poll',
+          referenceId: pollId,
+          eventId: pollData.eventId || undefined,
+          chapterId: pollData.chapterId || undefined,
+          cardIndex: pollData.cardIndex || undefined,
+          phase: undefined, // phase property doesn't exist in poll schema
+          metadata: {
+            selectedOption,
+            correctAnswer: pollData.correctAnswer,
+            pollTitle: pollData.question // use question as title since title doesn't exist
+          }
+        });
+      } catch (scoringError) {
+        console.error('Quiz correct scoring error:', scoringError);
+        // Don't fail the main operation due to scoring errors
+      }
+    }
 
     return NextResponse.json({
       success: true,

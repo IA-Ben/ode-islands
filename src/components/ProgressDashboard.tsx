@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import odeIslandsData from '@/app/data/ode-islands.json';
+import ScoreProgressPanel from './ScoreProgressPanel';
+import Leaderboard from './Leaderboard';
+import ScoreBadge from './ScoreBadge';
 
 // TypeScript interfaces for progress tracking
 interface UserProgress {
@@ -38,6 +41,7 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
   const [progressData, setProgressData] = useState<UserProgress[]>([]);
   const [chapterProgress, setChapterProgress] = useState<ChapterProgress[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [activeTab, setActiveTab] = useState<'progress' | 'fan-score' | 'leaderboard'>('progress');
 
   // Chapter structure - dynamically loaded from actual data
   const availableChapters = Object.keys(odeIslandsData).map(chapterId => {
@@ -259,32 +263,108 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
           <p className="text-gray-400 text-lg">Track your adventure through The Ode Islands</p>
         </div>
 
-        {/* Overall Progress */}
-        <div className="bg-gray-900 rounded-lg p-6 mb-8 border border-gray-800">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-2xl font-semibold text-white">Overall Progress</h2>
-            <span className="text-3xl font-bold" style={{ color: theme.colors.primary }}>
-              {overallProgress}%
-            </span>
-          </div>
-          
-          <div className="w-full bg-gray-800 rounded-full h-3 mb-2">
-            <div
-              className="h-3 rounded-full transition-all duration-500 ease-out"
-              style={{ 
-                width: `${overallProgress}%`,
-                backgroundColor: theme.colors.primary 
-              }}
-            />
-          </div>
-          
-          <div className="flex justify-between text-sm text-gray-400">
-            <span>{chapterProgress.filter(c => c.completionPercentage === 100).length} chapters completed</span>
-            <span>{chapterProgress.reduce((sum, c) => sum + c.completedCards, 0)} cards completed</span>
+        {/* Tab Navigation */}
+        <div className="mb-8">
+          <div className="flex space-x-1 bg-gray-900 p-1 rounded-lg border border-gray-800">
+            <button
+              onClick={() => setActiveTab('progress')}
+              className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'progress'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/60 hover:text-white/90 hover:bg-white/5'
+              }`}
+            >
+              Journey Progress
+            </button>
+            <button
+              onClick={() => setActiveTab('fan-score')}
+              className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'fan-score'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/60 hover:text-white/90 hover:bg-white/5'
+              }`}
+            >
+              Fan Score Progress
+            </button>
+            <button
+              onClick={() => setActiveTab('leaderboard')}
+              className={`flex-1 px-4 py-3 text-sm font-medium rounded-md transition-colors ${
+                activeTab === 'leaderboard'
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/60 hover:text-white/90 hover:bg-white/5'
+              }`}
+            >
+              Community Rankings
+            </button>
           </div>
         </div>
 
-        {/* Chapter Progress Grid */}
+        {/* Content based on active tab */}
+        {activeTab === 'progress' && (
+          <>
+            {/* Overall Progress */}
+            <div className="bg-gray-900 rounded-lg p-6 mb-8 border border-gray-800">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-semibold text-white">Journey Progress</h2>
+                <div className="flex items-center space-x-4">
+                  <ScoreBadge 
+                    compact={false}
+                    showLevel={true}
+                    showPosition={true}
+                    className=""
+                  />
+                  <span className="text-3xl font-bold" style={{ color: theme.colors.primary }}>
+                    {overallProgress}%
+                  </span>
+                </div>
+              </div>
+              
+              <div className="w-full bg-gray-800 rounded-full h-3 mb-2">
+                <div
+                  className="h-3 rounded-full transition-all duration-500 ease-out"
+                  style={{ 
+                    width: `${overallProgress}%`,
+                    backgroundColor: theme.colors.primary 
+                  }}
+                />
+              </div>
+              
+              <div className="flex justify-between text-sm text-gray-400">
+                <span>{chapterProgress.filter(c => c.completionPercentage === 100).length} chapters completed</span>
+                <span>{chapterProgress.reduce((sum, c) => sum + c.completedCards, 0)} cards completed</span>
+              </div>
+            </div>
+          </>
+        )}
+
+        {activeTab === 'fan-score' && (
+          <div className="mb-8">
+            <ScoreProgressPanel 
+              scopeType="global"
+              scopeId="global"
+              showAllScopes={true}
+              showRecentActivities={true}
+              showAchievements={true}
+              showStatistics={true}
+              className="w-full"
+            />
+          </div>
+        )}
+
+        {activeTab === 'leaderboard' && (
+          <div className="mb-8">
+            <Leaderboard 
+              scopeType="global"
+              scopeId="global"
+              includeUserPosition={true}
+              limit={50}
+              className="w-full"
+            />
+          </div>
+        )}
+
+        {/* Chapter Progress Grid - only show on progress tab */}
+        {activeTab === 'progress' && (
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {chapterProgress.map((chapter) => {
             const chapterInfo = availableChapters.find(c => c.id === chapter.chapterId);
@@ -370,9 +450,10 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
             );
           })}
         </div>
+        )}
 
-        {/* Empty State */}
-        {chapterProgress.length === 0 && (
+        {/* Empty State - only show on progress tab */}
+        {activeTab === 'progress' && chapterProgress.length === 0 && (
           <div className="text-center py-12">
             <svg className="w-16 h-16 text-gray-500 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />

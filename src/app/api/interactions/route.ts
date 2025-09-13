@@ -3,6 +3,7 @@ import { db } from '../../../../server/db';
 import { contentInteractions } from '../../../../shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { withAuth, withUserAuthAndCSRF } from '../../../../server/auth';
+import { ScoringService } from '../../../../server/scoringService';
 
 async function handleGET(request: NextRequest) {
   try {
@@ -78,6 +79,57 @@ async function handlePOST(request: NextRequest) {
         timestamp: new Date(),
       })
       .returning();
+
+    // Award fan scoring points for specific interaction types
+    const scoringService = new ScoringService();
+    
+    try {
+      // Map interaction types to scoring activity types
+      let activityType: string | null = null;
+      
+      switch (interactionType.toLowerCase()) {
+        case 'ar_complete':
+        case 'ar_interaction':
+        case 'ar_view':
+          activityType = 'ar_complete';
+          break;
+        case 'video_complete':
+        case 'video_watch':
+          // Only award for complete video watches to prevent spam
+          if (interactionType.toLowerCase() === 'video_complete') {
+            activityType = 'video_complete';
+          }
+          break;
+        case 'quiz_complete':
+          activityType = 'quiz_complete';
+          break;
+        case 'content_share':
+        case 'share':
+          activityType = 'content_share';
+          break;
+        default:
+          // Award general interaction points for other types
+          activityType = 'interaction';
+          break;
+      }
+
+      if (activityType) {
+        await scoringService.award(userId, {
+          activityType,
+          referenceType: contentType,
+          referenceId: contentId,
+          metadata: {
+            interactionType,
+            duration: duration || 0,
+            contentType,
+            ...(metadata || {})
+          }
+        });
+      }
+    } catch (scoringError) {
+      console.error('Interaction scoring error:', scoringError);
+      // Don't fail the main operation due to scoring errors
+    }
 
     return NextResponse.json({
       success: true,

@@ -3,6 +3,7 @@
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import NotificationCenter from './NotificationCenter';
+import ScoreBadge from './ScoreBadge';
 
 export type Phase = 'before' | 'event' | 'after';
 
@@ -101,6 +102,15 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
 
           {/* Right Side Actions */}
           <div className="flex items-center space-x-2">
+            {/* Fan Score Badge */}
+            <ScoreBadge 
+              compact={true}
+              showLevel={true}
+              showPosition={false}
+              onClick={handleProgressClick}
+              className="hover:scale-105 transition-transform duration-200"
+            />
+            
             {/* Notification Center */}
             <NotificationCenter />
 

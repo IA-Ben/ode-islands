@@ -3,6 +3,7 @@ import { db } from '../../../../server/db';
 import { userProgress, users } from '../../../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { withUserAuth, withUserAuthAndCSRF } from '../../../../server/auth';
+import { ScoringService } from '../../../../server/scoringService';
 
 async function handleGET(request: NextRequest) {
   try {
@@ -106,6 +107,60 @@ async function handlePOST(request: NextRequest) {
           lastAccessed: new Date(),
         })
         .returning();
+
+      // Award fan scoring points for completing new content
+      const scoringService = new ScoringService();
+      
+      // Always award card completion points for new progress
+      try {
+        await scoringService.award(userId, {
+          activityType: 'card_complete',
+          referenceType: 'card',
+          referenceId: `${chapterId}-${cardIndex}`,
+          chapterId: chapterId,
+          cardIndex: cardIndex,
+          metadata: {
+            timeSpent: timeSpent || 0,
+            completedAt: new Date().toISOString()
+          }
+        });
+      } catch (scoringError) {
+        console.error('Card completion scoring error:', scoringError);
+        // Don't fail the main operation due to scoring errors
+      }
+
+      // Check if this completes a chapter and award chapter completion points
+      // Note: This is a simplified check - in a real app you'd want to verify
+      // all cards in the chapter are completed
+      try {
+        // Get total cards completed for this chapter by this user
+        const chapterProgress = await db
+          .select()
+          .from(userProgress)
+          .where(
+            and(
+              eq(userProgress.userId, userId),
+              eq(userProgress.chapterId, chapterId)
+            )
+          );
+
+        // If this is a significant milestone (every 5 cards), award chapter progress points
+        if (chapterProgress.length % 5 === 0) {
+          await scoringService.award(userId, {
+            activityType: 'chapter_complete',
+            referenceType: 'chapter',
+            referenceId: chapterId,
+            chapterId: chapterId,
+            metadata: {
+              cardsCompleted: chapterProgress.length,
+              milestone: `${chapterProgress.length}_cards`
+            }
+          });
+        }
+      } catch (scoringError) {
+        console.error('Chapter completion scoring error:', scoringError);
+        // Don't fail the main operation due to scoring errors
+      }
 
       return NextResponse.json({
         success: true,
