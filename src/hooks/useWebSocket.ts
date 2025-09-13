@@ -58,6 +58,21 @@ export const useWebSocket = (
         try {
           const message: WebSocketMessage = JSON.parse(event.data);
           setLastMessage(message);
+          
+          // Handle content availability updates for real-time cache clearing
+          if (message.type === 'content_available' && typeof window !== 'undefined') {
+            try {
+              // Clear content availability cache to ensure fresh data
+              const { ContentAvailabilityService } = require('@/lib/contentAvailability');
+              ContentAvailabilityService.clearCache(
+                message.payload?.contentType, 
+                message.payload?.contentId
+              );
+            } catch (error) {
+              console.warn('Could not clear content availability cache:', error);
+            }
+          }
+          
           onMessage?.(message);
         } catch (error) {
           console.error('Failed to parse WebSocket message:', error);

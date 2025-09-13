@@ -37,9 +37,33 @@ app.prepare().then(async () => {
   const httpServer = http.createServer(server);
   webSocketManager.initialize(httpServer);
 
+  // Initialize Content Scheduler
+  const { schedulerManager } = await import('./server/schedulerManager.ts');
+  await schedulerManager.initialize();
+
   httpServer.listen(port, hostname, (err) => {
     if (err) throw err;
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> WebSocket server ready on ws://${hostname}:${port}/ws`);
+    console.log(`> Content scheduler initialized and running`);
+  });
+
+  // Graceful shutdown handling
+  process.on('SIGTERM', async () => {
+    console.log('Received SIGTERM, shutting down gracefully...');
+    await schedulerManager.shutdown();
+    httpServer.close(() => {
+      console.log('Server shut down');
+      process.exit(0);
+    });
+  });
+
+  process.on('SIGINT', async () => {
+    console.log('Received SIGINT, shutting down gracefully...');
+    await schedulerManager.shutdown();
+    httpServer.close(() => {
+      console.log('Server shut down');
+      process.exit(0);
+    });
   });
 });

@@ -196,15 +196,179 @@ export const notifications = pgTable("notifications", {
   readAt: timestamp("read_at"),
 });
 
-// Content Scheduling
-export const scheduledContent = pgTable("scheduled_content", {
+// Enhanced Content Scheduling System
+export const contentSchedules = pgTable("content_schedules", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  chapterId: varchar("chapter_id").notNull(),
-  releaseDate: timestamp("release_date").notNull(),
-  isReleased: boolean("is_released").default(false),
-  targetAudience: jsonb("target_audience"), // User criteria
+  title: varchar("title").notNull(),
+  description: text("description"),
+  
+  // Content Reference
+  contentType: varchar("content_type").notNull(), // 'chapter', 'poll', 'notification', 'certificate', 'event', 'memory'
+  contentId: varchar("content_id"), // Reference to specific content
+  contentMetadata: jsonb("content_metadata"), // Additional content configuration
+  
+  // Scheduling Configuration
+  scheduleType: varchar("schedule_type").notNull(), // 'absolute', 'relative', 'conditional', 'manual'
+  triggerTime: timestamp("trigger_time"), // Absolute time (for absolute schedules)
+  relativeToEvent: varchar("relative_to_event"), // Event ID for relative schedules
+  relativeTiming: jsonb("relative_timing"), // { type: 'event_start|event_end|user_action', offset_minutes: number }
+  
+  // Conditional Release Logic
+  conditions: jsonb("conditions"), // Array of conditions that must be met
+  conditionLogic: varchar("condition_logic").default('AND'), // 'AND' or 'OR'
+  
+  // Targeting and Personalization
+  targetAudience: jsonb("target_audience"), // User criteria for targeting
+  personalizationRules: jsonb("personalization_rules"), // User-specific customizations
+  
+  // A/B Testing
+  abTestConfig: jsonb("ab_test_config"), // A/B test configuration
+  abTestVariant: varchar("ab_test_variant"), // Which variant this schedule represents
+  
+  // Timezone and Recurrence
+  timezone: varchar("timezone").default('UTC'),
+  isRecurring: boolean("is_recurring").default(false),
+  recurrenceRule: jsonb("recurrence_rule"), // RRULE-like configuration
+  
+  // Status and Execution
+  status: varchar("status").default('active'), // 'active', 'paused', 'completed', 'cancelled', 'failed'
+  executionCount: integer("execution_count").default(0),
+  lastExecutedAt: timestamp("last_executed_at"),
+  nextExecutionAt: timestamp("next_execution_at"),
+  
+  // Priority and Constraints
+  priority: integer("priority").default(5), // 1-10, higher = more important
+  maxExecutions: integer("max_executions"), // Limit number of executions
+  executionTimeoutMinutes: integer("execution_timeout_minutes").default(60),
+  
+  // Administrative
   createdBy: varchar("created_by").references(() => users.id),
+  lastModifiedBy: varchar("last_modified_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  archivedAt: timestamp("archived_at"),
+});
+
+// Schedule Job Queue for Background Processing
+export const scheduleJobs = pgTable("schedule_jobs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scheduleId: varchar("schedule_id").references(() => contentSchedules.id).notNull(),
+  jobType: varchar("job_type").notNull(), // 'content_release', 'notification', 'condition_check'
+  
+  // Execution Details
+  status: varchar("status").default('pending'), // 'pending', 'processing', 'completed', 'failed', 'retrying'
+  scheduledFor: timestamp("scheduled_for").notNull(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  
+  // Retry Logic
+  attemptCount: integer("attempt_count").default(0),
+  maxRetries: integer("max_retries").default(3),
+  retryDelayMinutes: integer("retry_delay_minutes").default(5),
+  
+  // Execution Results
+  result: jsonb("result"), // Execution outcome and data
+  errorMessage: text("error_message"),
+  errorStack: text("error_stack"),
+  
+  // Job Metadata
+  jobData: jsonb("job_data"), // Serialized job parameters
+  priority: integer("priority").default(5),
+  processingNode: varchar("processing_node"), // Which server/worker processed this
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Content Release Audit Log
+export const contentReleaseAudit = pgTable("content_release_audit", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  scheduleId: varchar("schedule_id").references(() => contentSchedules.id),
+  jobId: varchar("job_id").references(() => scheduleJobs.id),
+  
+  // Release Details
+  contentType: varchar("content_type").notNull(),
+  contentId: varchar("content_id"),
+  releaseType: varchar("release_type").notNull(), // 'automatic', 'manual', 'emergency_override'
+  
+  // Targeting Information
+  targetUsers: jsonb("target_users"), // List of user IDs who received the content
+  actualRecipients: integer("actual_recipients"), // Count of users who actually received it
+  
+  // Execution Context
+  executedBy: varchar("executed_by").references(() => users.id), // Admin who triggered manual release
+  executionContext: jsonb("execution_context"), // Additional context about the release
+  
+  // Timing Information
+  scheduledTime: timestamp("scheduled_time"),
+  actualReleaseTime: timestamp("actual_release_time").defaultNow(),
+  delayMinutes: integer("delay_minutes"), // Difference between scheduled and actual
+  
+  // Results and Analytics
+  success: boolean("success").notNull(),
+  errorDetails: text("error_details"),
+  performanceMetrics: jsonb("performance_metrics"), // Execution time, resource usage, etc.
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// User Content Access Tracking
+export const userContentAccess = pgTable("user_content_access", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  scheduleId: varchar("schedule_id").references(() => contentSchedules.id),
+  
+  // Access Details
+  contentType: varchar("content_type").notNull(),
+  contentId: varchar("content_id").notNull(),
+  accessGrantedAt: timestamp("access_granted_at").notNull(),
+  accessMethod: varchar("access_method").notNull(), // 'scheduled', 'manual', 'condition_met'
+  
+  // User Interaction
+  firstAccessedAt: timestamp("first_accessed_at"),
+  lastAccessedAt: timestamp("last_accessed_at"),
+  totalAccessCount: integer("total_access_count").default(0),
+  
+  // Personalization Data
+  personalizedData: jsonb("personalized_data"), // User-specific content modifications
+  abTestVariant: varchar("ab_test_variant"), // Which A/B test variant user received
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  removedAt: timestamp("removed_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Emergency Override System
+export const emergencyOverrides = pgTable("emergency_overrides", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  
+  // Override Type
+  overrideType: varchar("override_type").notNull(), // 'release_now', 'cancel_schedule', 'modify_timing', 'pause_all'
+  affectedSchedules: jsonb("affected_schedules"), // List of schedule IDs affected
+  
+  // Override Details
+  newReleaseTime: timestamp("new_release_time"),
+  overrideReason: text("override_reason").notNull(),
+  urgencyLevel: varchar("urgency_level").notNull(), // 'low', 'medium', 'high', 'critical'
+  
+  // Approval Workflow
+  requestedBy: varchar("requested_by").references(() => users.id).notNull(),
+  approvedBy: varchar("approved_by").references(() => users.id),
+  approvalStatus: varchar("approval_status").default('pending'), // 'pending', 'approved', 'rejected'
+  approvalNotes: text("approval_notes"),
+  
+  // Execution
+  executedAt: timestamp("executed_at"),
+  executionResult: jsonb("execution_result"),
+  rollbackData: jsonb("rollback_data"), // Data needed to rollback the override
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
 });
 
 // Collaboration and Social Features
@@ -277,7 +441,13 @@ export type Certificate = typeof certificates.$inferSelect;
 export type UserSession = typeof userSessions.$inferSelect;
 export type ContentInteraction = typeof contentInteractions.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
-export type ScheduledContent = typeof scheduledContent.$inferSelect;
+export type ContentSchedule = typeof contentSchedules.$inferSelect;
+export type UpsertContentSchedule = typeof contentSchedules.$inferInsert;
+export type ScheduleJob = typeof scheduleJobs.$inferSelect;
+export type UpsertScheduleJob = typeof scheduleJobs.$inferInsert;
+export type ContentReleaseAudit = typeof contentReleaseAudit.$inferSelect;
+export type UserContentAccess = typeof userContentAccess.$inferSelect;
+export type EmergencyOverride = typeof emergencyOverrides.$inferSelect;
 export type UserNote = typeof userNotes.$inferSelect;
 export type ForumPost = typeof forumPosts.$inferSelect;
 export type ForumReply = typeof forumReplies.$inferSelect;
