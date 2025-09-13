@@ -4,11 +4,12 @@ import { useState } from "react";
 import PhaseNavigation from "@/components/PhaseNavigation";
 import EventMemoriesGallery from "@/components/EventMemoriesGallery";
 import CertificateManager from "@/components/CertificateManager";
+import MemoryWallet from "@/components/MemoryWallet";
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function AfterPage() {
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'overview' | 'memories' | 'insights' | 'certificates'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'memories' | 'memory-wallet' | 'insights' | 'certificates'>('overview');
 
   const renderContent = () => {
     switch (activeTab) {
@@ -18,6 +19,16 @@ export default function AfterPage() {
             <EventMemoriesGallery 
               showUploadButton={true}
               showPrivateMemories={false}
+              className="w-full"
+            />
+          </div>
+        );
+      
+      case 'memory-wallet':
+        return (
+          <div className="container mx-auto px-6 py-8">
+            <MemoryWallet 
+              showHeader={true}
               className="w-full"
             />
           </div>
@@ -150,6 +161,21 @@ export default function AfterPage() {
                 </button>
                 
                 <button
+                  onClick={() => setActiveTab('memory-wallet')}
+                  className="p-6 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors text-left"
+                >
+                  <h3 
+                    className="text-lg font-medium mb-3"
+                    style={{ color: theme.colors.secondary }}
+                  >
+                    Memory Wallet
+                  </h3>
+                  <p className="text-white/60 text-sm">
+                    Your personal collection of memories from cards, chapters, and events
+                  </p>
+                </button>
+                
+                <button
                   onClick={() => setActiveTab('insights')}
                   className="p-6 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors text-left"
                 >
@@ -243,6 +269,17 @@ export default function AfterPage() {
                   }`}
                 >
                   Event Memories
+                </button>
+                
+                <button
+                  onClick={() => setActiveTab('memory-wallet')}
+                  className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'memory-wallet'
+                      ? 'text-white border-blue-500'
+                      : 'text-white/60 border-transparent hover:text-white/90'
+                  }`}
+                >
+                  Memory Wallet
                 </button>
                 
                 <button

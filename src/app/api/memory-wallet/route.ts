@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { userMemoryWallet, users } from '../../../../shared/schema';
-import { eq, desc, and, or } from 'drizzle-orm';
+import { eq, desc, and, or, sql } from 'drizzle-orm';
 import { withAuth, withUserAuthAndCSRF, validateUserIdentifierFields, setUserIdentifierFields } from '../../../../server/auth';
 
 async function handleGET(request: NextRequest) {
@@ -55,14 +55,14 @@ async function handleGET(request: NextRequest) {
 
     // Get total count for pagination
     const totalResult = await db
-      .select({ count: userMemoryWallet.id })
+      .select({ count: sql<number>`count(*)` })
       .from(userMemoryWallet)
       .where(and(...conditions));
 
     return NextResponse.json({
       success: true,
       memories: processedMemories,
-      total: totalResult.length,
+      total: totalResult[0]?.count || 0,
       limit,
       offset,
     });
