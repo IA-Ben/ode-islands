@@ -7,8 +7,8 @@ export default function Home() {
   const router = useRouter();
 
   useEffect(() => {
-    // Redirect to first chapter
-    router.push("/chapter-1");
+    // Redirect to Before phase - first chapter
+    router.push("/before/chapter-1");
   }, [router]);
 
   return null;
