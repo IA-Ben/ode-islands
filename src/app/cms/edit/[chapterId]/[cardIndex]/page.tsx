@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ColorPicker } from '@/components/ui/ColorPicker';
 import ClientCard from '@/components/ClientCard';
 import type { CardData } from '@/@typings';
 
@@ -692,56 +693,52 @@ export default function CardEditorPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <label className="block text-sm font-medium mb-2">Background Color</label>
-                    <input
-                      type="color"
+                    <ColorPicker
+                      label="Background Color"
                       value={cardData.theme?.background || '#000000'}
-                      onChange={(e) => setCardData(prev => ({
+                      onChange={(color) => setCardData(prev => ({
                         ...prev,
-                        theme: { ...prev.theme, background: e.target.value }
+                        theme: { ...prev.theme, background: color }
                       }))}
-                      className="w-full h-10 bg-gray-700 border border-gray-600 rounded"
+                      showSavedColors={true}
                     />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-2">Title Color</label>
-                      <input
-                        type="color"
+                      <ColorPicker
+                        label="Title Color"
                         value={cardData.theme?.title || '#ffffff'}
-                        onChange={(e) => setCardData(prev => ({
+                        onChange={(color) => setCardData(prev => ({
                           ...prev,
-                          theme: { ...prev.theme, title: e.target.value }
+                          theme: { ...prev.theme, title: color }
                         }))}
-                        className="w-full h-10 bg-gray-700 border border-gray-600 rounded"
+                        showSavedColors={true}
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium mb-2">Subtitle Color</label>
-                      <input
-                        type="color"
+                      <ColorPicker
+                        label="Subtitle Color"
                         value={cardData.theme?.subtitle || '#ffffff'}
-                        onChange={(e) => setCardData(prev => ({
+                        onChange={(color) => setCardData(prev => ({
                           ...prev,
-                          theme: { ...prev.theme, subtitle: e.target.value }
+                          theme: { ...prev.theme, subtitle: color }
                         }))}
-                        className="w-full h-10 bg-gray-700 border border-gray-600 rounded"
+                        showSavedColors={true}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-2">Description Color</label>
-                    <input
-                      type="color"
+                    <ColorPicker
+                      label="Description Color"
                       value={cardData.theme?.description || '#ffffff'}
-                      onChange={(e) => setCardData(prev => ({
+                      onChange={(color) => setCardData(prev => ({
                         ...prev,
-                        theme: { ...prev.theme, description: e.target.value }
+                        theme: { ...prev.theme, description: color }
                       }))}
-                      className="w-full h-10 bg-gray-700 border border-gray-600 rounded"
+                      showSavedColors={true}
                     />
                   </div>
 
@@ -1881,37 +1878,37 @@ export default function CardEditorPage() {
                         <h5 className="text-sm font-medium text-gray-300">Custom Styling (Optional)</h5>
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <label className="block text-xs font-medium mb-1">Background Color</label>
-                            <input
-                              type="color"
+                            <ColorPicker
+                              label="Background Color"
                               value={button.styling?.backgroundColor || '#ffffff'}
-                              onChange={(e) => setCardData(prev => ({
+                              onChange={(color) => setCardData(prev => ({
                                 ...prev,
                                 customButtons: prev.customButtons?.map((b, i) => 
                                   i === index ? { 
                                     ...b, 
-                                    styling: { ...b.styling, backgroundColor: e.target.value }
+                                    styling: { ...b.styling, backgroundColor: color }
                                   } : b
                                 )
                               }))}
-                              className="w-full h-8 bg-gray-700 border border-gray-600 rounded"
+                              showSavedColors={true}
+                              className="text-xs"
                             />
                           </div>
                           <div>
-                            <label className="block text-xs font-medium mb-1">Text Color</label>
-                            <input
-                              type="color"
+                            <ColorPicker
+                              label="Text Color"
                               value={button.styling?.textColor || '#000000'}
-                              onChange={(e) => setCardData(prev => ({
+                              onChange={(color) => setCardData(prev => ({
                                 ...prev,
                                 customButtons: prev.customButtons?.map((b, i) => 
                                   i === index ? { 
                                     ...b, 
-                                    styling: { ...b.styling, textColor: e.target.value }
+                                    styling: { ...b.styling, textColor: color }
                                   } : b
                                 )
                               }))}
-                              className="w-full h-8 bg-gray-700 border border-gray-600 rounded"
+                              showSavedColors={true}
+                              className="text-xs"
                             />
                           </div>
                         </div>

@@ -10,12 +10,30 @@ export default function ThemeEditorPage() {
   const [activeTab, setActiveTab] = useState<'colors' | 'typography' | 'spacing' | 'visual'>('colors')
 
   const handleColorUpdate = (path: string, value: string) => {
-    const keys = path.split('.')
     const updatedColors = { ...theme.colors }
     
-    if (keys.length === 1) {
-      updatedColors[keys[0] as keyof typeof updatedColors] = value
-    }
+    // Handle direct color property updates
+    if (path === 'primary') updatedColors.primary = value
+    else if (path === 'primaryLight') updatedColors.primaryLight = value
+    else if (path === 'primaryDark') updatedColors.primaryDark = value
+    else if (path === 'secondary') updatedColors.secondary = value
+    else if (path === 'secondaryLight') updatedColors.secondaryLight = value
+    else if (path === 'secondaryDark') updatedColors.secondaryDark = value
+    else if (path === 'background') updatedColors.background = value
+    else if (path === 'backgroundLight') updatedColors.backgroundLight = value
+    else if (path === 'backgroundDark') updatedColors.backgroundDark = value
+    else if (path === 'surface') updatedColors.surface = value
+    else if (path === 'textPrimary') updatedColors.textPrimary = value
+    else if (path === 'textSecondary') updatedColors.textSecondary = value
+    else if (path === 'textMuted') updatedColors.textMuted = value
+    else if (path === 'textInverse') updatedColors.textInverse = value
+    else if (path === 'accent') updatedColors.accent = value
+    else if (path === 'accentLight') updatedColors.accentLight = value
+    else if (path === 'accentDark') updatedColors.accentDark = value
+    else if (path === 'success') updatedColors.success = value
+    else if (path === 'warning') updatedColors.warning = value
+    else if (path === 'error') updatedColors.error = value
+    else if (path === 'info') updatedColors.info = value
     
     updateTheme({
       colors: updatedColors
@@ -27,15 +45,32 @@ export default function ThemeEditorPage() {
     const updatedTypography = { ...theme.typography }
     
     if (keys.length === 1) {
-      updatedTypography[keys[0] as keyof typeof updatedTypography] = value as any
+      if (keys[0] === 'fontPrimary') updatedTypography.fontPrimary = value as string
+      else if (keys[0] === 'fontSecondary') updatedTypography.fontSecondary = value as string
     } else if (keys.length === 2) {
-      const category = keys[0] as keyof typeof updatedTypography
+      const category = keys[0]
       const property = keys[1]
-      if (typeof updatedTypography[category] === 'object') {
-        updatedTypography[category] = {
-          ...updatedTypography[category],
-          [property]: value
-        } as any
+      
+      if (category === 'fontWeight') {
+        updatedTypography.fontWeight = {
+          ...updatedTypography.fontWeight,
+          [property]: value as number
+        }
+      } else if (category === 'fontSize') {
+        updatedTypography.fontSize = {
+          ...updatedTypography.fontSize,
+          [property]: value as string
+        }
+      } else if (category === 'lineHeight') {
+        updatedTypography.lineHeight = {
+          ...updatedTypography.lineHeight,
+          [property]: value as number
+        }
+      } else if (category === 'letterSpacing') {
+        updatedTypography.letterSpacing = {
+          ...updatedTypography.letterSpacing,
+          [property]: value as string
+        }
       }
     }
     
@@ -45,12 +80,19 @@ export default function ThemeEditorPage() {
   }
 
   const handleSpacingUpdate = (path: string, value: string | number) => {
-    const keys = path.split('.')
     const updatedSpacing = { ...theme.spacing }
     
-    if (keys.length === 1) {
-      updatedSpacing[keys[0] as keyof typeof updatedSpacing] = value as any
-    }
+    if (path === 'base') updatedSpacing.base = value as number
+    else if (path === 'xs') updatedSpacing.xs = value as string
+    else if (path === 'sm') updatedSpacing.sm = value as string
+    else if (path === 'md') updatedSpacing.md = value as string
+    else if (path === 'lg') updatedSpacing.lg = value as string
+    else if (path === 'xl') updatedSpacing.xl = value as string
+    else if (path === '2xl') updatedSpacing['2xl'] = value as string
+    else if (path === '3xl') updatedSpacing['3xl'] = value as string
+    else if (path === '4xl') updatedSpacing['4xl'] = value as string
+    else if (path === '5xl') updatedSpacing['5xl'] = value as string
+    else if (path === '6xl') updatedSpacing['6xl'] = value as string
     
     updateTheme({
       spacing: updatedSpacing
@@ -62,13 +104,24 @@ export default function ThemeEditorPage() {
     const updatedVisual = { ...theme.visual }
     
     if (keys.length === 2) {
-      const category = keys[0] as keyof typeof updatedVisual
+      const category = keys[0]
       const property = keys[1]
-      if (typeof updatedVisual[category] === 'object') {
-        updatedVisual[category] = {
-          ...updatedVisual[category],
-          [property]: value
-        } as any
+      
+      if (category === 'borderRadius') {
+        updatedVisual.borderRadius = {
+          ...updatedVisual.borderRadius,
+          [property]: value as string
+        }
+      } else if (category === 'shadows') {
+        updatedVisual.shadows = {
+          ...updatedVisual.shadows,
+          [property]: value as string
+        }
+      } else if (category === 'opacity') {
+        updatedVisual.opacity = {
+          ...updatedVisual.opacity,
+          [property]: value as number
+        }
       }
     }
     
