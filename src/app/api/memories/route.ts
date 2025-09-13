@@ -11,14 +11,8 @@ async function handleGET(request: NextRequest) {
     const isPublic = searchParams.get('isPublic');
     const limit = parseInt(searchParams.get('limit') || '20');
 
-    // Get session information for authorization
+    // Get session information for authorization (may be null for unauthenticated users)
     const session = (request as any).session;
-    if (!session || !session.isAuthenticated) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
 
     // Build query conditions with proper authorization
     const conditions = [];
@@ -28,10 +22,17 @@ async function handleGET(request: NextRequest) {
     
     // Handle access control for private vs public memories
     if (isPublic === 'true') {
-      // Only public memories
+      // Only public memories - accessible to everyone
       conditions.push(eq(eventMemories.isPublic, true));
     } else if (isPublic === 'false') {
-      // Only private memories - user can only see their own unless they're admin
+      // Only private memories - user must be authenticated and can only see their own unless they're admin
+      if (!session || !session.isAuthenticated) {
+        return NextResponse.json(
+          { success: false, message: 'Authentication required to access private memories' },
+          { status: 401 }
+        );
+      }
+      
       if (session.isAdmin) {
         conditions.push(eq(eventMemories.isPublic, false));
       } else {
@@ -43,21 +44,26 @@ async function handleGET(request: NextRequest) {
         );
       }
     } else {
-      // No isPublic filter - show public memories + user's own private memories
-      if (session.isAdmin) {
-        // Admins can see all memories
-        // No additional access control needed
-      } else {
-        // Regular users can see: public memories OR their own private memories
-        conditions.push(
-          or(
-            eq(eventMemories.isPublic, true),
-            and(
-              eq(eventMemories.isPublic, false),
-              eq(eventMemories.createdBy, session.userId)
+      // No isPublic filter - show public memories + user's own private memories (if authenticated)
+      if (session && session.isAuthenticated) {
+        if (session.isAdmin) {
+          // Admins can see all memories
+          // No additional access control needed
+        } else {
+          // Authenticated users can see: public memories OR their own private memories
+          conditions.push(
+            or(
+              eq(eventMemories.isPublic, true),
+              and(
+                eq(eventMemories.isPublic, false),
+                eq(eventMemories.createdBy, session.userId)
+              )
             )
-          )
-        );
+          );
+        }
+      } else {
+        // Unauthenticated users can only see public memories
+        conditions.push(eq(eventMemories.isPublic, true));
       }
     }
 
@@ -147,5 +153,5 @@ async function handlePOST(request: NextRequest) {
 }
 
 // Apply authentication middleware
-export const GET = withAuth(handleGET);
+export const GET = handleGET; // Public endpoint - handles authentication internally
 export const POST = withUserAuthAndCSRF(handlePOST); // Users can only create memories as themselves + CSRF protection
