@@ -23,16 +23,15 @@ export default function BeforeChapterPage() {
   const [index, setIndex] = useState<number>(0);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Get cards for current chapter
-  const chapterNumber = chapterId.replace("chapter-", "");
-  const cards: CardData[] = chapterData[`chapter-${chapterNumber}`] || [];
+  // Get cards for current chapter  
+  const cards: CardData[] = chapterData[chapterId] || [];
 
   // Redirect to chapter 1 if invalid chapter
   useEffect(() => {
-    if (cards.length === 0 && chapterNumber !== "1") {
+    if (cards.length === 0 && chapterId !== "chapter-1") {
       router.push("/before/chapter-1");
     }
-  }, [cards.length, chapterNumber, router]);
+  }, [cards.length, chapterId, router]);
 
   const scrollToCard = useCallback((cardIndex: number) => {
     if (containerRef.current) {
