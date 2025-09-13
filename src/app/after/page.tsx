@@ -3,11 +3,12 @@
 import { useState } from "react";
 import PhaseNavigation from "@/components/PhaseNavigation";
 import EventMemoriesGallery from "@/components/EventMemoriesGallery";
+import CertificateManager from "@/components/CertificateManager";
 import { useTheme } from '@/contexts/ThemeContext';
 
 export default function AfterPage() {
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'overview' | 'memories' | 'insights'>('memories');
+  const [activeTab, setActiveTab] = useState<'overview' | 'memories' | 'insights' | 'certificates'>('overview');
 
   const renderContent = () => {
     switch (activeTab) {
@@ -18,6 +19,17 @@ export default function AfterPage() {
               showUploadButton={true}
               showPrivateMemories={false}
               className="w-full"
+            />
+          </div>
+        );
+      
+      case 'certificates':
+        return (
+          <div className="container mx-auto px-6 py-8">
+            <CertificateManager 
+              className="w-full"
+              showEligibility={true}
+              autoIssue={true}
             />
           </div>
         );
@@ -106,7 +118,22 @@ export default function AfterPage() {
               </p>
               
               {/* Feature preview cards */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-12">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-12">
+                <button
+                  onClick={() => setActiveTab('certificates')}
+                  className="p-6 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors text-left"
+                >
+                  <h3 
+                    className="text-lg font-medium mb-3"
+                    style={{ color: theme.colors.secondary }}
+                  >
+                    Your Certificates
+                  </h3>
+                  <p className="text-white/60 text-sm">
+                    View and download certificates recognizing your achievements
+                  </p>
+                </button>
+                
                 <button
                   onClick={() => setActiveTab('memories')}
                   className="p-6 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm hover:bg-white/10 transition-colors text-left"
@@ -160,6 +187,18 @@ export default function AfterPage() {
                     Connect with other participants and build lasting connections
                   </p>
                 </div>
+                
+                <div className="p-6 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm">
+                  <h3 
+                    className="text-lg font-medium mb-3"
+                    style={{ color: theme.colors.secondary }}
+                  >
+                    Share Your Success
+                  </h3>
+                  <p className="text-white/60 text-sm">
+                    Share your achievements and certificates with friends
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -184,6 +223,17 @@ export default function AfterPage() {
               </button>
               
               <div className="flex space-x-6">
+                <button
+                  onClick={() => setActiveTab('certificates')}
+                  className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
+                    activeTab === 'certificates'
+                      ? 'text-white border-blue-500'
+                      : 'text-white/60 border-transparent hover:text-white/90'
+                  }`}
+                >
+                  Your Certificates
+                </button>
+                
                 <button
                   onClick={() => setActiveTab('memories')}
                   className={`py-4 px-2 text-sm font-medium border-b-2 transition-colors ${
