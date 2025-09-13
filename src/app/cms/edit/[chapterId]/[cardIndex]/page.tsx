@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,8 +40,7 @@ export default function CardEditorPage() {
 
   useEffect(() => {
     checkAuth();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [checkAuth]);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -85,7 +84,7 @@ export default function CardEditorPage() {
     }
   }, [chapters, chapterId, cardIndexNum, isNewCard]);
 
-  const checkAuth = async () => {
+  const checkAuth = useCallback(async () => {
     try {
       const response = await fetch('/api/auth/user');
       if (response.ok) {
@@ -95,10 +94,10 @@ export default function CardEditorPage() {
         router.push('/cms');
       }
     } catch (error: unknown) {
-      console.error('Auth check failed:', error);
+      console.error('Auth check failed:', error instanceof Error ? error.message : String(error));
       router.push('/cms');
     }
-  };
+  }, [router]);
 
   const fetchChapters = async () => {
     try {
@@ -108,7 +107,7 @@ export default function CardEditorPage() {
         setChapters(data);
       }
     } catch (error: unknown) {
-      console.error('Error fetching chapters:', error);
+      console.error('Error fetching chapters:', error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -227,7 +226,7 @@ export default function CardEditorPage() {
         alert('Failed to save card');
       }
     } catch (error: unknown) {
-      console.error('Error saving card:', error);
+      console.error('Error saving card:', error instanceof Error ? error.message : String(error));
       alert('Error saving card');
     } finally {
       setSaving(false);
@@ -303,8 +302,8 @@ export default function CardEditorPage() {
         const error = await response.json();
         alert(`Processing temporarily unavailable: ${error.message}\n\nPlease use the existing video transcoding system for now.`);
       }
-    } catch (error) {
-      console.error('Error processing media:', error);
+    } catch (error: unknown) {
+      console.error('Error processing media:', error instanceof Error ? error.message : String(error));
       alert('Error processing media. Please try again.');
     } finally {
       setProcessing(false);

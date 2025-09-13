@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import type { CardData } from '@/@typings';
@@ -261,12 +262,12 @@ export default function CMSPage() {
               {user.email}
             </div>
             <div className="flex gap-2">
-              <a
+              <Link
                 href="/cms/theme"
                 className="px-3 py-1.5 bg-purple-600 hover:bg-purple-700 rounded text-sm transition-colors font-medium flex items-center gap-2"
               >
                 🎨 Theme Editor
-              </a>
+              </Link>
               <Button 
                 onClick={handleLogout}
                 variant="outline"

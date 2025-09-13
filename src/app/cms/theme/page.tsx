@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import Link from 'next/link'
 import { useTheme } from '@/contexts/ThemeContext'
 import { ColorPicker } from '@/components/ui/ColorPicker'
 import type { AppTheme } from '@/@typings'
@@ -154,12 +155,12 @@ export default function ThemeEditorPage() {
               >
                 Reset Theme
               </button>
-              <a
+              <Link
                 href="/cms"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
               >
                 Back to CMS
-              </a>
+              </Link>
             </div>
           </div>
 
