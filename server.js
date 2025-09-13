@@ -1,5 +1,6 @@
 const express = require('express');
 const next = require('next');
+const http = require('http');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = '0.0.0.0';
@@ -22,6 +23,9 @@ app.prepare().then(async () => {
   const { registerRoutes, isAuthenticated, isAdmin } = await import('./server/routes.ts');
   await registerRoutes(server);
 
+  // Initialize WebSocket server
+  const { webSocketManager } = await import('./server/websocket.ts');
+
   // Note: CMS page now handles authentication on the client side
 
   // Handle Next.js requests (except API routes which are handled by Express)
@@ -29,8 +33,13 @@ app.prepare().then(async () => {
     return handle(req, res);
   });
 
-  server.listen(port, hostname, (err) => {
+  // Create HTTP server and initialize WebSocket
+  const httpServer = http.createServer(server);
+  webSocketManager.initialize(httpServer);
+
+  httpServer.listen(port, hostname, (err) => {
     if (err) throw err;
     console.log(`> Ready on http://${hostname}:${port}`);
+    console.log(`> WebSocket server ready on ws://${hostname}:${port}/ws`);
   });
 });

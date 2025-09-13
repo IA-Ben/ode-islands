@@ -101,6 +101,19 @@ and(
       })
       .returning();
 
+    // Send notification about new certificate (non-blocking)
+    try {
+      const { NotificationService } = await import('../../../lib/notificationService');
+      await NotificationService.notifyCertificateAwarded(
+        userId,
+        title,
+        newCertificate[0].id
+      );
+    } catch (notificationError) {
+      console.warn('Failed to send certificate notification:', notificationError);
+      // Continue even if notification fails
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Certificate issued successfully',

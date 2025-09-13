@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
-import { polls, pollResponses } from '../../../../shared/schema';
+import { polls, pollResponses, users } from '../../../../shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import { withAuth, withAuthAndCSRF } from '../../../../server/auth';
 
@@ -109,6 +109,39 @@ async function handlePOST(request: NextRequest) {
         createdBy: session.userId, // Use session user ID for security
       })
       .returning();
+
+    // Send notification about new poll if it's live (non-blocking)
+    if (newPoll[0].isLive) {
+      try {
+        // Get all users to notify about live poll (in a real app, this might be event-specific or role-based)
+        const allUsers = await db.select({ id: users.id }).from(users);
+        
+        const { NotificationService } = await import('../../../lib/notificationService');
+        
+        // Send to all users (excluding the creator)
+        const userIds = allUsers
+          .map(u => u.id)
+          .filter(id => id !== session.userId);
+        
+        await NotificationService.createNotificationForUsers(
+          userIds,
+          {
+            title: '📊 New Live Poll!',
+            message: `A new poll is live: "${question}". Share your voice now!`,
+            type: 'poll',
+            actionUrl: eventId ? `/event` : undefined,
+            metadata: {
+              pollId: newPoll[0].id,
+              pollQuestion: question,
+              eventId,
+            }
+          }
+        );
+      } catch (notificationError) {
+        console.warn('Failed to send poll notification:', notificationError);
+        // Continue even if notification fails
+      }
+    }
 
     return NextResponse.json({
       success: true,

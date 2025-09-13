@@ -2,6 +2,7 @@
 
 import { useRouter, usePathname } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
+import NotificationCenter from './NotificationCenter';
 
 export type Phase = 'before' | 'event' | 'after';
 
@@ -98,8 +99,12 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
             ))}
           </div>
 
-          {/* Progress Dashboard Button */}
-          <div>
+          {/* Right Side Actions */}
+          <div className="flex items-center space-x-2">
+            {/* Notification Center */}
+            <NotificationCenter />
+
+            {/* Progress Dashboard Button */}
             <button
               onClick={handleProgressClick}
               className={`relative px-4 py-2 text-sm font-medium transition-all duration-300 rounded-lg border ${
@@ -112,7 +117,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                 </svg>
-                <span>Progress</span>
+                <span className="hidden sm:inline">Progress</span>
               </div>
               
               {/* Progress page description on hover */}

@@ -76,6 +76,15 @@ async function handlePOST(request: NextRequest) {
       })
       .returning();
 
+    // Send real-time notification via WebSocket
+    try {
+      const { webSocketManager } = await import('../../../../server/websocket');
+      webSocketManager.sendNotificationToUser(userId, newNotification[0]);
+    } catch (wsError) {
+      console.warn('Failed to send WebSocket notification:', wsError);
+      // Continue even if WebSocket fails
+    }
+
     return NextResponse.json({
       success: true,
       message: 'Notification created successfully',
