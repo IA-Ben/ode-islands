@@ -81,8 +81,23 @@ export const polls = pgTable("polls", {
   question: text("question").notNull(),
   options: jsonb("options").notNull(), // Array of poll options
   pollType: varchar("poll_type").notNull(), // 'quiz', 'poll', 'survey'
-  isLive: boolean("is_live").default(false),
+  
+  // Enhanced CMS features
+  status: varchar("status").default('draft'), // 'draft', 'scheduled', 'live', 'closed'
+  scheduleId: varchar("schedule_id").references(() => contentSchedules.id),
+  targetAudience: jsonb("target_audience"), // User criteria for targeting
+  allowMultiple: boolean("allow_multiple").default(false),
+  showResults: boolean("show_results").default(true),
+  
+  // Quiz-specific fields
   correctAnswer: varchar("correct_answer"), // For quiz questions
+  explanation: text("explanation"), // Explanation for quiz answers
+  timeLimit: integer("time_limit"), // Time limit in seconds
+  points: integer("points"), // Points awarded for correct answer
+  showFeedback: boolean("show_feedback").default(true),
+  
+  // Legacy fields
+  isLive: boolean("is_live").default(false),
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
   expiresAt: timestamp("expires_at"),
