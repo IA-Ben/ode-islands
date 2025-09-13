@@ -1,8 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
-import { liveChatMessages } from '../../../../shared/schema';
+import { liveChatMessages, users } from '../../../../shared/schema';
 import { eq, desc, and, gte } from 'drizzle-orm';
 import { withAuth, withUserAuth, withUserAuthAndCSRF } from '../../../../server/auth';
+
+// Helper function to create safe display names
+function getDisplayName(user: { firstName?: string | null; lastName?: string | null; email?: string; }): string {
+  const firstName = user.firstName?.trim();
+  const lastName = user.lastName?.trim();
+  
+  if (firstName && lastName) {
+    return `${firstName} ${lastName}`;
+  } else if (firstName) {
+    return firstName;
+  } else if (lastName) {
+    return lastName;
+  } else if (user.email) {
+    // Use the part before @ as fallback, but only if no other name available
+    const emailPrefix = user.email.split('@')[0];
+    return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
+  } else {
+    return 'Anonymous User';
+  }
+}
 
 async function handleGET(request: NextRequest) {
   try {
@@ -24,20 +44,56 @@ async function handleGET(request: NextRequest) {
       conditions.push(gte(liveChatMessages.sentAt, new Date(since)));
     }
 
-    // Get chat messages
+    // Check if current user is admin (from session)
+    const session = (request as any).session;
+    const isAdmin = session?.isAdmin || false;
+
+    // Get chat messages with privacy-safe user information
     const messages = await db
-      .select()
+      .select({
+        id: liveChatMessages.id,
+        eventId: liveChatMessages.eventId,
+        userId: liveChatMessages.userId,
+        message: liveChatMessages.message,
+        messageType: liveChatMessages.messageType,
+        isModerated: liveChatMessages.isModerated,
+        sentAt: liveChatMessages.sentAt,
+        user: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          isAdmin: users.isAdmin,
+          // Only expose email to admins
+          ...(isAdmin && { email: users.email })
+        }
+      })
       .from(liveChatMessages)
+      .leftJoin(users, eq(liveChatMessages.userId, users.id))
       .where(and(...conditions))
       .orderBy(desc(liveChatMessages.sentAt))
       .limit(limit);
 
-    // Reverse to show chronological order (oldest first)
-    const chronologicalMessages = messages.reverse();
+    // Filter out moderated messages for non-admins and add display names
+    const filteredMessages = messages
+      .filter(msg => isAdmin || !msg.isModerated)
+      .map(msg => ({
+        ...msg,
+        user: msg.user ? {
+          ...msg.user,
+          displayName: getDisplayName(msg.user)
+        } : null
+      }))
+      .reverse(); // Show chronological order (oldest first)
 
+    // For real-time updates, track message IDs to prevent duplicates
+    const messageIds = filteredMessages.map(m => m.id);
+    
     return NextResponse.json({
       success: true,
-      messages: chronologicalMessages,
+      messages: filteredMessages,
+      messageIds, // Help client detect duplicates
+      totalCount: filteredMessages.length,
+      isAdmin
     });
 
   } catch (error) {
@@ -56,7 +112,15 @@ async function handlePOST(request: NextRequest) {
 
     // Get authenticated user ID from session (prevents spoofing)
     const session = (request as any).session;
-    const userId = session.userId;
+    const userId = session?.userId;
+
+    // Validate authenticated user exists
+    if (!userId) {
+      return NextResponse.json(
+        { success: false, message: 'User authentication required' },
+        { status: 401 }
+      );
+    }
 
     // Validate required fields
     if (!eventId || !message) {

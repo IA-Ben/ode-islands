@@ -8,6 +8,7 @@ import EventCreationForm from './EventCreationForm';
 import LivePollingInterface from './LivePollingInterface';
 import QAManagement from './QAManagement';
 import EventTimeline from './EventTimeline';
+import LiveChatInterface from './LiveChatInterface';
 
 // Type definitions
 interface LiveEvent {
@@ -42,7 +43,7 @@ interface EventDashboardProps {
   theme: any;
 }
 
-type ViewMode = 'overview' | 'polls' | 'qa' | 'timeline' | 'create';
+type ViewMode = 'overview' | 'polls' | 'qa' | 'chat' | 'timeline' | 'create';
 
 export default function EventDashboard({ events, session, onEventsUpdate, theme }: EventDashboardProps) {
   const [activeView, setActiveView] = useState<ViewMode>('overview');
@@ -151,6 +152,7 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
     { id: 'overview', label: 'Event Overview', icon: '🏠', description: 'View and manage events' },
     { id: 'polls', label: 'Live Polls', icon: '📊', description: 'Interactive polling', disabled: !selectedEvent },
     { id: 'qa', label: 'Q&A Session', icon: '❓', description: 'Questions & answers', disabled: !selectedEvent },
+    { id: 'chat', label: 'Live Chat', icon: '💬', description: 'Real-time messaging', disabled: !selectedEvent },
     { id: 'timeline', label: 'Event Timeline', icon: '⏰', description: 'Scheduled content', disabled: !selectedEvent },
   ];
 
@@ -364,6 +366,14 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
 
           {activeView === 'qa' && selectedEvent && (
             <QAManagement
+              event={selectedEvent}
+              session={session}
+              theme={theme}
+            />
+          )}
+
+          {activeView === 'chat' && selectedEvent && (
+            <LiveChatInterface
               event={selectedEvent}
               session={session}
               theme={theme}

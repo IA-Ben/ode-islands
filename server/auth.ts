@@ -503,6 +503,31 @@ export function withUserAuthAndCSRF(
   return withCSRFProtection(withUserAuth(handler));
 }
 
+// Admin authentication with CSRF protection
+export function withAdminAuthAndCSRF(
+  handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
+) {
+  return async (request: NextRequest, context: { params?: any }) => {
+    // First apply regular auth and CSRF protection
+    const sessionHandler = withAuthAndCSRF(async (req: NextRequest, ctx: { params?: any }) => {
+      const session = (req as any).session;
+      
+      // Check if user is admin
+      if (!session?.isAdmin) {
+        return NextResponse.json(
+          { success: false, message: 'Admin access required' },
+          { status: 403 }
+        );
+      }
+      
+      // If admin, proceed with original handler
+      return handler(req, ctx);
+    });
+    
+    return sessionHandler(request, context);
+  };
+}
+
 // Utility to validate user access to resource
 export async function validateUserAccess(
   session: any,
