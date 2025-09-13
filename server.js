@@ -15,9 +15,24 @@ app.prepare().then(async () => {
   // Trust proxy for production deployments (required for secure cookies behind proxy)
   server.set('trust proxy', 1);
 
-  // Add JSON body parsing middleware
-  server.use(express.json());
-  server.use(express.urlencoded({ extended: true }));
+  // Add JSON body parsing middleware (exclude Next.js API routes)
+  // Next.js API routes handle their own body parsing, so exclude them from Express middleware
+  server.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      // Skip Express body parsing for Next.js API routes
+      return next();
+    }
+    // Apply Express body parsing for non-API routes only
+    express.json()(req, res, next);
+  });
+  
+  server.use((req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      // Skip Express URL encoding for Next.js API routes
+      return next();
+    }
+    express.urlencoded({ extended: true })(req, res, next);
+  });
 
   // Import and setup authentication routes
   const { registerRoutes, isAuthenticated, isAdmin } = await import('./server/routes.ts');

@@ -25,6 +25,8 @@ function isLoginRateLimited(ip: string): boolean {
 }
 
 export async function POST(request: NextRequest) {
+  let body: any;
+  
   try {
     // Rate limiting check
     const ip = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown';
@@ -35,7 +37,36 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const body = await request.json();
+    // Safe body parsing to prevent "Response body object should not be disturbed or locked" error
+    try {
+      // Read body as text first to avoid locking issues
+      const bodyText = await request.text();
+      
+      if (!bodyText || bodyText.trim() === '') {
+        return NextResponse.json(
+          { success: false, message: 'Request body is required' },
+          { status: 400 }
+        );
+      }
+
+      // Parse the text as JSON
+      try {
+        body = JSON.parse(bodyText);
+      } catch (parseError) {
+        console.error('JSON parsing error:', parseError instanceof Error ? parseError.message : String(parseError));
+        return NextResponse.json(
+          { success: false, message: 'Invalid JSON format in request body' },
+          { status: 400 }
+        );
+      }
+    } catch (bodyError) {
+      console.error('Body reading error:', bodyError instanceof Error ? bodyError.message : String(bodyError));
+      return NextResponse.json(
+        { success: false, message: 'Unable to read request body. Please try again.' },
+        { status: 400 }
+      );
+    }
+
     const { email, password } = body;
 
     // Validate required fields
