@@ -108,16 +108,15 @@ export const ImmersivePageLayout: React.FC<ImmersivePageLayoutProps> = ({
 
   return (
     <div
-      className={`relative w-full overflow-hidden flex-col items-center justify-center text-center ${className}`}
+      className={`relative w-full overflow-y-auto overflow-x-hidden flex-col items-center justify-center text-center ${className}`}
       style={{
         backgroundColor: theme?.background || appTheme.colors.background,
-        minHeight: "100dvh",
-        height: "100dvh"
+        minHeight: "100dvh"
       }}
       onClick={onBackgroundClick}
     >
-      {/* Media Background */}
-      <div className="absolute inset-0 w-full h-full flex items-center justify-center">
+      {/* Media Background - Fixed positioning for scrollable content */}
+      <div className="fixed inset-0 w-full h-screen flex items-center justify-center z-0">
         {/* Background Image */}
         {imageUrl && (
           <Image
@@ -195,14 +194,14 @@ export const ImmersivePageLayout: React.FC<ImmersivePageLayoutProps> = ({
       {/* Theme Overlay */}
       {theme?.overlay && (
         <div
-          className="absolute w-full h-full"
+          className="fixed inset-0 w-full h-screen z-0"
           style={{ background: theme.overlay }}
         />
       )}
 
-      {/* Header */}
+      {/* Header - Fixed positioning for scrollable content */}
       {showHeader && (
-        <div className="absolute top-0 left-0 right-0 z-20 p-6">
+        <div className="fixed top-0 left-0 right-0 z-30 p-6 bg-gradient-to-b from-black/20 to-transparent backdrop-blur-sm">
           <div className="flex items-center justify-between">
             {headerContent || (
               <div className="text-left">
@@ -217,8 +216,8 @@ export const ImmersivePageLayout: React.FC<ImmersivePageLayoutProps> = ({
 
       {/* Main Content */}
       <div
-        className={`relative flex flex-col h-full px-6 text-center pb-16 sm:pb-0 z-10 ${
-          centerContent ? 'items-center justify-center' : 'items-start justify-start pt-20'
+        className={`relative flex flex-col px-6 text-center pb-16 sm:pb-0 z-10 ${
+          centerContent ? 'items-center justify-center min-h-screen' : 'items-start justify-start pt-20'
         }`}
         style={{ mixBlendMode: theme?.mix as React.CSSProperties['mixBlendMode'] || undefined }}
       >
@@ -275,9 +274,9 @@ export const ImmersivePageLayout: React.FC<ImmersivePageLayoutProps> = ({
         </div>
       </div>
 
-      {/* Footer */}
+      {/* Footer - Fixed positioning for scrollable content */}
       {showFooter && (
-        <div className="absolute bottom-0 left-0 right-0 z-20 p-6">
+        <div className="fixed bottom-0 left-0 right-0 z-30 p-6 bg-gradient-to-t from-black/20 to-transparent backdrop-blur-sm">
           <div className="flex items-center justify-center">
             {footerContent || (
               <div className="text-center">
