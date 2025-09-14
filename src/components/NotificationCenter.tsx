@@ -87,7 +87,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
 
   return (
     <div className={`relative ${className}`} ref={dropdownRef}>
-      {/* Bell Icon Button */}
+      {/* Bell Icon Button - Enhanced Lumus Style */}
       <button
         onClick={() => {
           setIsOpen(!isOpen);
@@ -95,14 +95,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
             fetchNotifications(filter);
           }
         }}
-        className={`relative p-2 text-white/70 hover:text-white transition-all duration-200 rounded-lg hover:bg-white/10 ${
+        className={`relative group p-3 text-white/80 hover:text-white transition-all duration-300 rounded-xl hover:bg-white/5 backdrop-blur-sm ${
           hasNewNotifications ? 'animate-pulse' : ''
-        }`}
+        } ${isOpen ? 'bg-white/10 text-white' : ''}`}
         aria-label="Notifications"
       >
-        {/* Bell Icon */}
+        {/* Bell Icon - Professional styling */}
         <svg
-          className="w-6 h-6"
+          className="w-6 h-6 transition-transform duration-200 group-hover:scale-110"
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -116,27 +116,24 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
           />
         </svg>
 
-        {/* Unread Count Badge */}
+        {/* Unread Count Badge - Clean Design */}
         {unreadCount > 0 && (
-          <div
-            className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full flex items-center justify-center text-xs font-bold text-white"
-            style={{ backgroundColor: theme.colors.error }}
-          >
+          <div className="absolute -top-1 -right-1 min-w-[20px] h-[20px] rounded-full flex items-center justify-center text-xs font-semibold text-white bg-gradient-to-r from-red-500 to-red-600 shadow-lg border-2 border-white/20">
             {unreadCount > 99 ? '99+' : unreadCount}
           </div>
         )}
       </button>
 
-      {/* Notification Dropdown */}
+      {/* Notification Dropdown - Enhanced Lumus Design */}
       {isOpen && (
-        <div className="absolute top-full right-0 mt-2 w-96 max-w-[90vw] bg-black/95 backdrop-blur-sm border border-white/20 rounded-lg shadow-xl z-50">
-          {/* Header */}
-          <div className="p-4 border-b border-white/10">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-white">Notifications</h3>
+        <div className="absolute top-full right-0 mt-3 w-[420px] max-w-[95vw] bg-white/95 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl z-50 overflow-hidden">
+          {/* Header - Clean Professional Design */}
+          <div className="px-6 py-5 border-b border-black/10 bg-gradient-to-r from-gray-50/50 to-white/50">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xl font-semibold text-gray-900 tracking-tight">Notifications</h3>
               <button
                 onClick={() => setIsOpen(false)}
-                className="text-white/60 hover:text-white transition-colors"
+                className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-lg hover:bg-black/5"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -144,17 +141,17 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
               </button>
             </div>
 
-            {/* Filter Tabs */}
-            <div className="flex mt-3 space-x-1">
+            {/* Filter Tabs - Professional Design */}
+            <div className="flex space-x-2">
               <button
                 onClick={() => {
                   setFilter('all');
                   fetchNotifications('all');
                 }}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   filter === 'all'
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/60 hover:text-white/80'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 All ({notifications.length})
@@ -164,36 +161,36 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
                   setFilter('unread');
                   fetchNotifications('unread');
                 }}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
                   filter === 'unread'
-                    ? 'bg-white/20 text-white'
-                    : 'text-white/60 hover:text-white/80'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                 }`}
               >
                 Unread ({unreadCount})
               </button>
             </div>
 
-            {/* Connection Status Indicator */}
-            <div className="flex items-center mt-2">
-              <div className={`w-2 h-2 rounded-full mr-2 ${
+            {/* Connection Status Indicator - Professional Design */}
+            <div className="flex items-center mt-4 px-3 py-2 bg-gray-50/50 rounded-lg">
+              <div className={`w-2 h-2 rounded-full mr-3 ${
                 connectionStatus === 'open' ? 'bg-green-500' :
-                connectionStatus === 'connecting' ? 'bg-yellow-500 animate-pulse' :
+                connectionStatus === 'connecting' ? 'bg-amber-500 animate-pulse' :
                 'bg-red-500'
               }`} />
-              <span className="text-xs text-white/60">
-                {connectionStatus === 'open' ? 'Connected' :
+              <span className="text-sm text-gray-600 font-medium">
+                {connectionStatus === 'open' ? 'Live Updates Active' :
                  connectionStatus === 'connecting' ? 'Connecting...' :
-                 'Disconnected'}
+                 'Connection Lost'}
               </span>
             </div>
 
-            {/* Actions */}
-            <div className="flex items-center justify-between mt-3">
+            {/* Actions - Clean Professional Layout */}
+            <div className="flex items-center justify-between mt-4">
               {unreadCount > 0 && (
                 <button
                   onClick={markAllAsRead}
-                  className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors px-3 py-1 rounded-lg hover:bg-blue-50"
                 >
                   Mark all as read
                 </button>
@@ -201,7 +198,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
               
               <button
                 onClick={() => setShowSettings(true)}
-                className="text-sm text-white/60 hover:text-white/80 transition-colors flex items-center space-x-1"
+                className="text-sm text-gray-600 hover:text-gray-900 transition-colors flex items-center space-x-2 px-3 py-1 rounded-lg hover:bg-gray-50"
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -212,34 +209,44 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
             </div>
           </div>
 
-          {/* Notifications List */}
-          <div className="max-h-96 overflow-y-auto">
+          {/* Notifications List - Professional Design */}
+          <div className="max-h-[28rem] overflow-y-auto">
             {loading ? (
-              <div className="p-6 text-center text-white/60">
-                <div className="animate-spin w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full mx-auto mb-2"></div>
-                Loading notifications...
+              <div className="p-8 text-center">
+                <div className="animate-spin w-8 h-8 border-3 border-gray-200 border-t-blue-600 rounded-full mx-auto mb-4"></div>
+                <p className="text-gray-600 font-medium">Loading notifications...</p>
               </div>
             ) : error ? (
-              <div className="p-6 text-center text-red-400">
-                <p>Failed to load notifications</p>
+              <div className="p-8 text-center">
+                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="text-gray-900 font-medium mb-2">Failed to load notifications</p>
                 <button
                   onClick={() => fetchNotifications(filter)}
-                  className="mt-2 text-sm text-blue-400 hover:text-blue-300"
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium px-4 py-2 rounded-lg hover:bg-blue-50 transition-colors"
                 >
                   Try again
                 </button>
               </div>
             ) : filteredNotifications.length === 0 ? (
-              <div className="p-6 text-center text-white/60">
-                <svg className="w-12 h-12 mx-auto mb-3 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-5-5V9.5a4.5 4.5 0 00-9 0V12L1 17h5m4 0v1a3 3 0 006 0v-1m-6 0H9" />
-                </svg>
-                <p>
-                  {filter === 'unread' ? 'No unread notifications' : 'No notifications yet'}
+              <div className="p-8 text-center">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 17h5l-5-5V9.5a4.5 4.5 0 00-9 0V12L1 17h5m4 0v1a3 3 0 006 0v-1m-6 0H9" />
+                  </svg>
+                </div>
+                <p className="text-gray-900 font-medium mb-1">
+                  {filter === 'unread' ? 'All caught up!' : 'No notifications yet'}
+                </p>
+                <p className="text-gray-500 text-sm">
+                  {filter === 'unread' ? 'You have no unread notifications' : 'We\'ll notify you when something new happens'}
                 </p>
               </div>
             ) : (
-              <div>
+              <div className="divide-y divide-gray-100">
                 {filteredNotifications.map((notification) => (
                   <NotificationCard
                     key={notification.id}

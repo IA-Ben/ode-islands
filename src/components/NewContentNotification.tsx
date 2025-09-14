@@ -71,51 +71,66 @@ export default function NewContentNotification() {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50 space-y-2">
+    <div className="fixed top-6 right-6 z-50 space-y-3">
       {alerts.map((alert) => (
         <div
           key={alert.id}
-          className="bg-white border border-green-200 rounded-lg shadow-lg p-4 max-w-sm animate-slide-in-right"
+          className="bg-white/95 backdrop-blur-xl border border-white/30 rounded-2xl shadow-2xl p-6 max-w-sm animate-slide-in-right overflow-hidden"
+          style={{
+            animation: 'slideInRight 0.4s ease-out'
+          }}
         >
           <div className="flex items-start justify-between">
-            <div className="flex items-start space-x-3 flex-1">
-              <div className="text-2xl">
-                {ContentTypeUtils.getContentIcon(alert.contentType)}
+            <div className="flex items-start space-x-4 flex-1">
+              {/* Content Icon - Professional Design */}
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <div className="text-white text-lg">
+                  {ContentTypeUtils.getContentIcon(alert.contentType)}
+                </div>
               </div>
-              <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-1">
-                  <h4 className="font-medium text-gray-900 text-sm">{alert.title}</h4>
-                  <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between mb-2">
+                  <h4 className="font-semibold text-gray-900 text-sm leading-5 pr-2">{alert.title}</h4>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 whitespace-nowrap">
+                    <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full mr-1.5"></div>
                     New
                   </span>
                 </div>
+                
                 {alert.description && (
-                  <p className="text-sm text-gray-600 mb-2">{alert.description}</p>
+                  <p className="text-sm text-gray-600 mb-3 leading-relaxed">{alert.description}</p>
                 )}
+                
+                {/* Action Buttons - Professional Design */}
                 <div className="flex space-x-2">
-                  <Button
-                    size="sm"
+                  <button
                     onClick={() => navigateToContent(alert)}
-                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-3 py-1"
+                    className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition-all duration-200 shadow-md hover:shadow-lg"
                   >
+                    <svg className="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
                     View Now
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
+                  </button>
+                  <button
                     onClick={() => dismissAlert(alert.id)}
-                    className="text-xs px-3 py-1"
+                    className="inline-flex items-center px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-medium rounded-lg transition-all duration-200"
                   >
                     Dismiss
-                  </Button>
+                  </button>
                 </div>
               </div>
             </div>
+            
+            {/* Close Button - Clean Design */}
             <button
               onClick={() => dismissAlert(alert.id)}
-              className="text-gray-400 hover:text-gray-600 ml-2"
+              className="text-gray-400 hover:text-gray-600 ml-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
             >
-              ✕
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
         </div>
