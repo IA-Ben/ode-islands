@@ -127,7 +127,7 @@ export default function EventPage() {
   // Show loading state
   if (loading || activeView === 'loading') {
     return (
-      <div className="w-full h-screen bg-black relative overflow-hidden">
+      <div className="w-full min-h-screen bg-black relative overflow-y-auto overflow-x-hidden">
         <PhaseNavigation currentPhase="event" />
         
         <div className="h-full pt-20 flex flex-col items-center justify-center text-center px-8">
@@ -150,7 +150,7 @@ export default function EventPage() {
   // Show error state
   if (error) {
     return (
-      <div className="w-full h-screen bg-black relative overflow-hidden">
+      <div className="w-full min-h-screen bg-black relative overflow-y-auto overflow-x-hidden">
         <PhaseNavigation currentPhase="event" />
         
         <div className="h-full pt-20 flex flex-col items-center justify-center text-center px-8">
@@ -184,7 +184,7 @@ export default function EventPage() {
   // Show login required state for unauthenticated users
   if (!session?.isAuthenticated) {
     return (
-      <div className="w-full h-screen bg-black relative overflow-hidden">
+      <div className="w-full min-h-screen bg-black relative overflow-y-auto overflow-x-hidden">
         <PhaseNavigation currentPhase="event" />
         
         <div className="h-full pt-20 flex flex-col items-center justify-center text-center px-8">
