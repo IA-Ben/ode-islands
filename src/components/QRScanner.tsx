@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import jsQR from 'jsqr';
 
 interface QRScanResult {
   text: string;
@@ -26,6 +27,9 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
   const [isInitialized, setIsInitialized] = useState(false);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasFlashlight, setHasFlashlight] = useState(false);
+  const [isFlashlightOn, setIsFlashlightOn] = useState(false);
+  const [detectionCount, setDetectionCount] = useState(0);
 
   // Initialize camera when scanner opens
   useEffect(() => {
@@ -58,6 +62,7 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
         
         videoRef.current.onloadedmetadata = () => {
           setIsInitialized(true);
+          checkFlashlightSupport();
           startScanning();
         };
       }
@@ -110,40 +115,122 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
     // Draw current video frame to canvas
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
+    setDetectionCount(prev => prev + 1);
+
     try {
       // Get image data from canvas
       const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
       
-      // Simple QR detection (this is a basic implementation)
-      // In production, use a library like jsQR: 
-      // const code = jsQR(imageData.data, imageData.width, imageData.height);
-      
-      // For now, we'll simulate QR detection for development
-      // TODO: Integrate proper QR scanning library
-      const mockQRDetection = detectMockQR(imageData);
-      
-      if (mockQRDetection) {
-        stopScanning();
-        onResult({
-          text: mockQRDetection,
-          format: 'QR_CODE'
-        });
+      // Try BarcodeDetector API first (Chrome/Edge)
+      if ('BarcodeDetector' in window) {
+        detectWithBarcodeAPI(imageData, canvas);
+      } else {
+        // Fallback to jsQR
+        detectWithJsQR(imageData);
       }
     } catch (err) {
       console.error('QR scanning error:', err);
     }
   }, [onResult, stopScanning]);
 
-  // Mock QR detection for development (replace with real QR library)
-  const detectMockQR = (imageData: ImageData): string | null => {
-    // This is just a placeholder - in production, use jsQR or similar
-    // For demo purposes, let's simulate finding a QR code occasionally
-    const random = Math.random();
-    if (random < 0.01) { // 1% chance per scan
-      return `E:ode-islands|C:chapter-1|S:001|V:1|H:abc123`;
+  // Use BarcodeDetector API (Chrome/Edge)
+  const detectWithBarcodeAPI = async (imageData: ImageData, canvas: HTMLCanvasElement) => {
+    try {
+      const detector = new (window as any).BarcodeDetector({ formats: ['qr_code'] });
+      const barcodes = await detector.detect(canvas);
+      
+      if (barcodes.length > 0) {
+        const barcode = barcodes[0];
+        if (validateQRCode(barcode.rawValue)) {
+          stopScanning();
+          onResult({
+            text: barcode.rawValue,
+            format: barcode.format
+          });
+        }
+      }
+    } catch (err) {
+      console.error('BarcodeDetector error:', err);
+      // Fallback to jsQR
+      detectWithJsQR(imageData);
     }
-    return null;
   };
+
+  // Use jsQR as fallback
+  const detectWithJsQR = (imageData: ImageData) => {
+    try {
+      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+        inversionAttempts: 'dontInvert'
+      });
+      
+      if (code && validateQRCode(code.data)) {
+        stopScanning();
+        onResult({
+          text: code.data,
+          format: 'QR_CODE'
+        });
+      }
+    } catch (err) {
+      console.error('jsQR error:', err);
+    }
+  };
+
+  // Validate QR code format and offline verification
+  const validateQRCode = (qrData: string): boolean => {
+    try {
+      // Basic format validation: E:<eventShort>|C:<chapter>|S:<seq>|V:1|H:<crc>
+      if (!qrData.startsWith('E:') || !qrData.includes('|C:')) {
+        return false;
+      }
+
+      const parts = qrData.split('|');
+      const eventPart = parts.find(p => p.startsWith('E:'))?.substring(2);
+      const chapterPart = parts.find(p => p.startsWith('C:'))?.substring(2);
+      const seqPart = parts.find(p => p.startsWith('S:'))?.substring(2);
+      const versionPart = parts.find(p => p.startsWith('V:'))?.substring(2);
+      const hashPart = parts.find(p => p.startsWith('H:'))?.substring(2);
+
+      // Validate required parts
+      if (!eventPart || !chapterPart || !seqPart || !versionPart || !hashPart) {
+        return false;
+      }
+
+      // TODO: Add offline dictionary validation and CRC checking
+      // For now, accept well-formatted codes
+      console.log('Valid QR detected:', { eventPart, chapterPart, seqPart });
+      return true;
+    } catch (error) {
+      console.error('QR validation error:', error);
+      return false;
+    }
+  };
+
+  // Toggle flashlight (torch) if supported
+  const toggleFlashlight = useCallback(async () => {
+    if (!streamRef.current || !hasFlashlight) return;
+
+    try {
+      const track = streamRef.current.getVideoTracks()[0];
+      if (track && 'torch' in track.getCapabilities()) {
+        await track.applyConstraints({
+          advanced: [{ torch: !isFlashlightOn }]
+        });
+        setIsFlashlightOn(!isFlashlightOn);
+      }
+    } catch (err) {
+      console.error('Flashlight toggle error:', err);
+    }
+  }, [hasFlashlight, isFlashlightOn]);
+
+  // Check for flashlight support
+  const checkFlashlightSupport = useCallback(() => {
+    if (streamRef.current) {
+      const track = streamRef.current.getVideoTracks()[0];
+      if (track && 'torch' in track.getCapabilities()) {
+        setHasFlashlight(true);
+      }
+    }
+  }, []);
 
   // Cleanup camera and scanning
   const cleanup = useCallback(() => {
@@ -258,6 +345,11 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
                 <p className="text-xs text-white/60">
                   Look for QR codes next to chapter titles on stage
                 </p>
+                {detectionCount > 0 && (
+                  <p className="text-xs text-white/40 mt-1">
+                    Scans: {detectionCount}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -275,18 +367,19 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
             </Button>
             
             {/* Flashlight toggle (if supported) */}
-            <Button
-              variant="outline"
-              onClick={() => {
-                // TODO: Implement flashlight toggle
-                console.log('Toggle flashlight');
-              }}
-              className="border-white/40 text-white hover:bg-white/20"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            </Button>
+            {hasFlashlight && (
+              <Button
+                variant="outline"
+                onClick={toggleFlashlight}
+                className={`border-white/40 text-white hover:bg-white/20 ${
+                  isFlashlightOn ? 'bg-white/20' : ''
+                }`}
+              >
+                <svg className="w-5 h-5" fill={isFlashlightOn ? 'currentColor' : 'none'} stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+              </Button>
+            )}
           </div>
         </div>
       </div>
