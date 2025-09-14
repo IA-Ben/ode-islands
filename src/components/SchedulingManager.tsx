@@ -804,9 +804,10 @@ export default function SchedulingManager() {
                       onChange={(e) => setNewSchedule({ ...newSchedule, targetAudience: e.target.value })}
                       className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 transition-all duration-300 font-medium font-mono text-sm"
                       rows={4}
-                  placeholder='{"userType": "all"} or {"completedChapters": ["chapter-1"]}'
-                />
-              </div>
+                      placeholder='{"userType": "all"} or {"completedChapters": ["chapter-1"]}'
+                    />
+                  </div>
+                </div>
 
                 {/* Action Buttons */}
                 <div className="border-t border-slate-200 pt-8">
@@ -841,8 +842,8 @@ export default function SchedulingManager() {
                 </div>
               </div>
             </Card>
-        </div>
-      )}
+          </div>
+        )}
 
         {/* Schedule Details Modal */}
         {selectedSchedule && (
