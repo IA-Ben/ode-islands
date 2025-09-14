@@ -217,9 +217,14 @@ export const ImmersivePageLayout: React.FC<ImmersivePageLayoutProps> = ({
       {/* Main Content */}
       <div
         className={`relative flex flex-col px-6 text-center pb-16 sm:pb-0 z-10 ${
-          centerContent ? 'items-center justify-center min-h-screen' : 'items-start justify-start pt-20'
+          centerContent ? 'items-center' : 'items-start justify-start pt-20'
         }`}
-        style={{ mixBlendMode: theme?.mix as React.CSSProperties['mixBlendMode'] || undefined }}
+        style={{ 
+          mixBlendMode: theme?.mix as React.CSSProperties['mixBlendMode'] || undefined,
+          minHeight: centerContent && showHeader ? 'calc(100dvh - 6rem)' : centerContent ? '100dvh' : 'auto',
+          justifyContent: centerContent ? 'center' : 'flex-start',
+          marginTop: centerContent && showHeader ? '6rem' : '0'
+        }}
       >
         {/* Typography Section */}
         {(title || subtitle || description) && (
