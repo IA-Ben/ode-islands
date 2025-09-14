@@ -149,15 +149,15 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
 
   // Navigation items
   const navigationItems = [
-    { id: 'overview', label: 'Event Overview', icon: '🏠', description: 'View and manage events' },
-    { id: 'polls', label: 'Live Polls', icon: '📊', description: 'Interactive polling', disabled: !selectedEvent },
-    { id: 'qa', label: 'Q&A Session', icon: '❓', description: 'Questions & answers', disabled: !selectedEvent },
-    { id: 'chat', label: 'Live Chat', icon: '💬', description: 'Real-time messaging', disabled: !selectedEvent },
-    { id: 'timeline', label: 'Event Timeline', icon: '⏰', description: 'Scheduled content', disabled: !selectedEvent },
+    { id: 'overview', label: 'Overview', description: 'Event management and status' },
+    { id: 'polls', label: 'Live Polls', description: 'Interactive audience polling', disabled: !selectedEvent },
+    { id: 'qa', label: 'Q&A Session', description: 'Questions and answers', disabled: !selectedEvent },
+    { id: 'chat', label: 'Live Chat', description: 'Real-time messaging', disabled: !selectedEvent },
+    { id: 'timeline', label: 'Timeline', description: 'Scheduled activities', disabled: !selectedEvent },
   ];
 
   if (session.isAdmin) {
-    navigationItems.push({ id: 'create', label: 'Create Event', icon: '➕', description: 'Add new event' });
+    navigationItems.push({ id: 'create', label: 'Create Event', description: 'Add new event' });
   }
 
   return (
@@ -170,70 +170,81 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
         }}
       />
       
-      <div className="container mx-auto px-4 relative z-10">
+      <div className="container mx-auto px-6 relative z-10 max-w-7xl">
         {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-12">
+          <div className="flex items-center justify-between mb-6">
             <div>
               <h1 
-                className="text-4xl font-bold mb-2"
+                className="text-5xl font-bold mb-3 tracking-tight"
                 style={{ color: theme.colors.primary }}
               >
-                Live Event Dashboard
+                Event Dashboard
               </h1>
-              <p className="text-white/60">
-                {activeEvents.length > 0 
-                  ? `${activeEvents.length} active event${activeEvents.length !== 1 ? 's' : ''} running`
-                  : 'No active events'
-                }
-              </p>
+              <div className="flex items-center gap-4">
+                <p className="text-white/70 text-lg">
+                  {activeEvents.length > 0 
+                    ? `${activeEvents.length} active event${activeEvents.length !== 1 ? 's' : ''}`
+                    : 'No active events'
+                  }
+                </p>
+                {activeEvents.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                    <span className="text-green-400 font-medium text-sm uppercase tracking-wide">Live</span>
+                  </div>
+                )}
+              </div>
             </div>
             
-            <div className="flex items-center gap-3">
-              {/* Real-time toggle */}
-              <Button
-                variant={realTimeEnabled ? "default" : "outline"}
-                size="sm"
-                onClick={() => setRealTimeEnabled(!realTimeEnabled)}
-                className="text-xs"
-              >
-                <span className={`w-2 h-2 rounded-full mr-2 ${realTimeEnabled ? 'bg-green-400' : 'bg-gray-400'}`}></span>
-                {realTimeEnabled ? 'Live' : 'Paused'}
-              </Button>
-              
-              {/* Manual refresh */}
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onEventsUpdate}
-                className="text-xs"
-              >
-                🔄 Refresh
-              </Button>
+            <div className="flex items-center gap-4">
+              {/* Real-time status */}
+              <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/10">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setRealTimeEnabled(!realTimeEnabled)}
+                  className={`text-sm font-medium ${realTimeEnabled ? 'text-green-400' : 'text-white/60'} hover:bg-white/10`}
+                >
+                  <span className={`w-2 h-2 rounded-full mr-2 ${realTimeEnabled ? 'bg-green-400 animate-pulse' : 'bg-white/40'}`}></span>
+                  {realTimeEnabled ? 'Live Updates' : 'Paused'}
+                </Button>
+                
+                <div className="w-px h-4 bg-white/20"></div>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onEventsUpdate}
+                  className="text-sm font-medium text-white/60 hover:text-white hover:bg-white/10"
+                >
+                  Refresh
+                </Button>
+              </div>
             </div>
           </div>
 
           {/* Event selector for non-overview views */}
           {activeView !== 'overview' && activeView !== 'create' && selectedEvent && (
-            <Card className="bg-white/5 border-white/10 backdrop-blur-sm mb-6">
-              <CardContent className="p-4">
+            <Card className="bg-white/5 border-white/10 backdrop-blur-sm mb-8">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold text-white">{selectedEvent.title}</h3>
-                    <p className="text-white/60 text-sm">
-                      {new Date(selectedEvent.startTime).toLocaleString()} - {new Date(selectedEvent.endTime).toLocaleString()}
+                  <div className="flex-1">
+                    <h3 className="font-bold text-white text-xl mb-2">{selectedEvent.title}</h3>
+                    <p className="text-white/60">
+                      {new Date(selectedEvent.startTime).toLocaleDateString()} • {new Date(selectedEvent.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })} - {new Date(selectedEvent.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span 
-                      className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className={`px-4 py-2 rounded-lg font-medium text-sm uppercase tracking-wide ${
                         selectedEvent.isActive 
                           ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
-                          : 'bg-gray-500/20 text-gray-400 border border-gray-500/30'
+                          : 'bg-white/10 text-white/60 border border-white/20'
                       }`}
                     >
-                      {selectedEvent.isActive ? '🟢 Active' : '⚪ Inactive'}
-                    </span>
+                      {selectedEvent.isActive ? 'Live' : 'Inactive'}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -242,23 +253,24 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
         </div>
 
         {/* Navigation */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-2">
+        <div className="mb-12">
+          <div className="flex flex-wrap gap-3">
             {navigationItems.map((item) => (
               <Button
                 key={item.id}
-                variant={activeView === item.id ? "default" : "outline"}
+                variant="ghost"
                 onClick={() => setActiveView(item.id as ViewMode)}
                 disabled={item.disabled}
-                className={`flex items-center gap-2 ${
+                className={`px-6 py-3 rounded-lg font-medium transition-all ${
                   activeView === item.id 
-                    ? 'bg-white/10 text-white border-white/20' 
-                    : 'bg-transparent text-white/70 border-white/10 hover:bg-white/5'
-                }`}
+                    ? 'bg-white/15 text-white border border-white/20 shadow-lg' 
+                    : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white'
+                } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
-                <span>{item.icon}</span>
-                <span className="hidden sm:inline">{item.label}</span>
-                <span className="sm:hidden">{item.icon}</span>
+                <div className="flex flex-col items-center gap-1">
+                  <span className="font-semibold">{item.label}</span>
+                  <span className="text-xs opacity-70">{item.description}</span>
+                </div>
               </Button>
             ))}
           </div>
@@ -267,12 +279,17 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
         {/* Main content area */}
         <div className="min-h-[60vh]">
           {activeView === 'overview' && (
-            <div className="space-y-8">
+            <div className="space-y-12">
               {/* Active Events */}
               {activeEvents.length > 0 && (
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4 text-white">Active Events</h2>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <section>
+                  <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-3xl font-bold text-white">Active Events</h2>
+                    <div className="text-white/60">
+                      {activeEvents.length} event{activeEvents.length !== 1 ? 's' : ''} live
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                     {activeEvents.map(event => (
                       <LiveEventCard
                         key={event.id}
@@ -286,14 +303,19 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
                       />
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* Upcoming Events */}
               {upcomingEvents.length > 0 && (
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4 text-white">Upcoming Events</h2>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <section>
+                  <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-3xl font-bold text-white">Upcoming Events</h2>
+                    <div className="text-white/60">
+                      {upcomingEvents.length} event{upcomingEvents.length !== 1 ? 's' : ''} scheduled
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                     {upcomingEvents.map(event => (
                       <LiveEventCard
                         key={event.id}
@@ -307,38 +329,48 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
                       />
                     ))}
                   </div>
-                </div>
+                </section>
               )}
 
               {/* No events message */}
               {events.length === 0 && (
                 <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-                  <CardContent className="p-8 text-center">
-                    <div className="text-4xl mb-4">📅</div>
-                    <h3 className="text-xl font-semibold mb-2 text-white">No Events Available</h3>
-                    <p className="text-white/60 mb-4">
-                      {session.isAdmin 
-                        ? 'Create your first event to get started with live interactions.'
-                        : 'There are currently no events scheduled.'
-                      }
-                    </p>
-                    {session.isAdmin && (
-                      <Button
-                        onClick={() => setActiveView('create')}
-                        style={{ backgroundColor: theme.colors.primary, color: theme.colors.background }}
-                      >
-                        Create First Event
-                      </Button>
-                    )}
+                  <CardContent className="px-12 py-16 text-center">
+                    <div className="max-w-md mx-auto">
+                      <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white/10 flex items-center justify-center">
+                        <div className="w-8 h-8 border-2 border-white/40 rounded-md"></div>
+                      </div>
+                      <h3 className="text-2xl font-bold mb-4 text-white">No Events Available</h3>
+                      <p className="text-white/60 text-lg mb-8 leading-relaxed">
+                        {session.isAdmin 
+                          ? 'Create your first event to get started with live interactions and real-time engagement.'
+                          : 'There are currently no events scheduled. Check back soon for upcoming live events.'
+                        }
+                      </p>
+                      {session.isAdmin && (
+                        <Button
+                          onClick={() => setActiveView('create')}
+                          style={{ backgroundColor: theme.colors.primary, color: theme.colors.background }}
+                          className="px-8 py-3 font-semibold text-lg"
+                        >
+                          Create First Event
+                        </Button>
+                      )}
+                    </div>
                   </CardContent>
                 </Card>
               )}
 
               {/* Recent Events */}
               {pastEvents.length > 0 && (
-                <div>
-                  <h2 className="text-2xl font-semibold mb-4 text-white">Recent Events</h2>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                <section>
+                  <div className="flex items-center justify-between mb-8">
+                    <h2 className="text-3xl font-bold text-white">Recent Events</h2>
+                    <div className="text-white/60">
+                      {pastEvents.length} event{pastEvents.length !== 1 ? 's' : ''} completed
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
                     {pastEvents.slice(0, 6).map(event => (
                       <LiveEventCard
                         key={event.id}
@@ -351,7 +383,7 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
                       />
                     ))}
                   </div>
-                </div>
+                </section>
               )}
             </div>
           )}

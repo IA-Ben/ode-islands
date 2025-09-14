@@ -235,25 +235,32 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-12">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-2">Live Polling</h2>
-          <p className="text-white/60">
-            {livePolls.length > 0 
-              ? `${livePolls.length} active poll${livePolls.length !== 1 ? 's' : ''}`
-              : 'No active polls'
-            }
-          </p>
+          <h1 className="text-4xl font-bold text-white mb-3">Live Polling</h1>
+          <div className="flex items-center gap-4">
+            <p className="text-white/70 text-lg">
+              {livePolls.length > 0 
+                ? `${livePolls.length} active poll${livePolls.length !== 1 ? 's' : ''}`
+                : 'No active polls'
+              }
+            </p>
+            {livePolls.length > 0 && (
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                <span className="text-green-400 font-medium text-sm uppercase tracking-wide">Live</span>
+              </div>
+            )}
+          </div>
         </div>
         
         {session.isAdmin && (
           <Button
             onClick={() => setShowCreateForm(true)}
             style={{ backgroundColor: theme.colors.primary, color: theme.colors.background }}
-            className="flex items-center gap-2"
+            className="px-6 py-3 font-semibold"
           >
-            <span>📊</span>
-            Create Poll
+            Create New Poll
           </Button>
         )}
       </div>
@@ -287,8 +294,10 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
       {livePolls.length === 0 && !showCreateForm ? (
         <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
           <CardContent className="p-8 text-center">
-            <div className="text-4xl mb-4">📊</div>
-            <h3 className="text-xl font-semibold mb-2 text-white">No Active Polls</h3>
+            <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white/10 flex items-center justify-center">
+              <div className="w-8 h-8 border-2 border-white/40 rounded border-dashed"></div>
+            </div>
+            <h3 className="text-2xl font-bold mb-4 text-white">No Active Polls</h3>
             <p className="text-white/60 mb-4">
               {session.isAdmin 
                 ? 'Create a live poll to engage your audience during the event.'
@@ -309,7 +318,7 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Poll list */}
           <div className="lg:col-span-1 space-y-4">
-            <h3 className="text-lg font-medium text-white">Active Polls</h3>
+            <h2 className="text-2xl font-bold text-white mb-6">Active Polls</h2>
             {livePolls.map(poll => (
               <Card
                 key={poll.id}
@@ -318,13 +327,16 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
                 }`}
                 onClick={() => setActivePoll(poll)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h4 className="font-medium text-white text-sm line-clamp-2">{poll.question}</h4>
-                    <span className="text-green-400 text-xs ml-2">🟢 Live</span>
+                <CardContent className="p-5">
+                  <div className="flex items-start justify-between mb-3">
+                    <h3 className="font-semibold text-white text-base line-clamp-2 leading-relaxed">{poll.question}</h3>
+                    <div className="flex items-center gap-1 ml-3">
+                      <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                      <span className="text-green-400 text-xs font-medium uppercase tracking-wide">Live</span>
+                    </div>
                   </div>
-                  <div className="text-white/60 text-xs">
-                    {poll.pollType} • {new Date(poll.createdAt).toLocaleTimeString()}
+                  <div className="text-white/60 text-sm">
+                    {poll.pollType.charAt(0).toUpperCase() + poll.pollType.slice(1)} • {new Date(poll.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </div>
                 </CardContent>
               </Card>
@@ -335,12 +347,15 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
           <div className="lg:col-span-2">
             {activePoll ? (
               <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="text-white text-xl">{activePoll.question}</CardTitle>
-                    <div className="flex items-center gap-2">
-                      <span className="text-green-400 text-sm">🟢 Live</span>
-                      <span className="text-white/60 text-sm">{totalResponses} responses</span>
+                <CardHeader className="pb-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <CardTitle className="text-white text-2xl font-bold leading-relaxed">{activePoll.question}</CardTitle>
+                    <div className="flex items-center gap-4 ml-4">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+                        <span className="text-green-400 text-sm font-semibold uppercase tracking-wide">Live</span>
+                      </div>
+                      <div className="text-white/70 font-medium">{totalResponses} responses</div>
                     </div>
                   </div>
                 </CardHeader>

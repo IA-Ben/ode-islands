@@ -332,21 +332,26 @@ export default function QAManagement({ event, session, theme }: QAManagementProp
       {/* Questions list */}
       {filteredQuestions.length === 0 ? (
         <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-          <CardContent className="p-8 text-center">
-            <div className="text-4xl mb-4">❓</div>
-            <h3 className="text-xl font-semibold mb-2 text-white">No Questions</h3>
-            <p className="text-white/60 mb-4">
-              {filter === 'all' 
-                ? 'Be the first to ask a question during this event.'
-                : `No ${filter} questions found.`
-              }
-            </p>
-            <Button
-              onClick={() => setShowSubmitForm(true)}
-              style={{ backgroundColor: theme.colors.primary, color: theme.colors.background }}
-            >
-              Ask First Question
-            </Button>
+          <CardContent className="px-12 py-16 text-center">
+            <div className="max-w-md mx-auto">
+              <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white/10 flex items-center justify-center">
+                <div className="w-8 h-8 border-2 border-white/40 rounded-full"></div>
+              </div>
+              <h3 className="text-2xl font-bold mb-4 text-white">No Questions</h3>
+              <p className="text-white/60 text-lg mb-8 leading-relaxed">
+                {filter === 'all' 
+                  ? 'Be the first to ask a question during this event. Your questions help drive the conversation.'
+                  : `No ${filter} questions found. Try adjusting your filter or ask a new question.`
+                }
+              </p>
+              <Button
+                onClick={() => setShowSubmitForm(true)}
+                style={{ backgroundColor: theme.colors.primary, color: theme.colors.background }}
+                className="px-8 py-3 font-semibold text-lg"
+              >
+                Ask First Question
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (

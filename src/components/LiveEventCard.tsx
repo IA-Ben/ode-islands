@@ -63,56 +63,65 @@ export default function LiveEventCard({
 
   return (
     <Card 
-      className={`bg-white/5 border backdrop-blur-sm transition-all duration-300 hover:bg-white/10 cursor-pointer ${
+      className={`bg-white/5 border backdrop-blur-sm transition-all duration-300 hover:bg-white/8 cursor-pointer group ${
         isSelected 
-          ? 'border-white/30 ring-2 ring-white/20' 
-          : 'border-white/10 hover:border-white/20'
+          ? 'border-white/30 ring-2 ring-white/15 shadow-lg' 
+          : 'border-white/10 hover:border-white/25'
       }`}
       onClick={onSelect}
     >
-      <CardHeader className="pb-2">
-        <div className="flex items-start justify-between">
-          <CardTitle className="text-white text-lg line-clamp-2">
+      <CardHeader className="pb-4">
+        <div className="flex items-start justify-between mb-3">
+          <CardTitle className="text-white text-xl font-bold line-clamp-2 group-hover:text-white/90 transition-colors">
             {event.title}
           </CardTitle>
-          <span 
-            className={`px-2 py-1 rounded-full text-xs font-medium border ${statusInfo.color} ${statusInfo.bgColor} ${statusInfo.borderColor} whitespace-nowrap ml-2`}
+          <div 
+            className={`px-3 py-1 rounded-lg text-xs font-semibold uppercase tracking-wide ${statusInfo.color} ${statusInfo.bgColor} ${statusInfo.borderColor} border whitespace-nowrap ml-3`}
           >
             {statusInfo.status}
-          </span>
+          </div>
         </div>
       </CardHeader>
       
       <CardContent className="pt-0">
         {/* Description */}
         {event.description && (
-          <p className="text-white/60 text-sm mb-4 line-clamp-3">
+          <p className="text-white/70 text-base mb-6 line-clamp-3 leading-relaxed">
             {event.description}
           </p>
         )}
 
         {/* Event timing */}
-        <div className="space-y-2 mb-4">
-          <div className="flex items-center text-sm text-white/60">
-            <span className="mr-2">🗓️</span>
-            <span>Starts: {formatDate(event.startTime)}</span>
+        <div className="space-y-3 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-white/40 rounded-full mr-3"></div>
+              <span className="text-white/60 text-sm font-medium">Start Time</span>
+            </div>
+            <span className="text-white font-semibold">{formatDate(event.startTime)}</span>
           </div>
-          <div className="flex items-center text-sm text-white/60">
-            <span className="mr-2">⏰</span>
-            <span>Duration: {duration}h</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <div className="w-2 h-2 bg-white/40 rounded-full mr-3"></div>
+              <span className="text-white/60 text-sm font-medium">Duration</span>
+            </div>
+            <span className="text-white font-semibold">{duration}h</span>
           </div>
         </div>
 
         {/* Progress bar for active events */}
         {event.isActive && (
-          <div className="mb-4">
-            <div className="flex justify-between text-xs text-white/60 mb-1">
-              <span>Event Progress</span>
-              <span>Live</span>
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-3">
+              <span className="text-white/70 font-medium">Event Progress</span>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-green-400 font-semibold text-sm uppercase tracking-wide">Live</span>
+              </div>
             </div>
-            <div className="w-full bg-white/10 rounded-full h-2">
+            <div className="w-full bg-white/10 rounded-full h-3 shadow-inner">
               <div 
-                className="h-2 rounded-full"
+                className="h-3 rounded-full transition-all duration-1000 ease-out shadow-sm"
                 style={{ 
                   backgroundColor: theme.colors.primary,
                   width: (() => {
@@ -130,7 +139,7 @@ export default function LiveEventCard({
 
         {/* Action buttons for admins */}
         {isAdmin && !isPastEvent && (
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-3 mt-6">
             {!event.isActive && onActivate && (
               <Button
                 size="sm"
@@ -138,9 +147,9 @@ export default function LiveEventCard({
                   e.stopPropagation();
                   onActivate();
                 }}
-                className="bg-green-600 hover:bg-green-700 text-white border-0 text-xs flex-1"
+                className="bg-green-500 hover:bg-green-600 text-white border-0 font-semibold flex-1 py-2"
               >
-                🟢 Activate
+                Activate Event
               </Button>
             )}
             
@@ -152,9 +161,9 @@ export default function LiveEventCard({
                   e.stopPropagation();
                   onDeactivate();
                 }}
-                className="border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs flex-1"
+                className="border-red-500/40 text-red-400 hover:bg-red-500/10 hover:border-red-500/60 font-semibold flex-1 py-2"
               >
-                ⏹️ Stop
+                Stop Event
               </Button>
             )}
           </div>
@@ -162,26 +171,37 @@ export default function LiveEventCard({
 
         {/* Participant action buttons */}
         {!isAdmin && event.isActive && (
-          <div className="flex gap-2 mt-4">
+          <div className="flex gap-3 mt-6">
             <Button
               size="sm"
               style={{ backgroundColor: theme.colors.primary, color: theme.colors.background }}
-              className="text-xs flex-1"
+              className="font-semibold flex-1 py-2"
               onClick={(e) => {
                 e.stopPropagation();
                 onSelect();
               }}
             >
-              Join Event
+              Join Live Event
             </Button>
           </div>
         )}
 
-        {/* Event stats preview */}
-        <div className="flex justify-between text-xs text-white/40 mt-4 pt-3 border-t border-white/10">
-          <span>📊 Interactive</span>
-          <span>💬 Q&A Ready</span>
-          <span>🎯 Live Polls</span>
+        {/* Event features preview */}
+        <div className="flex justify-between items-center mt-6 pt-4 border-t border-white/10">
+          <div className="flex items-center gap-4 text-xs text-white/60">
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-blue-400 rounded-full"></div>
+              <span className="font-medium">Interactive</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full"></div>
+              <span className="font-medium">Q&A</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <div className="w-1.5 h-1.5 bg-purple-400 rounded-full"></div>
+              <span className="font-medium">Polls</span>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

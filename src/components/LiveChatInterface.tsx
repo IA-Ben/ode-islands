@@ -297,33 +297,37 @@ export default function LiveChatInterface({ event, session, theme }: LiveChatInt
   return (
     <div className="space-y-6 h-full">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-2xl font-bold text-white mb-2">Live Chat</h2>
-          <p className="text-white/60">
-            {messages.length > 0 
-              ? `${messages.length} message${messages.length !== 1 ? 's' : ''} • Live updates`
-              : 'No messages yet • Be the first to chat!'
-            }
-          </p>
+          <h1 className="text-4xl font-bold text-white mb-3">Live Chat</h1>
+          <div className="flex items-center gap-4">
+            <p className="text-white/70 text-lg">
+              {messages.length > 0 
+                ? `${messages.length} message${messages.length !== 1 ? 's' : ''}`
+                : 'No messages yet'
+              }
+            </p>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></div>
+              <span className="text-green-400 font-medium text-sm uppercase tracking-wide">Live Updates</span>
+            </div>
+          </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          {/* Live indicator */}
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
-            <span className="text-green-400 text-sm">Live</span>
-          </div>
-
+        <div className="flex items-center gap-4">
           {/* Admin moderation toggle */}
           {isUserAdmin && (
             <Button
               size="sm"
               variant={showModerationPanel ? "default" : "outline"}
               onClick={() => setShowModerationPanel(!showModerationPanel)}
-              className="text-xs"
+              className={`px-4 py-2 font-medium ${
+                showModerationPanel
+                  ? 'bg-white/15 text-white border-white/20'
+                  : 'bg-white/5 text-white/70 border-white/10 hover:bg-white/10'
+              }`}
             >
-              🛡️ Moderation
+              Moderation Panel
             </Button>
           )}
         </div>
@@ -351,20 +355,23 @@ export default function LiveChatInterface({ event, session, theme }: LiveChatInt
         {/* Messages area */}
         <div className={`${showModerationPanel && session.isAdmin ? 'lg:col-span-3' : 'lg:col-span-4'}`}>
           <Card className="bg-white/5 border-white/10 backdrop-blur-sm h-full flex flex-col">
-            <CardHeader className="flex-none">
-              <CardTitle className="text-white text-lg">
-                Chat for {event.title}
+            <CardHeader className="flex-none pb-4">
+              <CardTitle className="text-white text-xl font-bold">
+                {event.title}
               </CardTitle>
+              <p className="text-white/60 mt-1">Live Discussion</p>
             </CardHeader>
             
             <CardContent className="flex-1 flex flex-col p-4">
               {/* Messages list */}
               <div className="flex-1 overflow-y-auto mb-4 space-y-3 max-h-[50vh]">
                 {messages.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="text-4xl mb-4">💬</div>
-                    <h3 className="text-lg font-semibold mb-2 text-white">No messages yet</h3>
-                    <p className="text-white/60">Start the conversation during this live event!</p>
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-white/10 flex items-center justify-center">
+                      <div className="w-8 h-8 border-2 border-white/40 rounded-full border-dashed"></div>
+                    </div>
+                    <h3 className="text-xl font-bold mb-3 text-white">No messages yet</h3>
+                    <p className="text-white/60 text-lg">Start the conversation during this live event!</p>
                   </div>
                 ) : (
                   messages.map((message) => (

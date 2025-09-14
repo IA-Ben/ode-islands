@@ -116,17 +116,17 @@ export default function EventCreationForm({ onEventCreated, onCancel, theme }: E
   const defaultTimes = getDefaultTimes();
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div className="max-w-5xl mx-auto">
       <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle style={{ color: theme.colors.primary }}>Create New Event</CardTitle>
-          <p className="text-white/60">
-            Set up a new live event with interactive features for your audience.
+        <CardHeader className="pb-8">
+          <CardTitle className="text-3xl font-bold" style={{ color: theme.colors.primary }}>Create New Event</CardTitle>
+          <p className="text-white/70 text-lg mt-3">
+            Set up a new live event with interactive features and real-time engagement for your audience.
           </p>
         </CardHeader>
         
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <CardContent className="px-8 pb-8">
+          <form onSubmit={handleSubmit} className="space-y-8">
             {/* Error display */}
             {error && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4">
@@ -135,11 +135,11 @@ export default function EventCreationForm({ onEventCreated, onCancel, theme }: E
             )}
 
             {/* Basic event details */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {/* Left column */}
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <div>
-                  <label className="block text-white text-sm font-medium mb-2">
+                  <label className="block text-white text-base font-semibold mb-3">
                     Event Title *
                   </label>
                   <input
@@ -147,7 +147,7 @@ export default function EventCreationForm({ onEventCreated, onCancel, theme }: E
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     required
-                    className="w-full px-3 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/15"
+                    className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-white/50 focus:outline-none focus:border-white/40 focus:bg-white/15 text-lg transition-all"
                     placeholder="Enter event title..."
                   />
                 </div>
@@ -212,18 +212,18 @@ export default function EventCreationForm({ onEventCreated, onCancel, theme }: E
 
             {/* Event features */}
             <div>
-              <h3 className="text-white text-lg font-medium mb-4">Event Features</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between p-4 bg-white/5 rounded-lg border border-white/10">
-                  <div>
-                    <div className="text-white font-medium">Live Polls</div>
-                    <div className="text-white/60 text-sm">Enable interactive polling during the event</div>
+              <h3 className="text-white text-2xl font-bold mb-6">Event Features</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="flex items-center justify-between p-6 bg-white/8 rounded-lg border border-white/20 hover:bg-white/12 transition-all">
+                  <div className="flex-1">
+                    <div className="text-white font-semibold text-lg">Live Polls</div>
+                    <div className="text-white/70 mt-1">Enable interactive polling during the event</div>
                   </div>
                   <input
                     type="checkbox"
                     checked={formData.settings.allowPolls}
                     onChange={(e) => handleSettingsChange('allowPolls', e.target.checked)}
-                    className="w-4 h-4 rounded"
+                    className="w-5 h-5 rounded"
                   />
                 </div>
 
@@ -269,13 +269,13 @@ export default function EventCreationForm({ onEventCreated, onCancel, theme }: E
             </div>
 
             {/* Form actions */}
-            <div className="flex gap-4 pt-6 border-t border-white/10">
+            <div className="flex gap-6 pt-8 border-t border-white/10">
               <Button
                 type="button"
                 variant="outline"
                 onClick={onCancel}
                 disabled={isSubmitting}
-                className="border-white/20 text-white/70 hover:bg-white/5"
+                className="px-8 py-3 border-white/30 text-white/80 hover:bg-white/10 font-semibold text-lg"
               >
                 Cancel
               </Button>
@@ -288,18 +288,15 @@ export default function EventCreationForm({ onEventCreated, onCancel, theme }: E
                   color: theme.colors.background,
                   opacity: (isSubmitting || !formData.title || !formData.startTime || !formData.endTime) ? 0.5 : 1
                 }}
-                className="flex items-center gap-2"
+                className="px-8 py-3 font-semibold text-lg flex items-center gap-3"
               >
                 {isSubmitting ? (
                   <>
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
-                    Creating...
+                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
+                    Creating Event...
                   </>
                 ) : (
-                  <>
-                    <span>✨</span>
-                    Create Event
-                  </>
+                  'Create Live Event'
                 )}
               </Button>
             </div>
