@@ -238,6 +238,12 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
     router.push('/auth/login');
   };
 
+  const handleBackToJourney = () => {
+    // Navigate back to the last accessed chapter or default to first chapter
+    const lastAccessedChapter = chapterProgress.find(ch => ch.lastAccessed)?.chapterId || 'chapter-1';
+    router.push(`/before/${lastAccessedChapter}`);
+  };
+
   if (!isAuthenticated) {
     return (
       <ImmersivePageLayout
@@ -422,7 +428,30 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
       showHeader={true}
       headerContent={
         <div className="flex items-center justify-between w-full">
-          <div className="text-left">
+          <div className="flex items-center space-x-4">
+            {/* Back to Journey Button */}
+            <button
+              onClick={handleBackToJourney}
+              className="group flex items-center space-x-3 bg-white/10 hover:bg-white/20 backdrop-blur-lg rounded-xl px-4 py-3 transition-all duration-300 transform hover:scale-105 border border-white/20 hover:border-white/30"
+              title="Return to your journey"
+            >
+              <div className="relative">
+                <svg className="w-5 h-5 text-white transition-transform duration-300 group-hover:-translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+              </div>
+              <div className="text-left">
+                <div className="text-white text-sm font-medium group-hover:text-white/90">
+                  Back to Journey
+                </div>
+                <div className="text-white/60 text-xs group-hover:text-white/70">
+                  Continue exploring
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <div className="text-center flex-1">
             <div className="text-white/80 text-sm font-medium mb-1">
               {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
@@ -435,6 +464,7 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
               Personal Progress Dashboard
             </div>
           </div>
+
           <div className="flex items-center space-x-4">
             <ScoreBadge 
               showLevel={true}
