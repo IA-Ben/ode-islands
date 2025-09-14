@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import PhaseNavigation from "@/components/PhaseNavigation";
 import { useTheme } from '@/contexts/ThemeContext';
 import EventDashboard from '@/components/EventDashboard';
+import EventAudienceInterface from '@/components/EventAudienceInterface';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -39,7 +40,7 @@ export default function EventPage() {
   const [error, setError] = useState<string | null>(null);
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [session, setSession] = useState<SessionData | null>(null);
-  const [activeView, setActiveView] = useState<'dashboard' | 'loading'>('loading');
+  const [activeView, setActiveView] = useState<'audience' | 'dashboard' | 'loading'>('loading');
 
   // Fetch user session data
   const fetchSession = async () => {
@@ -109,13 +110,17 @@ export default function EventPage() {
       setLoading(true);
       const sessionData = await fetchSession();
       
-      // Only fetch events and CSRF token for authenticated users
-      if (sessionData.isAuthenticated) {
+      // Determine view based on user role
+      if (sessionData.isAuthenticated && sessionData.isAdmin) {
+        // Authenticated admin gets operator dashboard
         await Promise.all([
           fetchEvents(),
           fetchCSRFToken()
         ]);
         setActiveView('dashboard');
+      } else {
+        // Default to audience interface for everyone else (including unauthenticated)
+        setActiveView('audience');
       }
       
       setLoading(false);
@@ -181,54 +186,65 @@ export default function EventPage() {
     );
   }
 
-  // Show login required state for unauthenticated users
-  if (!session?.isAuthenticated) {
+  // Show audience interface
+  if (activeView === 'audience') {
     return (
-      <div className="w-full min-h-screen bg-black relative overflow-y-auto overflow-x-hidden">
+      <div className="w-full min-h-screen bg-black relative">
         <PhaseNavigation currentPhase="event" />
         
-        <div className="h-full pt-20 flex flex-col items-center justify-center text-center px-8">
-          <div 
-            className="absolute inset-0 opacity-20"
-            style={{
-              background: `radial-gradient(ellipse at center, ${theme.colors.primary}40 0%, transparent 50%)`
-            }}
-          />
-          
-          <div className="relative z-10 max-w-md">
-            <Card className="bg-white/5 border-white/10 backdrop-blur-sm">
-              <CardHeader>
-                <CardTitle style={{ color: theme.colors.primary }}>Authentication Required</CardTitle>
-              </CardHeader>
-              <CardContent className="text-center">
-                <p className="text-white/60 mb-6">
-                  Please log in to access the live event features and participate in real-time interactions.
-                </p>
-                <Button 
-                  onClick={() => window.location.href = '/auth/login'}
-                  style={{ backgroundColor: theme.colors.primary, color: theme.colors.background }}
-                >
-                  Go to Login
-                </Button>
-              </CardContent>
-            </Card>
+        <EventAudienceInterface
+          eventId="current-event" // TODO: Get from active event or URL params
+          userId={session?.userId || 'anonymous'}
+          theme={theme}
+        />
+        
+        {/* Admin access button (hidden, only for authenticated admins) */}
+        {session?.isAuthenticated && session?.isAdmin && (
+          <div className="fixed top-20 right-4 z-50">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                fetchEvents().then(() => setActiveView('dashboard'));
+              }}
+              className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs"
+            >
+              Operator Console
+            </Button>
           </div>
+        )}
+      </div>
+    );
+  }
+
+  // Show operator dashboard (admin only)
+  if (activeView === 'dashboard') {
+    return (
+      <div className="w-full min-h-screen bg-black relative">
+        <PhaseNavigation currentPhase="event" />
+        
+        <EventDashboard 
+          events={events}
+          session={session!}
+          onEventsUpdate={fetchEvents}
+          theme={theme}
+        />
+        
+        {/* Switch to audience view button */}
+        <div className="fixed top-20 right-4 z-50">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setActiveView('audience')}
+            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs"
+          >
+            Audience View
+          </Button>
         </div>
       </div>
     );
   }
 
-  // Show main event dashboard
-  return (
-    <div className="w-full min-h-screen bg-black relative">
-      <PhaseNavigation currentPhase="event" />
-      
-      <EventDashboard 
-        events={events}
-        session={session}
-        onEventsUpdate={fetchEvents}
-        theme={theme}
-      />
-    </div>
-  );
+  // This should never be reached, but just in case
+  return null;
 }

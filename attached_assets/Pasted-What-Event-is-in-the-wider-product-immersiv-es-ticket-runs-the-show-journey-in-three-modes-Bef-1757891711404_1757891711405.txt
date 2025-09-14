@@ -1,0 +1,63 @@
+What “Event” is (in the wider product)
+
+immersiv.es/ticket runs the show journey in three modes: Before → Event → After.
+
+A user’s ticket purchase (via partner deep-link/claim) creates an Active Event in the app with time, venue and unlock windows.
+
+Before primes story and mechanics; Event augments the live show in-room; After turns attendance into a memory and follow-on loop.
+
+How Event activates (tied to the ticket)
+
+After purchase, the user sees Before content and a countdown.
+
+On arrival, the app auto-switches to Event when the device hits the venue geofence or the Show QR is scanned at the door.
+
+This starts a Show Session (local timecode, offline cache ready). If signal drops, Event stays active and queues actions for sync.
+
+Event feature set (audience)
+
+Live Feed (Now/Next): quietly surfaces the current cue and the next one; dark, low-glow UI.
+
+Chapter QR scans: QRs by each chapter title; scan → Chapter Stamp in the Memory Wallet + optional micro-reward (frame/sticker). Works offline via a preloaded code list.
+
+Polls & votes: short, timed choices that may influence stage visuals (via webhook/OSC).
+
+Light tasks: seated-safe mini actions (e.g., hold steady, clap on beat) to “calm the storm”, yield tokens; no raw audio stored.
+
+Event AR (optional): 20-second, low-glow AR moments anchored to seat cards/stage placards (Dream Garden, Escape, Storm, Womb Room, Nors/Orans). Single-tap capture creates an AR postcard.
+
+Keystoned keepsake: on a designated cue, capture a themed still/clip; instantly added to wallet.
+
+Help & access: one-tap “I need assistance” routes to staff, with seat row if known, plus in-room FAQs.
+
+Event feature set (operators/artists)
+
+Operator console: start/stop session, timecode view, cue timeline, Spotlight push, poll control, broadcast message, AR enable/disable.
+
+Live counters: anonymous scans/min, poll turnout, task pass rate, help queue.
+
+Resilience: WebSocket heartbeat + graceful offline fallback; QR-only mode if needed.
+
+How Event links back to the ticket & wallet
+
+Every scan, vote, task, AR capture → tokens and stamps tied to the ticketed event.
+
+Tokens are visible immediately in the Memory Wallet and later fuse into a Memory Crystal (v2 occurs in After).
+
+When the show ends (or the session times-out), the app nudges the user to After for recap, personalised message, gallery and merch.
+
+Why this matters
+
+For audiences: more meaning, not more screen time—quick, low-glow, optional interactions that reward attention and courage.
+
+For artists/ops: predictable, operator-timed moments; offline-safe; drive choreography/lighting via webhooks.
+
+For the business: chapter coverage, poll engagement and keepsake creation become measurable outcomes; merch and community upsell follow in After.
+
+Success targets (Event)
+
+QR local stamp in <300 ms; server ack <2 s.
+
+Poll push → device render <1.5 s on venue Wi-Fi.
+
+100% critical flows work offline with later sync.
