@@ -3,7 +3,7 @@ import { db } from '../../../../../server/db';
 import { users } from '../../../../../shared/schema';
 import { eq } from 'drizzle-orm';
 import bcrypt from 'bcryptjs';
-import { createAuthResponse } from '../../../../../server/auth';
+import { createAuthResponse, getSessionFromHeaders } from '../../../../../server/auth';
 
 // Simple rate limiting for login attempts
 const loginAttempts = new Map<string, { count: number; resetTime: number }>();
@@ -127,6 +127,36 @@ export async function POST(request: NextRequest) {
     console.error('Login error:', error instanceof Error ? error.message : String(error));
     return NextResponse.json(
       { success: false, message: 'Login failed. Please try again.' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET handler to check current authentication status
+export async function GET(request: NextRequest) {
+  try {
+    const session = await getSessionFromHeaders(request);
+    
+    if (!session.isAuthenticated) {
+      return NextResponse.json(
+        { success: false, message: 'Not authenticated' },
+        { status: 401 }
+      );
+    }
+
+    // Return session data in the format expected by the Event page
+    return NextResponse.json({
+      success: true,
+      user: session.user,
+      isAuthenticated: session.isAuthenticated,
+      userId: session.userId,
+      isAdmin: session.isAdmin
+    });
+
+  } catch (error) {
+    console.error('Session check error:', error instanceof Error ? error.message : String(error));
+    return NextResponse.json(
+      { success: false, message: 'Failed to check authentication status' },
       { status: 500 }
     );
   }
