@@ -26,51 +26,51 @@ export default function AfterPage() {
   const [activeTab, setActiveTab] = useState<'overview' | 'memories' | 'memory-wallet' | 'insights' | 'certificates' | 'fan-score'>('overview');
   const [animateIn, setAnimateIn] = useState(false);
   
-  // Tab-specific immersive themes
+  // Tab-specific immersive themes - Professional Lumus-inspired palettes
   const tabThemes: Record<string, TabTheme> = {
     overview: {
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
+      background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
       title: '#ffffff',
       subtitle: '#e2e8f0',
       description: '#cbd5e0',
       shadow: true
     },
     memories: {
-      background: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)',
+      background: 'linear-gradient(135deg, #374151 0%, #4b5563 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
+      title: '#ffffff',
+      subtitle: '#f3f4f6',
+      description: '#d1d5db',
+      shadow: true
+    },
+    'memory-wallet': {
+      background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
+      title: '#ffffff',
+      subtitle: '#ecfdf5',
+      description: '#d1fae5',
+      shadow: true
+    },
+    certificates: {
+      background: 'linear-gradient(135deg, #7c2d12 0%, #9a3412 100%)',
       overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
       title: '#ffffff',
       subtitle: '#fef7f0',
       description: '#fed7aa',
       shadow: true
     },
-    'memory-wallet': {
-      background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
-      title: '#ffffff',
-      subtitle: '#f0fdfa',
-      description: '#ccfbf1',
-      shadow: true
-    },
-    certificates: {
-      background: 'linear-gradient(135deg, #d299c2 0%, #fef9d3 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
-      title: '#ffffff',
-      subtitle: '#fdf4ff',
-      description: '#f3e8ff',
-      shadow: true
-    },
     'fan-score': {
-      background: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
+      background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
       title: '#ffffff',
       subtitle: '#dbeafe',
       description: '#bfdbfe',
       shadow: true
     },
     insights: {
-      background: 'linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
+      background: 'linear-gradient(135deg, #7c2d12 0%, #a16207 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
       title: '#ffffff',
       subtitle: '#fef3c7',
       description: '#fde68a',
@@ -107,7 +107,10 @@ export default function AfterPage() {
             <div className="text-center mb-8">
               <h3 className="text-3xl font-bold text-white mb-4">
                 <AnimateText active={animateIn} delay={1800}>
-                  📸 Event Memories Gallery
+                  <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Event Memories Gallery
                 </AnimateText>
               </h3>
               <p className="text-white/80 text-lg">Your captured moments from the journey</p>
@@ -132,7 +135,10 @@ export default function AfterPage() {
             <div className="text-center mb-8">
               <h3 className="text-3xl font-bold text-white mb-4">
                 <AnimateText active={animateIn} delay={1800}>
-                  🎒 Your Memory Collection
+                  <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  Your Memory Collection
                 </AnimateText>
               </h3>
               <p className="text-white/80 text-lg">Personal memories from cards, chapters, and events</p>
@@ -156,7 +162,10 @@ export default function AfterPage() {
             <div className="text-center mb-8">
               <h3 className="text-3xl font-bold text-white mb-4">
                 <AnimateText active={animateIn} delay={1800}>
-                  🏆 Achievement Certificates
+                  <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                  Achievement Certificates
                 </AnimateText>
               </h3>
               <p className="text-white/80 text-lg">Download and share your accomplishment certificates</p>
@@ -183,7 +192,10 @@ export default function AfterPage() {
               <div className="text-center mb-8">
                 <h3 className="text-3xl font-bold text-white mb-4">
                   <AnimateText active={animateIn} delay={1800}>
-                    🏆 Your Achievement Legacy
+                    <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    Your Achievement Legacy
                   </AnimateText>
                 </h3>
                 <p className="text-white/80 text-lg mb-8">Celebrate your accomplishments and see how you rank in the community</p>
@@ -209,7 +221,9 @@ export default function AfterPage() {
             >
               <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-6">
                 <h4 className="text-2xl font-bold text-white mb-6 flex items-center">
-                  <span className="mr-3 text-3xl">📈</span>
+                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
                   Your Score Progress
                 </h4>
                 <ScoreProgressPanel 
@@ -225,7 +239,9 @@ export default function AfterPage() {
               
               <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-6">
                 <h4 className="text-2xl font-bold text-white mb-6 flex items-center">
-                  <span className="mr-3 text-3xl">🥇</span>
+                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
                   Community Rankings
                 </h4>
                 <Leaderboard 
@@ -252,7 +268,10 @@ export default function AfterPage() {
             <div className="text-center mb-12">
               <h3 className="text-3xl font-bold text-white mb-4">
                 <AnimateText active={animateIn} delay={1800}>
-                  🔍 Journey Insights
+                  <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  Journey Insights
                 </AnimateText>
               </h3>
               <p className="text-white/80 text-lg mb-8">Discover the deeper meaning of your adventure</p>
@@ -267,7 +286,9 @@ export default function AfterPage() {
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-3xl">🧭</span>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                  </svg>
                 </div>
                 <h4 className="text-2xl font-bold text-white mb-4">Personal Reflection</h4>
                 <p className="text-white/70 leading-relaxed">
@@ -283,7 +304,9 @@ export default function AfterPage() {
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <span className="text-3xl">🌟</span>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                  </svg>
                 </div>
                 <h4 className="text-2xl font-bold text-white mb-4">Community Impact</h4>
                 <p className="text-white/70 leading-relaxed">
@@ -294,7 +317,11 @@ export default function AfterPage() {
             
             <div className="text-center">
               <div className="bg-white/5 backdrop-blur-sm rounded-xl border border-white/10 p-6 max-w-md mx-auto">
-                <div className="text-white/60 mb-2">🚧</div>
+                <div className="text-white/60 mb-2">
+                  <svg className="w-6 h-6 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.464 0L4.35 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
                 <p className="text-white/60 text-sm">Detailed analytics dashboard coming soon</p>
               </div>
             </div>
@@ -319,7 +346,9 @@ export default function AfterPage() {
                   animation: animateIn ? 'animButtonIn 0.6s 1.5s ease forwards' : 'none'
                 }}
               >
-                <span className="mr-2 text-2xl">🎯</span>
+                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                </svg>
                 <span className="text-white">After Phase Complete</span>
               </div>
               
@@ -344,7 +373,12 @@ export default function AfterPage() {
                   onClick={() => setActiveTab('fan-score')}
                   className="group inline-flex items-center space-x-2 text-white/80 hover:text-white transition-all duration-300 text-lg font-medium bg-white/10 backdrop-blur-sm px-6 py-3 rounded-xl border border-white/20 hover:bg-white/20 hover:border-white/40"
                 >
-                  <span>🏆 View Complete Achievement Legacy</span>
+                  <span className="flex items-center">
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                    </svg>
+                    View Complete Achievement Legacy
+                  </span>
                   <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
@@ -368,7 +402,9 @@ export default function AfterPage() {
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/30 transition-colors">
-                  <span className="text-3xl">📜</span>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-200 transition-colors">
                   Achievement Certificates
@@ -387,7 +423,9 @@ export default function AfterPage() {
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/30 transition-colors">
-                  <span className="text-3xl">📸</span>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-200 transition-colors">
                   Event Memories
@@ -406,7 +444,9 @@ export default function AfterPage() {
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/30 transition-colors">
-                  <span className="text-3xl">🎒</span>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-200 transition-colors">
                   Memory Collection
@@ -425,7 +465,9 @@ export default function AfterPage() {
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/30 transition-colors">
-                  <span className="text-3xl">🔍</span>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-200 transition-colors">
                   Journey Analytics
@@ -443,7 +485,9 @@ export default function AfterPage() {
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                  <span className="text-3xl">🚀</span>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">
                   Continued Adventures
@@ -461,7 +505,9 @@ export default function AfterPage() {
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                  <span className="text-3xl">🌐</span>
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                  </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4">
                   Community Hub
@@ -526,17 +572,17 @@ export default function AfterPage() {
         headerContent={
           <div className="flex items-center justify-between w-full">
             <div className="text-left">
-              <div className="text-white/80 text-sm font-medium mb-1">
-                🌟 Post-Journey Experience
+              <div className="text-white/90 text-base font-semibold mb-1">
+                Post-Journey Experience
               </div>
-              <div className="text-white/60 text-xs">
+              <div className="text-white/60 text-sm">
                 Your adventure legacy awaits
               </div>
             </div>
             {activeTab !== 'overview' && (
               <button
                 onClick={() => setActiveTab('overview')}
-                className="group flex items-center space-x-2 text-white/80 hover:text-white transition-all duration-300 text-sm font-medium bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20 hover:bg-white/20"
+                className="group flex items-center space-x-2 text-white/90 hover:text-white transition-all duration-200 text-sm font-medium bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20 hover:bg-white/15"
               >
                 <svg className="w-4 h-4 transform group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -547,69 +593,94 @@ export default function AfterPage() {
           </div>
         }
       >
-        {/* Tab Navigation */}
+        {/* Professional Tab Navigation */}
         {activeTab !== 'overview' && (
           <div 
-            className="bg-white/5 backdrop-blur-lg rounded-2xl border border-white/20 p-2 mb-8"
+            className="bg-white/8 backdrop-blur-sm rounded-lg border border-white/20 p-1 mb-8"
             style={{
               opacity: 0,
               animation: animateIn ? 'animButtonIn 0.8s 1.2s ease forwards' : 'none'
             }}
           >
-            <div className="flex flex-wrap gap-2">
+            <div className="flex space-x-1">
               <button
                 onClick={() => setActiveTab('certificates')}
-                className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                className={`flex-1 px-4 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
                   activeTab === 'certificates'
-                    ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm border border-white/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30'
+                    : 'text-white/70 hover:text-white/90 hover:bg-white/10'
                 }`}
               >
-                📜 Certificates
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                  <span>Certificates</span>
+                </div>
               </button>
               
               <button
                 onClick={() => setActiveTab('memories')}
-                className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                className={`flex-1 px-4 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
                   activeTab === 'memories'
-                    ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm border border-white/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30'
+                    : 'text-white/70 hover:text-white/90 hover:bg-white/10'
                 }`}
               >
-                📸 Memories
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span>Memories</span>
+                </div>
               </button>
               
               <button
                 onClick={() => setActiveTab('memory-wallet')}
-                className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                className={`flex-1 px-4 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
                   activeTab === 'memory-wallet'
-                    ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm border border-white/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30'
+                    : 'text-white/70 hover:text-white/90 hover:bg-white/10'
                 }`}
               >
-                🎒 Collection
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                  </svg>
+                  <span>Collection</span>
+                </div>
               </button>
               
               <button
                 onClick={() => setActiveTab('insights')}
-                className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                className={`flex-1 px-4 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
                   activeTab === 'insights'
-                    ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm border border-white/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30'
+                    : 'text-white/70 hover:text-white/90 hover:bg-white/10'
                 }`}
               >
-                🔍 Insights
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  <span>Insights</span>
+                </div>
               </button>
               
               <button
                 onClick={() => setActiveTab('fan-score')}
-                className={`px-4 py-3 text-sm font-semibold rounded-xl transition-all duration-300 ${
+                className={`flex-1 px-4 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
                   activeTab === 'fan-score'
-                    ? 'bg-white/20 text-white shadow-lg backdrop-blur-sm border border-white/30'
-                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                    ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30'
+                    : 'text-white/70 hover:text-white/90 hover:bg-white/10'
                 }`}
               >
-                🏆 Achievements
+                <div className="flex items-center justify-center space-x-2">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
+                  </svg>
+                  <span>Achievements</span>
+                </div>
               </button>
             </div>
           </div>
