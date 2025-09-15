@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import odeIslandsData from '@/app/data/ode-islands.json';
 import ImmersivePageLayout, { ImmersiveTheme } from './ImmersivePageLayout';
-import ScoreProgressPanel from './ScoreProgressPanel';
-import Leaderboard from './Leaderboard';
-import ScoreBadge from './ScoreBadge';
 import AnimateText from './AnimateText';
+import CertificateManager from './CertificateManager';
+import MemoryWallet from './MemoryWallet';
+import ScoreBadge from './ScoreBadge';
+import UserEngagementAnalytics from './analytics/UserEngagementAnalytics';
+import OverviewDashboard from './analytics/OverviewDashboard';
 
 // TypeScript interfaces for progress tracking
 interface UserProgress {
@@ -51,31 +53,38 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
   const [progressData, setProgressData] = useState<UserProgress[]>([]);
   const [chapterProgress, setChapterProgress] = useState<ChapterProgress[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [activeTab, setActiveTab] = useState<'progress' | 'fan-score' | 'leaderboard'>('progress');
+  const [activeTab, setActiveTab] = useState<'certificates' | 'memories' | 'collection' | 'insights'>('collection');
   const [animateIn, setAnimateIn] = useState(false);
   
-  // Clean Lumus-inspired tab themes
+  // Professional treasury themes for each tab
   const tabThemes: Record<string, TabTheme> = {
-    progress: {
-      background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.05))',
+    certificates: {
+      background: 'linear-gradient(135deg, #7c2d12 0%, #9a3412 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
       title: '#ffffff',
-      subtitle: '#e2e8f0',
-      description: '#cbd5e0'
+      subtitle: '#fef7f0',
+      description: '#fed7aa'
     },
-    'fan-score': {
+    memories: {
+      background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
+      title: '#ffffff',
+      subtitle: '#eff6ff',
+      description: '#dbeafe'
+    },
+    collection: {
       background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.05))',
+      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
       title: '#ffffff',
       subtitle: '#ecfdf5',
       description: '#d1fae5'
     },
-    leaderboard: {
-      background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.05))',
+    insights: {
+      background: 'linear-gradient(135deg, #7c2d12 0%, #a16207 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
       title: '#ffffff',
-      subtitle: '#eff6ff',
-      description: '#dbeafe'
+      subtitle: '#fefbf3',
+      description: '#fde68a'
     }
   };
   
@@ -392,28 +401,31 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
 
   const getTabTitle = (tab: string) => {
     switch (tab) {
-      case 'progress': return 'Journey Progress';
-      case 'fan-score': return 'Achievement Center';
-      case 'leaderboard': return 'Community Rankings';
-      default: return 'Dashboard';
+      case 'certificates': return 'Certificates';
+      case 'memories': return 'Memories';
+      case 'collection': return 'Collection';
+      case 'insights': return 'Insights';
+      default: return 'Personal Treasury';
     }
   };
 
   const getTabSubtitle = (tab: string) => {
     switch (tab) {
-      case 'progress': return 'Track Your Learning Path';
-      case 'fan-score': return 'Celebrate Your Achievements';
-      case 'leaderboard': return 'Community Performance';
-      default: return 'Your Dashboard';
+      case 'certificates': return 'Achievement Certificates';
+      case 'memories': return 'Memory Collection';
+      case 'collection': return 'Journey Recap';
+      case 'insights': return 'Personal Analytics';
+      default: return 'Your Personal Treasury';
     }
   };
 
   const getTabDescription = (tab: string) => {
     switch (tab) {
-      case 'progress': return `Monitor your journey through The Ode Islands. ${overallProgress}% complete with ${chapterProgress.reduce((sum, c) => sum + c.completedCards, 0)} learning cards mastered.`;
-      case 'fan-score': return 'View your achievements, scores, and recent activities. Track your engagement and learning milestones.';
-      case 'leaderboard': return 'Compare your achievements with fellow learners. See your ranking and progression within the community.';
-      default: return 'Your personalized learning dashboard.';
+      case 'certificates': return 'View and manage your earned certificates and achievements from your journey through The Ode Islands.';
+      case 'memories': return 'Browse your collected memories, moments, and experiences captured during your adventure.';
+      case 'collection': return `Your personal collection of memories from cards, chapters, and events - a treasury of experiences to treasure forever. ${overallProgress}% journey complete.`;
+      case 'insights': return 'Analyze your engagement patterns, learning progress, and personal growth metrics throughout your journey.';
+      default: return 'Your personalized treasury of achievements, memories, and insights.';
     }
   };
 
@@ -444,7 +456,7 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
 
           <div className="text-center flex-1">
             <div className="text-white/90 text-base font-semibold">
-              Progress Dashboard
+              Personal Treasury
             </div>
             <div className="text-white/60 text-sm">
               {new Date().toLocaleDateString('en-US', { 
@@ -477,24 +489,9 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
         >
           <div className="flex space-x-1">
             <button
-              onClick={() => setActiveTab('progress')}
+              onClick={() => setActiveTab('certificates')}
               className={`group flex-1 px-6 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
-                activeTab === 'progress'
-                  ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/30'
-                  : 'text-white/70 hover:text-white/90 hover:bg-white/10'
-              }`}
-            >
-              <div className="flex items-center justify-center space-x-2">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-                <span>Progress</span>
-              </div>
-            </button>
-            <button
-              onClick={() => setActiveTab('fan-score')}
-              className={`group flex-1 px-6 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
-                activeTab === 'fan-score'
+                activeTab === 'certificates'
                   ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/30'
                   : 'text-white/70 hover:text-white/90 hover:bg-white/10'
               }`}
@@ -503,261 +500,204 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
                 </svg>
-                <span>Achievements</span>
+                <span>Certificates</span>
               </div>
             </button>
             <button
-              onClick={() => setActiveTab('leaderboard')}
+              onClick={() => setActiveTab('memories')}
               className={`group flex-1 px-6 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
-                activeTab === 'leaderboard'
+                activeTab === 'memories'
                   ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/30'
                   : 'text-white/70 hover:text-white/90 hover:bg-white/10'
               }`}
             >
               <div className="flex items-center justify-center space-x-2">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
-                <span>Rankings</span>
+                <span>Memories</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('collection')}
+              className={`group flex-1 px-6 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
+                activeTab === 'collection'
+                  ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/30'
+                  : 'text-white/70 hover:text-white/90 hover:bg-white/10'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                </svg>
+                <span>Collection</span>
+              </div>
+            </button>
+            <button
+              onClick={() => setActiveTab('insights')}
+              className={`group flex-1 px-6 py-3 text-sm font-semibold rounded-md transition-all duration-200 ${
+                activeTab === 'insights'
+                  ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/30'
+                  : 'text-white/70 hover:text-white/90 hover:bg-white/10'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span>Insights</span>
               </div>
             </button>
           </div>
         </div>
 
-        {/* Progress Tab Content */}
-        {activeTab === 'progress' && (
-          <div className="space-y-8">
-            {/* Clean Overall Progress Section */}
-            <div 
-              className="bg-white/8 backdrop-blur-sm rounded-lg border border-white/20 p-8"
-              style={{
-                opacity: 0,
-                animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
-              }}
-            >
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-white mb-6">
-                  <AnimateText active={animateIn} delay={1800}>
-                    Overall Journey Progress
-                  </AnimateText>
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                  <div className="bg-white/5 rounded-lg p-6 text-center">
-                    <div className="text-4xl font-bold text-white mb-2">{overallProgress}%</div>
-                    <div className="text-white/70 text-sm font-medium">Overall Complete</div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-6 text-center">
-                    <div className="text-4xl font-bold text-white mb-2">{chapterProgress.filter(c => c.completionPercentage === 100).length}</div>
-                    <div className="text-white/70 text-sm font-medium">Chapters Completed</div>
-                  </div>
-                  <div className="bg-white/5 rounded-lg p-6 text-center">
-                    <div className="text-4xl font-bold text-white mb-2">{chapterProgress.reduce((sum, c) => sum + c.completedCards, 0)}</div>
-                    <div className="text-white/70 text-sm font-medium">Learning Cards Mastered</div>
-                  </div>
-                </div>
-              </div>
-              
-              {/* Clean Progress Bar */}
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-white/90 text-sm font-medium">Journey Completion</span>
-                  <span className="text-white/70 text-sm">{overallProgress}%</span>
-                </div>
-                <div className="w-full bg-white/10 rounded-full h-3 overflow-hidden">
-                  <div
-                    className="h-3 rounded-full transition-all duration-1000 ease-out bg-gradient-to-r from-blue-400 to-blue-600"
-                    style={{ 
-                      width: animateIn ? `${overallProgress}%` : '0%',
-                      transitionDelay: '2s'
-                    }}
-                  />
-                </div>
-                <div className="flex justify-between text-sm text-white/60">
-                  <span>{chapterProgress.filter(c => c.completionPercentage === 100).length} of {chapterProgress.length} chapters completed</span>
-                  <span>{chapterProgress.reduce((sum, c) => sum + c.completedCards, 0)} total cards mastered</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Clean Fan Score Tab Content */}
-        {activeTab === 'fan-score' && (
+        {/* Collection Tab Content - Journey Recap */}
+        {activeTab === 'collection' && (
           <div 
-            className="bg-white/8 backdrop-blur-sm rounded-lg border border-white/20 p-8"
+            className="space-y-6"
             style={{
               opacity: 0,
               animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
             }}
           >
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-white mb-6">
-                <AnimateText active={animateIn} delay={1800}>
-                  Your Achievement Center
-                </AnimateText>
-              </h3>
-            </div>
-            <ScoreProgressPanel 
-              scopeType="global"
-              scopeId="global"
-              showAllScopes={true}
-              showRecentActivities={true}
-              showAchievements={true}
-              showStatistics={true}
-              className="transform transition-all duration-200"
-            />
-          </div>
-        )}
-
-        {/* Clean Leaderboard Tab Content */}
-        {activeTab === 'leaderboard' && (
-          <div 
-            className="bg-white/8 backdrop-blur-sm rounded-lg border border-white/20 p-8"
-            style={{
-              opacity: 0,
-              animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
-            }}
-          >
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-white mb-6">
-                <AnimateText active={animateIn} delay={1800}>
-                  Community Rankings
-                </AnimateText>
-              </h3>
-            </div>
-            <Leaderboard 
-              scopeType="global"
-              scopeId="global"
-              includeUserPosition={true}
-              limit={50}
-              className="transform transition-all duration-200"
-            />
-          </div>
-        )}
-
-        {/* Chapter Progress Grid - only show on progress tab */}
-        {activeTab === 'progress' && (
-          <div 
-            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-            style={{
-              opacity: 0,
-              animation: animateIn ? 'animButtonIn 0.8s 1.8s ease forwards' : 'none'
-            }}
-          >
-            {chapterProgress.map((chapter, index) => {
-              const chapterInfo = availableChapters.find(c => c.id === chapter.chapterId);
-              const status = getProgressStatus(chapter.completionPercentage);
-              
-              return (
-                <div
-                  key={chapter.chapterId}
-                  className="group bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-6 cursor-pointer transform transition-all duration-300 hover:scale-105 hover:bg-white/15 hover:border-white/30 hover:shadow-xl"
-                  onClick={() => handleChapterClick(chapter.chapterId, chapter.completionPercentage === 100)}
-                  style={{
-                    opacity: 0,
-                    animation: animateIn ? `animButtonIn 0.6s ${2.1 + index * 0.1}s ease forwards` : 'none'
-                  }}
+            {/* Journey Recap Unavailable State */}
+            <div className="bg-white/8 backdrop-blur-sm rounded-lg border border-white/20 p-8">
+              <div className="text-center">
+                <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">Journey Recap Unavailable</h3>
+                <p className="text-white/60 mb-6 max-w-md mx-auto">
+                  We couldn't load your journey recap at the moment.
+                </p>
+                <button 
+                  onClick={fetchUserProgress}
+                  className="bg-white/20 hover:bg-white/30 text-white font-medium py-3 px-6 rounded-lg transition-all duration-200 border border-white/30 hover:border-white/50"
                 >
-                  {/* Chapter Header */}
-                  <div className="flex items-start justify-between mb-6">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold text-white group-hover:text-blue-200 transition-colors mb-2">
-                        {chapterInfo?.title || chapter.chapterId}
-                      </h3>
-                      <p className="text-white/70 text-sm mb-3">
-                        {chapter.completedCards} of {chapter.totalCards} cards completed
-                      </p>
-                      <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium" style={{ 
-                        backgroundColor: `${status.color}30`, 
-                        color: status.color,
-                        border: `1px solid ${status.color}40`
-                      }}>
-                        {status.text}
-                      </div>
-                    </div>
-                    
-                    <div className="text-right ml-4">
-                      <div className="text-3xl font-bold text-white mb-1">
-                        {chapter.completionPercentage}%
-                      </div>
-                      <div className="text-white/60 text-xs">
-                        {chapter.completionPercentage === 100 ? '✨ Complete' : '🚀 In Progress'}
-                      </div>
-                    </div>
-                  </div>
+                  Try Again
+                </button>
+              </div>
+            </div>
 
-                  {/* Enhanced Progress Bar */}
-                  <div className="mb-6">
-                    <div className="w-full bg-white/10 rounded-full h-3 mb-2 overflow-hidden">
-                      <div
-                        className="h-3 rounded-full transition-all duration-700 ease-out"
-                        style={{ 
-                          width: animateIn ? `${chapter.completionPercentage}%` : '0%',
-                          backgroundColor: status.color,
-                          transitionDelay: `${2.3 + index * 0.1}s`
-                        }}
-                      />
-                    </div>
-                    <div className="text-xs text-white/60">
-                      Progress: {chapter.completedCards}/{chapter.totalCards} cards
-                    </div>
-                  </div>
+            {/* After Phase Complete Badge */}
+            <div className="flex justify-center">
+              <div className="flex items-center space-x-2 bg-white/10 backdrop-blur-sm rounded-full px-6 py-3 border border-white/20">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span className="text-white font-medium">After Phase Complete</span>
+              </div>
+            </div>
 
-                  {/* Chapter Stats */}
-                  <div className="space-y-3 text-sm mb-6">
-                    {chapter.totalTimeSpent > 0 && (
-                      <div className="flex items-center justify-between text-white/70">
-                        <span className="flex items-center">
-                          <span className="mr-2">⏱️</span>
-                          Time spent:
-                        </span>
-                        <span className="font-medium">{formatTime(chapter.totalTimeSpent)}</span>
-                      </div>
-                    )}
-                    
-                    {chapter.lastAccessed && (
-                      <div className="flex items-center justify-between text-white/70">
-                        <span className="flex items-center">
-                          <span className="mr-2">📅</span>
-                          Last visited:
-                        </span>
-                        <span className="font-medium">{formatDate(chapter.lastAccessed)}</span>
-                      </div>
-                    )}
-                    
-                    {chapter.completedAt && chapter.completionPercentage === 100 && (
-                      <div className="flex items-center justify-between text-white/70">
-                        <span className="flex items-center">
-                          <span className="mr-2">🎉</span>
-                          Completed:
-                        </span>
-                        <span className="font-medium">{formatDate(chapter.completedAt)}</span>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Indicator */}
-                  <div className="pt-4 border-t border-white/10">
-                    <div className="flex items-center justify-between text-white/80 group-hover:text-white transition-colors">
-                      <span className="font-medium">
-                        {chapter.completionPercentage === 100 ? '🔄 Review Chapter' : '🎯 Continue Journey'}
-                      </span>
-                      <div className="flex items-center space-x-1 transform group-hover:translate-x-1 transition-transform">
-                        <span className="text-sm">Explore</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
+            {/* Score Display */}
+            <div className="flex justify-center">
+              <div className="flex items-center space-x-4 bg-white/5 rounded-lg px-4 py-2">
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">⭐</span>
+                  <span className="text-white font-medium">1</span>
                 </div>
-              );
-            })}
+                <div className="flex items-center space-x-2">
+                  <span className="text-xl">🌟</span>
+                  <span className="text-white font-medium">0</span>
+                </div>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Empty State - only show on progress tab */}
-        {activeTab === 'progress' && chapterProgress.length === 0 && (
+        {/* Certificates Tab Content */}
+        {activeTab === 'certificates' && (
+          <div 
+            className="space-y-6"
+            style={{
+              opacity: 0,
+              animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
+            }}
+          >
+            <CertificateManager 
+              showEligibility={true}
+              autoIssue={false}
+              className="transform transition-all duration-200"
+            />
+          </div>
+        )}
+
+        {/* Memories Tab Content */}
+        {activeTab === 'memories' && (
+          <div 
+            className="space-y-6"
+            style={{
+              opacity: 0,
+              animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
+            }}
+          >
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-white mb-6">
+                <AnimateText active={animateIn} delay={1800}>
+                  Memory Collection
+                </AnimateText>
+              </h3>
+              <p className="text-white/70 max-w-2xl mx-auto">
+                Browse your collected memories, moments, and experiences captured during your adventure through The Ode Islands.
+              </p>
+            </div>
+            
+            <MemoryWallet 
+              className="transform transition-all duration-200"
+            />
+          </div>
+        )}
+
+        {/* Insights Tab Content */}
+        {activeTab === 'insights' && (
+          <div 
+            className="space-y-6"
+            style={{
+              opacity: 0,
+              animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
+            }}
+          >
+            <div className="text-center mb-8">
+              <h3 className="text-2xl font-bold text-white mb-6">
+                <AnimateText active={animateIn} delay={1800}>
+                  Personal Analytics
+                </AnimateText>
+              </h3>
+              <p className="text-white/70 max-w-2xl mx-auto">
+                Analyze your engagement patterns, learning progress, and personal growth metrics throughout your journey.
+              </p>
+            </div>
+
+            {/* Overview Analytics Dashboard */}
+            <div className="bg-white/8 backdrop-blur-sm rounded-lg border border-white/20 p-6">
+              <OverviewDashboard 
+                dateRange={{
+                  startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                  endDate: new Date().toISOString()
+                }}
+                eventId="global"
+                realTimeEnabled={false}
+              />
+            </div>
+
+            {/* User Engagement Analytics */}
+            <div className="bg-white/8 backdrop-blur-sm rounded-lg border border-white/20 p-6">
+              <UserEngagementAnalytics 
+                dateRange={{
+                  startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+                  endDate: new Date().toISOString()
+                }}
+                eventId="global"
+                realTimeEnabled={false}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Journey Unavailable State - show when no progress data */}
+        {chapterProgress.length === 0 && (
           <div 
             className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-12 text-center"
             style={{
