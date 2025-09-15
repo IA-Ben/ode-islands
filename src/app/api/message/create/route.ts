@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '../../../../../server/auth';
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   return withAuth(async (session: any) => {
     try {
       const body = await request.json();
@@ -93,3 +93,5 @@ export async function POST(request: NextRequest) {
     }
   })(request);
 }
+
+export const POST = handlePOST;

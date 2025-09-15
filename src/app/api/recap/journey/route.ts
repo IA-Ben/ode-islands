@@ -14,7 +14,7 @@ interface JourneyEvent {
   metadata?: any;
 }
 
-async function handleGET(request: NextRequest) {
+export async function GET(request: NextRequest) {
   return withAuth(async (session: any) => {
     try {
       // Get user's latest progress and activities
@@ -96,5 +96,4 @@ async function handleGET(request: NextRequest) {
       );
     }
   })(request);
-
-export const GET = handleGET;
+}
