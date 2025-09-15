@@ -1,6 +1,9 @@
+"use client";
+
 import { useEffect, useRef, useState, useCallback } from "react";
 import Hls from "hls.js";
 import { getConfig } from '@/lib/config';
+import { useMobile } from '@/contexts/MobileContext';
 
 interface PlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
   video: {
@@ -26,14 +29,15 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const cdnUrl = getConfig().cdnUrl;
+  const { getVideoQuality, shouldReduceAnimations, isMobile } = useMobile();
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
   
-  // Handle both full URLs and identifiers
+  // Handle both full URLs and identifiers - NO URL rewriting for quality
   let videoUrl: string | null = null;
   if (video?.url) {
     if (video.url.startsWith('http')) {
-      // It's already a full URL, just add /master.m3u8
+      // It's already a full URL, add master.m3u8
       videoUrl = `${video.url}/master.m3u8`;
     } else {
       // It's an identifier, construct the full URL
@@ -137,25 +141,64 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       // Native HLS support (Safari)
       videoEl.src = url;
     } else if (Hls.isSupported()) {
-      const hls = new Hls({
+      // Adjust HLS configuration based on mobile and data saver settings
+      const hlsConfig: any = {
         enableWorker: true,
         lowLatencyMode: false,
-        backBufferLength: 90,
-        maxBufferLength: 120,
-        maxMaxBufferLength: 600,
-        maxBufferSize: 60 * 1000 * 1000,
-        maxBufferHole: 0.5,
         autoStartLoad: true,
-        startFragPrefetch: true,
-        fpsDroppedMonitoringPeriod: 5000,
-        fpsDroppedMonitoringThreshold: 0.2,
+        startFragPrefetch: !isMobile, // Reduce prefetching on mobile
         capLevelToPlayerSize: true
-      });
+      };
+      
+      if (isMobile || shouldReduceAnimations) {
+        // Mobile-optimized settings
+        hlsConfig.backBufferLength = 30;
+        hlsConfig.maxBufferLength = 60;
+        hlsConfig.maxMaxBufferLength = 300;
+        hlsConfig.maxBufferSize = 30 * 1000 * 1000;
+        hlsConfig.maxBufferHole = 1;
+        hlsConfig.fpsDroppedMonitoringPeriod = 10000;
+        hlsConfig.fpsDroppedMonitoringThreshold = 0.3;
+      } else {
+        // Desktop settings
+        hlsConfig.backBufferLength = 90;
+        hlsConfig.maxBufferLength = 120;
+        hlsConfig.maxMaxBufferLength = 600;
+        hlsConfig.maxBufferSize = 60 * 1000 * 1000;
+        hlsConfig.maxBufferHole = 0.5;
+        hlsConfig.fpsDroppedMonitoringPeriod = 5000;
+        hlsConfig.fpsDroppedMonitoringThreshold = 0.2;
+      }
+      
+      const hls = new Hls(hlsConfig);
       
       hlsRef.current = hls;
       
       hls.on(Hls.Events.MANIFEST_LOADED, () => {
         console.log('HLS manifest loaded successfully');
+        
+        // Apply quality capping based on data saver mode AFTER manifest loads
+        const quality = getVideoQuality();
+        const levels = hls.levels;
+        
+        if (quality === '480p' && levels.length > 0) {
+          // Cap to 480p or closest available
+          const maxLevel = levels.findIndex(level => level.height <= 480);
+          if (maxLevel !== -1) {
+            hls.loadLevel = maxLevel;
+            hls.autoLevelCapping = maxLevel;
+            console.log(`Quality capped to 480p (level ${maxLevel})`);
+          }
+        } else if (quality === '720p' && levels.length > 0) {
+          // Cap to 720p or closest available
+          const maxLevel = levels.findIndex(level => level.height <= 720);
+          if (maxLevel !== -1) {
+            hls.loadLevel = maxLevel;
+            hls.autoLevelCapping = maxLevel;
+            console.log(`Quality capped to 720p (level ${maxLevel})`);
+          }
+        }
+        // For 'auto' quality, let HLS decide (no capping)
       });
       
       hls.on(Hls.Events.LEVEL_LOADED, () => {
