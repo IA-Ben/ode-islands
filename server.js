@@ -53,6 +53,52 @@ app.prepare().then(async () => {
     }
   });
 
+  // Setup session middleware required for simple authentication
+  const session = require('express-session');
+  const connectPg = require('connect-pg-simple');
+
+  // Enforce required SESSION_SECRET
+  const SESSION_SECRET = process.env.SESSION_SECRET;
+  if (!SESSION_SECRET) {
+    console.error('FATAL: SESSION_SECRET environment variable is required');
+    process.exit(1);
+  }
+
+  // Setup session middleware with fallback store
+  let sessionStore;
+  if (process.env.DATABASE_URL) {
+    // Use PostgreSQL store if DATABASE_URL is available
+    const pgStore = connectPg(session);
+    sessionStore = new pgStore({
+      conString: process.env.DATABASE_URL,
+      createTableIfMissing: true,
+      ttl: 7 * 24 * 60 * 60, // 1 week in seconds
+      tableName: "sessions",
+    });
+    console.log('Using PostgreSQL session store');
+  } else {
+    // Fallback to memory store (note: sessions won't persist across restarts)
+    console.log('Using memory session store (sessions won\'t persist across restarts)');
+    sessionStore = new session.MemoryStore();
+  }
+
+  server.use(session({
+    secret: SESSION_SECRET,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: 'auto', // Automatically set secure based on connection type
+      httpOnly: true,
+      sameSite: 'lax', // CSRF protection
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
+    },
+  }));
+
+  // Import and setup simple authentication for CMS admin access
+  const { setupSimpleAuth } = await import('./server/simpleAuth.ts');
+  setupSimpleAuth(server);
+
   // Import and setup unified authentication routes
   const { registerUnifiedRoutes, isAuthenticated, isAdmin } = await import('./server/unifiedRoutes.ts');
   await registerUnifiedRoutes(server);
