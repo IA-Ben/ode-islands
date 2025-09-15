@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '../../../../../../../server/auth';
 
 export async function GET(request: NextRequest, { params }: { params: { jobId: string; index: string } }) {
-  return withAuth(async (session: any) => {
+  return withAuth(async (req: NextRequest, context: { params?: any }) => {
+    const session = (req as any).session;
     try {
       const { jobId, index } = params;
       
@@ -98,5 +99,5 @@ export async function GET(request: NextRequest, { params }: { params: { jobId: s
         { status: 500 }
       );
     }
-  })(request);
+  })(request, { params });
 }

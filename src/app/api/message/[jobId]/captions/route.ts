@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '../../../../../../server/auth';
 
 export async function GET(request: NextRequest, { params }: { params: { jobId: string } }) {
-  return withAuth(async (session: any) => {
+  return withAuth(async (req: NextRequest, context: { params?: any }) => {
+    const session = (req as any).session;
     try {
       const { jobId } = params;
       
@@ -53,5 +54,5 @@ Thank you for being part of this transformative experience.`;
         { status: 500 }
       );
     }
-  })(request);
+  })(request, { params });
 }
