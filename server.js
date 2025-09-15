@@ -18,11 +18,12 @@ app.prepare().then(async () => {
   // Add JSON body parsing middleware (include Express API routes, exclude only Next.js App Router routes)
   // Express routes need body parsing, but Next.js App Router routes handle their own
   server.use((req, res, next) => {
-    // Allow Express API routes (auth, cms, content, scheduler) to have body parsing
+    // Allow Express API routes (auth, cms, content, scheduler, csrf-token) to have body parsing
     if (req.path.startsWith('/api/auth/') || 
         req.path.startsWith('/api/cms/') || 
         req.path.startsWith('/api/content/') || 
-        req.path.startsWith('/api/scheduler/')) {
+        req.path.startsWith('/api/scheduler/') ||
+        req.path === '/api/csrf-token') {
       // Apply Express body parsing for Express API routes
       express.json()(req, res, next);
     } else if (req.path.startsWith('/api/')) {
@@ -39,7 +40,8 @@ app.prepare().then(async () => {
     if (req.path.startsWith('/api/auth/') || 
         req.path.startsWith('/api/cms/') || 
         req.path.startsWith('/api/content/') || 
-        req.path.startsWith('/api/scheduler/')) {
+        req.path.startsWith('/api/scheduler/') ||
+        req.path === '/api/csrf-token') {
       // Apply Express URL encoding for Express API routes
       express.urlencoded({ extended: true })(req, res, next);
     } else if (req.path.startsWith('/api/')) {
