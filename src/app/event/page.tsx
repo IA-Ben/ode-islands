@@ -41,6 +41,7 @@ export default function EventPage() {
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [session, setSession] = useState<SessionData | null>(null);
   const [activeView, setActiveView] = useState<'audience' | 'dashboard' | 'loading'>('loading');
+  const [activeEvent, setActiveEvent] = useState<LiveEvent | null>(null);
 
   // Fetch user session data
   const fetchSession = async () => {
@@ -105,6 +106,36 @@ export default function EventPage() {
     }
   };
 
+  // Find currently active event
+  const findActiveEvent = async (): Promise<LiveEvent | null> => {
+    try {
+      const response = await fetch('/api/events?isActive=true', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        const activeEvents = data.events || [];
+        
+        // Find the most recent active event that is currently running
+        const now = new Date();
+        const currentEvent = activeEvents.find((event: LiveEvent) => {
+          const startTime = new Date(event.startTime);
+          const endTime = new Date(event.endTime);
+          return startTime <= now && now <= endTime && event.isActive;
+        });
+        
+        return currentEvent || (activeEvents.length > 0 ? activeEvents[0] : null);
+      } else {
+        console.warn('Failed to fetch active events');
+        return null;
+      }
+    } catch (err) {
+      console.error('Failed to find active event:', err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const initializePage = async () => {
       setLoading(true);
@@ -120,6 +151,9 @@ export default function EventPage() {
         setActiveView('dashboard');
       } else {
         // Default to audience interface for everyone else (including unauthenticated)
+        // Find active event for audience view
+        const currentEvent = await findActiveEvent();
+        setActiveEvent(currentEvent);
         setActiveView('audience');
       }
       
@@ -128,6 +162,18 @@ export default function EventPage() {
 
     initializePage();
   }, []);
+
+  // Refresh active event periodically (every 30 seconds)
+  useEffect(() => {
+    if (activeView === 'audience') {
+      const interval = setInterval(async () => {
+        const currentEvent = await findActiveEvent();
+        setActiveEvent(currentEvent);
+      }, 30000); // 30 seconds
+      
+      return () => clearInterval(interval);
+    }
+  }, [activeView]);
 
   // Show loading state
   if (loading || activeView === 'loading') {
@@ -188,12 +234,56 @@ export default function EventPage() {
 
   // Show audience interface
   if (activeView === 'audience') {
+    // No active event found
+    if (!activeEvent) {
+      return (
+        <div className="w-full min-h-screen bg-black relative overflow-y-auto overflow-x-hidden">
+          <PhaseNavigation currentPhase="event" />
+          
+          <div className="h-full pt-20 flex flex-col items-center justify-center text-center px-8">
+            <div 
+              className="absolute inset-0 opacity-20"
+              style={{
+                background: `radial-gradient(ellipse at center, ${theme.colors.primary}40 0%, transparent 50%)`
+              }}
+            />
+            
+            <div className="relative z-10 max-w-md">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
+                <svg className="w-10 h-10 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold mb-4 text-white">No Live Event</h2>
+              <p className="text-white/60 text-lg mb-8 leading-relaxed">
+                There's currently no active event happening. Check back when an event is live to join the interactive experience.
+              </p>
+              <Button
+                onClick={async () => {
+                  setLoading(true);
+                  const currentEvent = await findActiveEvent();
+                  setActiveEvent(currentEvent);
+                  setLoading(false);
+                }}
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                Check Again
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <div className="w-full min-h-screen bg-black relative">
         <PhaseNavigation currentPhase="event" />
         
         <EventAudienceInterface
-          eventId="current-event" // TODO: Get from active event or URL params
+          eventId={activeEvent.id}
           userId={session?.userId || 'anonymous'}
           theme={theme}
         />
@@ -213,6 +303,15 @@ export default function EventPage() {
             </Button>
           </div>
         )}
+        
+        {/* Event info indicator */}
+        <div className="fixed bottom-20 left-4 z-40">
+          <div className="bg-black/70 backdrop-blur-sm border border-white/10 rounded-lg px-3 py-2">
+            <p className="text-white/60 text-xs">
+              Connected to: <span className="text-white font-medium">{activeEvent.title}</span>
+            </p>
+          </div>
+        </div>
       </div>
     );
   }

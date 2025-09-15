@@ -94,6 +94,7 @@ async function handlePATCH(request: NextRequest) {
   try {
     const body = (request as any).parsedBody || await request.json();
     const { eventId, isActive } = body;
+    const session = (request as any).session;
 
     // Validate required fields
     if (!eventId) {
@@ -103,7 +104,7 @@ async function handlePATCH(request: NextRequest) {
       );
     }
 
-    // Check if event exists
+    // Check if event exists and verify ownership/admin permissions
     const existingEvent = await db
       .select()
       .from(liveEvents)
@@ -114,6 +115,17 @@ async function handlePATCH(request: NextRequest) {
       return NextResponse.json(
         { success: false, message: 'Event not found' },
         { status: 404 }
+      );
+    }
+
+    // SECURITY: Allow event updates only by admins or event creators
+    const event = existingEvent[0];
+    const canUpdate = session.isAdmin || event.createdBy === session.userId;
+    
+    if (!canUpdate) {
+      return NextResponse.json(
+        { success: false, message: 'Access denied. Only administrators or event creators can modify events.' },
+        { status: 403 }
       );
     }
 

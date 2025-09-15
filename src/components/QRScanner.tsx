@@ -141,7 +141,8 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
       
       if (barcodes.length > 0) {
         const barcode = barcodes[0];
-        if (validateQRCode(barcode.rawValue)) {
+        const isValid = await validateQRCode(barcode.rawValue);
+        if (isValid) {
           stopScanning();
           onResult({
             text: barcode.rawValue,
@@ -157,50 +158,65 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
   };
 
   // Use jsQR as fallback
-  const detectWithJsQR = (imageData: ImageData) => {
+  const detectWithJsQR = async (imageData: ImageData) => {
     try {
       const code = jsQR(imageData.data, imageData.width, imageData.height, {
         inversionAttempts: 'dontInvert'
       });
       
-      if (code && validateQRCode(code.data)) {
-        stopScanning();
-        onResult({
-          text: code.data,
-          format: 'QR_CODE'
-        });
+      if (code) {
+        const isValid = await validateQRCode(code.data);
+        if (isValid) {
+          stopScanning();
+          onResult({
+            text: code.data,
+            format: 'QR_CODE'
+          });
+        }
       }
     } catch (err) {
       console.error('jsQR error:', err);
     }
   };
 
-  // Validate QR code format and offline verification
-  const validateQRCode = (qrData: string): boolean => {
+  // Server-side QR validation with cryptographic integrity checks
+  const validateQRCode = async (qrData: string): Promise<boolean> => {
     try {
-      // Basic format validation: E:<eventShort>|C:<chapter>|S:<seq>|V:1|H:<crc>
+      // Basic format check first (client-side optimization)
       if (!qrData.startsWith('E:') || !qrData.includes('|C:')) {
         return false;
       }
 
-      const parts = qrData.split('|');
-      const eventPart = parts.find(p => p.startsWith('E:'))?.substring(2);
-      const chapterPart = parts.find(p => p.startsWith('C:'))?.substring(2);
-      const seqPart = parts.find(p => p.startsWith('S:'))?.substring(2);
-      const versionPart = parts.find(p => p.startsWith('V:'))?.substring(2);
-      const hashPart = parts.find(p => p.startsWith('H:'))?.substring(2);
+      // Call server-side validation API for cryptographic verification
+      const response = await fetch('/api/qr-validation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include', // Include auth cookies
+        body: JSON.stringify({
+          qrData,
+          eventId: undefined, // Optional: can specify event context
+        }),
+      });
 
-      // Validate required parts
-      if (!eventPart || !chapterPart || !seqPart || !versionPart || !hashPart) {
+      const result = await response.json();
+      
+      if (result.success && result.isValid) {
+        console.log('Valid QR validated server-side:', {
+          eventId: result.eventId,
+          chapterId: result.chapterId,
+          sequenceId: result.sequenceId,
+          points: result.points,
+          alreadyCollected: result.alreadyCollected
+        });
+        return true;
+      } else {
+        console.warn('QR validation failed:', result.message, result.error);
         return false;
       }
-
-      // TODO: Add offline dictionary validation and CRC checking
-      // For now, accept well-formatted codes
-      console.log('Valid QR detected:', { eventPart, chapterPart, seqPart });
-      return true;
     } catch (error) {
-      console.error('QR validation error:', error);
+      console.error('QR server validation error:', error);
       return false;
     }
   };
@@ -211,9 +227,10 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
 
     try {
       const track = streamRef.current.getVideoTracks()[0];
-      if (track && 'torch' in track.getCapabilities()) {
+      const capabilities = track.getCapabilities() as any;
+      if (track && 'torch' in capabilities) {
         await track.applyConstraints({
-          advanced: [{ torch: !isFlashlightOn }]
+          advanced: [{ torch: !isFlashlightOn } as any]
         });
         setIsFlashlightOn(!isFlashlightOn);
       }
@@ -226,7 +243,8 @@ export default function QRScanner({ isOpen, onClose, onResult, onError }: QRScan
   const checkFlashlightSupport = useCallback(() => {
     if (streamRef.current) {
       const track = streamRef.current.getVideoTracks()[0];
-      if (track && 'torch' in track.getCapabilities()) {
+      const capabilities = track.getCapabilities() as any;
+      if (track && 'torch' in capabilities) {
         setHasFlashlight(true);
       }
     }
