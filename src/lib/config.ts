@@ -96,15 +96,20 @@ function loadConfig(): AppConfig {
   const isDevelopment = nodeEnv === 'development';
   const isProduction = nodeEnv === 'production';
   
-  // Validate required environment variables
-  const requiredEnvVars = ['DATABASE_URL'];
-  if (isProduction) {
-    requiredEnvVars.push('JWT_SECRET', 'SESSION_SECRET');
-  }
+  // Check if we're in a server environment (Node.js vs browser)
+  const isServerSide = typeof window === 'undefined';
   
-  for (const envVar of requiredEnvVars) {
-    if (!process.env[envVar]) {
-      throw new Error(`Missing required environment variable: ${envVar}`);
+  // Validate required environment variables (only on server-side)
+  if (isServerSide) {
+    const requiredEnvVars = ['DATABASE_URL'];
+    if (isProduction) {
+      requiredEnvVars.push('JWT_SECRET', 'SESSION_SECRET');
+    }
+    
+    for (const envVar of requiredEnvVars) {
+      if (!process.env[envVar]) {
+        throw new Error(`Missing required environment variable: ${envVar}`);
+      }
     }
   }
   
@@ -126,14 +131,14 @@ function loadConfig(): AppConfig {
     cdnUrl: process.env.CDN_URL || 'https://storage.googleapis.com/odeislands',
     domain: process.env.DOMAIN,
     
-    // Database
-    databaseUrl: process.env.DATABASE_URL!,
+    // Database (server-side only)
+    databaseUrl: isServerSide ? process.env.DATABASE_URL! : '',
     
-    // Authentication & Security
-    jwtSecret,
-    sessionSecret: process.env.SESSION_SECRET || 'development-session-secret',
-    csrfSecret: process.env.CSRF_SECRET,
-    qrSecret: process.env.QR_SECRET,
+    // Authentication & Security (server-side only for sensitive secrets)
+    jwtSecret: isServerSide ? jwtSecret : '',
+    sessionSecret: isServerSide ? (process.env.SESSION_SECRET || 'development-session-secret') : '',
+    csrfSecret: isServerSide ? process.env.CSRF_SECRET : undefined,
+    qrSecret: isServerSide ? process.env.QR_SECRET : undefined,
     
     // Media & Storage
     storage: {
