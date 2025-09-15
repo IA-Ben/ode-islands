@@ -288,7 +288,7 @@ export default function AfterPage() {
             <div className="text-center mb-8">
               <h3 className="text-3xl font-bold text-white mb-4">
                 <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 714.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 713.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 710 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 710-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 712.828 0L16 16m-2-2l1.586-1.586a2 2 0 712.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
                 <AnimateText active={animateIn} delay={1800}>
                   Achievement Certificates
@@ -320,7 +320,7 @@ export default function AfterPage() {
               <div className="text-center mb-8">
                 <h3 className="text-3xl font-bold text-white mb-4">
                   <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 714.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 713.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 710 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 710-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 713.138-3.138z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 712.828 0L16 16m-2-2l1.586-1.586a2 2 0 712.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                   <AnimateText active={animateIn} delay={1800}>
                     Your Achievement Legacy
@@ -529,7 +529,7 @@ export default function AfterPage() {
               }}
             >
               <button
-                onClick={() => setActiveTab('certificates')}
+                onClick={() => setActiveTab('memory-wallet')}
                 className="group bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 text-left transform transition-all duration-300 hover:scale-105 hover:bg-white/15 hover:border-white/30 hover:shadow-2xl"
                 style={{
                   opacity: 0,
@@ -542,52 +542,32 @@ export default function AfterPage() {
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-200 transition-colors">
-                  Achievement Certificates
+                  Memory Wallet
                 </h3>
                 <p className="text-white/70 leading-relaxed">
-                  Download and share official certificates recognizing your journey milestones and accomplishments.
+                  Browse, share, and relive your favorite captured moments and experiences from your journey through The Ode Islands.
                 </p>
               </button>
               
-              <button
-                onClick={() => setActiveTab('memories')}
-                className="group bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 text-left transform transition-all duration-300 hover:scale-105 hover:bg-white/15 hover:border-white/30 hover:shadow-2xl"
-                style={{
-                  opacity: 0,
-                  animation: animateIn ? 'animButtonIn 0.6s 2.4s ease forwards' : 'none'
-                }}
-              >
-                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/30 transition-colors">
-                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-200 transition-colors">
-                  Event Memories
-                </h3>
-                <p className="text-white/70 leading-relaxed">
-                  Browse, share, and relive your favorite captured moments and experiences from the journey.
-                </p>
-              </button>
               
               <button
                 onClick={() => setActiveTab('memory-wallet')}
                 className="group bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 text-left transform transition-all duration-300 hover:scale-105 hover:bg-white/15 hover:border-white/30 hover:shadow-2xl"
                 style={{
                   opacity: 0,
-                  animation: animateIn ? 'animButtonIn 0.6s 2.5s ease forwards' : 'none'
+                  animation: animateIn ? 'animButtonIn 0.6s 2.3s ease forwards' : 'none'
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/30 transition-colors">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 712.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-200 transition-colors">
-                  Memory Collection
+                  Memory Wallet
                 </h3>
                 <p className="text-white/70 leading-relaxed">
-                  Your personal treasury of memories collected from cards, chapters, and special events.
+                  Browse, share, and relive your favorite captured moments and experiences from your journey through The Ode Islands.
                 </p>
               </button>
               
@@ -596,7 +576,7 @@ export default function AfterPage() {
                 className="group bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 text-left transform transition-all duration-300 hover:scale-105 hover:bg-white/15 hover:border-white/30 hover:shadow-2xl"
                 style={{
                   opacity: 0,
-                  animation: animateIn ? 'animButtonIn 0.6s 2.6s ease forwards' : 'none'
+                  animation: animateIn ? 'animButtonIn 0.6s 2.5s ease forwards' : 'none'
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/30 transition-colors">
