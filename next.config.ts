@@ -1,9 +1,13 @@
 
 import type { NextConfig } from 'next'
+import { getConfig } from "./src/lib/config";
+
+// Get config at build time
+const config = getConfig();
 
 const nextConfig: NextConfig = {
   images: {
-    remotePatterns: [{ protocol: 'https', hostname: 'storage.googleapis.com' }]
+    remotePatterns: [{ protocol: 'https', hostname: config.storage.hostname }]
   },
   typescript: {
     ignoreBuildErrors: true

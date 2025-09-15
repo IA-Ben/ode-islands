@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import Hls from "hls.js";
+import { getConfig } from '@/lib/config';
 
 interface PlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
   video: {
@@ -24,7 +25,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const videoListenersCleanupRef = useRef<(() => void) | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const cdnUrl = "https://storage.googleapis.com/odeislands";
+  const cdnUrl = getConfig().cdnUrl;
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
   
