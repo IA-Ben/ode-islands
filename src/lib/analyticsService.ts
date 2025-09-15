@@ -46,7 +46,7 @@ export class AnalyticsService {
   }> {
     const cacheKey = this.getCacheKey('realTimeMetrics', {});
     const cached = this.getCachedData(cacheKey);
-    if (cached) return cached;
+    if (cached) return cached as any;
 
     const now = new Date();
     const last15Minutes = new Date(now.getTime() - 15 * 60 * 1000);
@@ -104,7 +104,7 @@ export class AnalyticsService {
   }> {
     const cacheKey = this.getCacheKey('userEngagement', filter);
     const cached = this.getCachedData(cacheKey);
-    if (cached) return cached;
+    if (cached) return cached as any;
 
     const startDate = filter.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const endDate = filter.endDate || new Date();
@@ -224,7 +224,7 @@ export class AnalyticsService {
   }> {
     const cacheKey = this.getCacheKey('contentPerformance', filter);
     const cached = this.getCachedData(cacheKey);
-    if (cached) return cached;
+    if (cached) return cached as any;
 
     const startDate = filter.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const endDate = filter.endDate || new Date();
@@ -342,7 +342,7 @@ export class AnalyticsService {
   }> {
     const cacheKey = this.getCacheKey('interactiveMetrics', filter);
     const cached = this.getCachedData(cacheKey);
-    if (cached) return cached;
+    if (cached) return cached as any;
 
     const startDate = filter.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const endDate = filter.endDate || new Date();
@@ -456,7 +456,7 @@ export class AnalyticsService {
   }> {
     const cacheKey = this.getCacheKey('eventManagement', { eventId });
     const cached = this.getCachedData(cacheKey);
-    if (cached) return cached;
+    if (cached) return cached as any;
 
     const [eventsResult] = await Promise.all([
       // Current events with participant counts

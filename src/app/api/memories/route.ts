@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { eventMemories } from '../../../../shared/schema';
-import { eq, desc, and, or } from 'drizzle-orm';
+import { eq, desc, and, or, count } from 'drizzle-orm';
 import { withAuth, withUserAuthAndCSRF, validateUserIdentifierFields, setUserIdentifierFields } from '../../../../server/auth';
 
 async function handleGET(request: NextRequest) {
@@ -9,7 +9,8 @@ async function handleGET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('eventId');
     const isPublic = searchParams.get('isPublic');
-    const limit = parseInt(searchParams.get('limit') || '20');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 100); // Cap at 100 for performance
+    const offset = parseInt(searchParams.get('offset') || '0');
 
     // Get session information for authorization (may be null for unauthenticated users)
     const session = (request as any).session;
@@ -67,17 +68,41 @@ async function handleGET(request: NextRequest) {
       }
     }
 
-    // Get event memories with proper authorization
-    const memories = await db
-      .select()
+    // Get total count for pagination metadata
+    const totalCountQuery = db
+      .select({ count: count() })
       .from(eventMemories)
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(eventMemories.createdAt))
-      .limit(limit);
+      .where(conditions.length > 0 ? and(...conditions) : undefined);
+    
+    const [totalCountResult, memories] = await Promise.all([
+      totalCountQuery,
+      // Get event memories with proper authorization and pagination
+      db
+        .select()
+        .from(eventMemories)
+        .where(conditions.length > 0 ? and(...conditions) : undefined)
+        .orderBy(desc(eventMemories.createdAt))
+        .limit(limit)
+        .offset(offset)
+    ]);
+
+    const totalCount = totalCountResult[0]?.count || 0;
+    const hasMore = offset + limit < totalCount;
+    const totalPages = Math.ceil(totalCount / limit);
+    const currentPage = Math.floor(offset / limit) + 1;
 
     return NextResponse.json({
       success: true,
       memories: memories,
+      pagination: {
+        total: totalCount,
+        limit,
+        offset,
+        currentPage,
+        totalPages,
+        hasMore,
+        hasPrevious: offset > 0
+      }
     });
 
   } catch (error) {

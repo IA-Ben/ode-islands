@@ -7,6 +7,7 @@ import {
   userProgress,
   polls,
   pollResponses,
+  users,
   type FanScoringRule,
   type UpsertFanScoreEvent,
   type UpsertUserFanScore,
@@ -385,17 +386,30 @@ export class ScoringService {
   }
 
   /**
-   * Get leaderboard for a specific scope
+   * Get leaderboard for a specific scope with user information (fixes N+1 query problem)
    */
-  async getLeaderboard(scopeType: string, scopeId: string, limit: number = 10): Promise<any[]> {
+  async getLeaderboard(scopeType: string, scopeId: string, limit: number = 10, offset: number = 0): Promise<any[]> {
+    // Sanitize input parameters
+    const sanitizedLimit = Math.max(1, Math.min(isNaN(limit) ? 10 : limit, 100));
+    const sanitizedOffset = Math.max(0, isNaN(offset) ? 0 : offset);
+
     return await db
       .select({
         userId: userFanScores.userId,
         totalScore: userFanScores.totalScore,
         level: userFanScores.level,
-        position: sql<number>`ROW_NUMBER() OVER (ORDER BY ${userFanScores.totalScore} DESC)`.as('position')
+        position: sql<number>`ROW_NUMBER() OVER (ORDER BY ${userFanScores.totalScore} DESC)`.as('position'),
+        // Include user information to eliminate N+1 queries
+        user: {
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          profileImageUrl: users.profileImageUrl,
+          displayName: sql<string>`TRIM(COALESCE(${users.firstName}, '') || ' ' || COALESCE(${users.lastName}, ''))`.as('display_name')
+        }
       })
       .from(userFanScores)
+      .leftJoin(users, eq(userFanScores.userId, users.id))
       .where(
         and(
           eq(userFanScores.scopeType, scopeType),
@@ -403,7 +417,8 @@ export class ScoringService {
         )
       )
       .orderBy(desc(userFanScores.totalScore))
-      .limit(limit);
+      .limit(sanitizedLimit)
+      .offset(sanitizedOffset);
   }
 
   // Private helper methods

@@ -4,7 +4,7 @@ import {
   userFanScores, 
   users 
 } from '../../../../../shared/schema';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, sql, count } from 'drizzle-orm';
 import { withAuth } from '../../../../../server/auth';
 import { ScoringService } from '../../../../../server/scoringService';
 
@@ -15,16 +15,12 @@ async function handleGET(request: NextRequest) {
     const scopeId = searchParams.get('scopeId') || 'global';
     const eventId = searchParams.get('eventId');
     const phase = searchParams.get('phase');
-    const limit = parseInt(searchParams.get('limit') || '10');
+    // Sanitize input parameters with proper validation
+    const rawLimit = parseInt(searchParams.get('limit') || '10');
+    const rawOffset = parseInt(searchParams.get('offset') || '0');
+    const limit = Math.max(1, Math.min(isNaN(rawLimit) ? 10 : rawLimit, 100));
+    const offset = Math.max(0, isNaN(rawOffset) ? 0 : rawOffset);
     const includeUserPosition = searchParams.get('includeUserPosition') !== 'false';
-
-    // Validate limit
-    if (limit > 50) {
-      return NextResponse.json(
-        { success: false, message: 'Limit cannot exceed 50' },
-        { status: 400 }
-      );
-    }
 
     // Get session information for authorization
     const session = (request as any).session;
@@ -50,37 +46,22 @@ async function handleGET(request: NextRequest) {
 
     const scoringService = new ScoringService();
 
-    // Get leaderboard data
-    const leaderboard = await scoringService.getLeaderboard(finalScopeType, finalScopeId, limit);
+    // Get leaderboard data with user information (fixed N+1 query problem)
+    const leaderboard = await scoringService.getLeaderboard(finalScopeType, finalScopeId, limit, offset);
 
-    // Enhance leaderboard data with user information
-    const enhancedLeaderboard = await Promise.all(
-      leaderboard.map(async (entry, index) => {
-        const user = await db
-          .select({
-            id: users.id,
-            firstName: users.firstName,
-            lastName: users.lastName,
-            profileImageUrl: users.profileImageUrl,
-          })
-          .from(users)
-          .where(eq(users.id, entry.userId))
-          .limit(1);
-
-        return {
-          position: entry.position || (index + 1),
-          userId: entry.userId,
-          totalScore: entry.totalScore,
-          level: entry.level,
-          user: user[0] ? {
-            firstName: user[0].firstName || '',
-            lastName: user[0].lastName || '',
-            profileImageUrl: user[0].profileImageUrl || null,
-            displayName: `${user[0].firstName || ''} ${user[0].lastName || ''}`.trim() || 'User',
-          } : null,
-        };
-      })
-    );
+    // Transform leaderboard data (no additional queries needed)
+    const enhancedLeaderboard = leaderboard.map((entry, index) => ({
+      position: entry.position || (offset + index + 1),
+      userId: entry.userId,
+      totalScore: entry.totalScore,
+      level: entry.level,
+      user: entry.user ? {
+        firstName: entry.user.firstName || '',
+        lastName: entry.user.lastName || '',
+        profileImageUrl: entry.user.profileImageUrl || null,
+        displayName: entry.user.displayName || 'User',
+      } : null,
+    }));
 
     // Get current user's position if requested
     let userPosition = null;
@@ -97,9 +78,9 @@ async function handleGET(request: NextRequest) {
       };
     }
 
-    // Get total participants in this scope
+    // Get total participants in this scope (standardized count approach)
     const totalParticipants = await db
-      .select({ count: sql<number>`count(*)` })
+      .select({ count: count() })
       .from(userFanScores)
       .where(
         and(
@@ -108,18 +89,31 @@ async function handleGET(request: NextRequest) {
         )
       );
 
+    const totalCount = totalParticipants[0]?.count || 0;
+    const hasMore = offset + limit < totalCount;
+    const totalPages = Math.ceil(totalCount / limit);
+    const currentPage = Math.floor(offset / limit) + 1;
+
     return NextResponse.json({
       success: true,
       data: {
         scope: {
           type: finalScopeType,
           id: finalScopeId,
-          totalParticipants: totalParticipants[0]?.count || 0,
+          totalParticipants: totalCount,
         },
         leaderboard: enhancedLeaderboard,
         userPosition,
-        meta: {
+        pagination: {
+          total: totalCount,
           limit,
+          offset,
+          currentPage,
+          totalPages,
+          hasMore,
+          hasPrevious: offset > 0
+        },
+        meta: {
           timestamp: new Date().toISOString(),
         },
       }
