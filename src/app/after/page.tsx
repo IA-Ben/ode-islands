@@ -8,6 +8,7 @@ import MemoryWallet from "@/components/MemoryWallet";
 import ScoreProgressPanel from "@/components/ScoreProgressPanel";
 import Leaderboard from "@/components/Leaderboard";
 import ScoreBadge from "@/components/ScoreBadge";
+import HeroRecapCard from "@/components/HeroRecapCard";
 import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageLayout';
 import AnimateText from '@/components/AnimateText';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -23,7 +24,7 @@ interface TabTheme {
 
 export default function AfterPage() {
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'overview' | 'memories' | 'memory-wallet' | 'insights' | 'certificates' | 'fan-score'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'message' | 'wallet' | 'gallery' | 'merch' | 'community'>('overview');
   const [animateIn, setAnimateIn] = useState(false);
   
   // Tab-specific immersive themes - Professional Lumus-inspired palettes
@@ -36,15 +37,15 @@ export default function AfterPage() {
       description: '#cbd5e0',
       shadow: true
     },
-    memories: {
-      background: 'linear-gradient(135deg, #374151 0%, #4b5563 100%)',
+    message: {
+      background: 'linear-gradient(135deg, #581c87 0%, #7c3aed 100%)',
       overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
       title: '#ffffff',
-      subtitle: '#f3f4f6',
-      description: '#d1d5db',
+      subtitle: '#f3e8ff',
+      description: '#ddd6fe',
       shadow: true
     },
-    'memory-wallet': {
+    wallet: {
       background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
       overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
       title: '#ffffff',
@@ -52,7 +53,15 @@ export default function AfterPage() {
       description: '#d1fae5',
       shadow: true
     },
-    certificates: {
+    gallery: {
+      background: 'linear-gradient(135deg, #374151 0%, #4b5563 100%)',
+      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
+      title: '#ffffff',
+      subtitle: '#f3f4f6',
+      description: '#d1d5db',
+      shadow: true
+    },
+    merch: {
       background: 'linear-gradient(135deg, #7c2d12 0%, #9a3412 100%)',
       overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
       title: '#ffffff',
@@ -60,20 +69,12 @@ export default function AfterPage() {
       description: '#fed7aa',
       shadow: true
     },
-    'fan-score': {
+    community: {
       background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
       overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
       title: '#ffffff',
       subtitle: '#dbeafe',
       description: '#bfdbfe',
-      shadow: true
-    },
-    insights: {
-      background: 'linear-gradient(135deg, #7c2d12 0%, #a16207 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
-      title: '#ffffff',
-      subtitle: '#fef3c7',
-      description: '#fde68a',
       shadow: true
     }
   };
@@ -95,7 +96,44 @@ export default function AfterPage() {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'memories':
+      case 'message':
+        return (
+          <div 
+            className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8"
+            style={{
+              opacity: 0,
+              animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
+            }}
+          >
+            <div className="text-center mb-8">
+              <h3 className="text-3xl font-bold text-white mb-4">
+                <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <AnimateText active={animateIn} delay={1800}>
+                  Your Personalized Message
+                </AnimateText>
+              </h3>
+              <p className="text-white/80 text-lg">A custom video message crafted from your journey</p>
+            </div>
+            
+            <div className="bg-white/10 rounded-xl p-6 text-center">
+              <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h4 className="text-xl font-bold text-white mb-2">Generating Your Message</h4>
+              <p className="text-white/60 mb-4">We're creating a personalized video message based on your unique journey through The Ode Islands.</p>
+              <div className="w-full bg-white/20 rounded-full h-2 mb-4">
+                <div className="bg-gradient-to-r from-purple-400 to-pink-500 h-2 rounded-full w-3/4 transition-all duration-1000"></div>
+              </div>
+              <p className="text-white/50 text-sm">Estimated completion: 2-3 minutes</p>
+            </div>
+          </div>
+        );
+
+      case 'gallery':
         return (
           <div 
             className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8"
@@ -123,7 +161,7 @@ export default function AfterPage() {
           </div>
         );
       
-      case 'memory-wallet':
+      case 'wallet':
         return (
           <div 
             className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8"
@@ -138,10 +176,10 @@ export default function AfterPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
                 <AnimateText active={animateIn} delay={1800}>
-                  Your Memory Collection
+                  Memory Wallet v2
                 </AnimateText>
               </h3>
-              <p className="text-white/80 text-lg">Personal memories from cards, chapters, and events</p>
+              <p className="text-white/80 text-lg">Fuse your collected memories into a Memory Crystal</p>
             </div>
             <MemoryWallet 
               showHeader={false}
@@ -330,6 +368,9 @@ export default function AfterPage() {
       default: // overview
         return (
           <div className="space-y-12">
+            {/* Hero Recap Card */}
+            <HeroRecapCard className="w-full" />
+            
             {/* Welcome Hero Section */}
             <div 
               className="text-center"
