@@ -720,10 +720,10 @@ export default function CMSPage() {
             >
               <div className="bg-white/8 backdrop-blur-sm rounded-xl border border-white/20 p-6">
                 <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                  </svg>
                   <AnimateText active={animateIn} delay={1800}>
-                    <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
                     Storytelling Chapters
                   </AnimateText>
                 </h3>
@@ -760,7 +760,7 @@ export default function CMSPage() {
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-2xl font-bold text-white flex items-center">
                   <AnimateText active={animateIn} delay={2100}>
-                    {selectedChapter.replace('-', ' ').toUpperCase()} Chapter
+                    {`${selectedChapter.replace('-', ' ').toUpperCase()} Chapter`}
                   </AnimateText>
                 </h3>
                 <div className="text-white/70 text-sm bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/20">
@@ -1104,10 +1104,10 @@ export default function CMSPage() {
           }}
         >
           <h3 className="text-lg font-bold text-white mb-6 flex items-center">
+            <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7" />
+            </svg>
             <AnimateText active={animateIn} delay={2400}>
-              <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7" />
-              </svg>
               Quick Actions
             </AnimateText>
           </h3>
