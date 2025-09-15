@@ -108,7 +108,7 @@ export const ImmersivePageLayout: React.FC<ImmersivePageLayoutProps> = ({
 
   return (
     <div
-      className={`relative w-full overflow-y-auto overflow-x-hidden flex-col items-center justify-center text-center ${className}`}
+      className={`relative w-full flex-col items-center justify-center text-center ${className}`}
       style={{
         backgroundColor: theme?.background || appTheme.colors.background,
         minHeight: "100dvh"
