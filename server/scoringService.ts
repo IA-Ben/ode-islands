@@ -912,7 +912,7 @@ export class ScoringService {
       return { currentStreak: 0, longestStreak: 0, lastActivityDate: null };
     }
 
-    const periods = activities.map(a => new Date(a.period));
+    const periods = activities.map((a: any) => new Date(a.period));
     const lastActivityDate = periods[0];
 
     // Calculate current streak from most recent activity
@@ -925,7 +925,7 @@ export class ScoringService {
     
     // Check if there's activity today/this week
     const todayPeriod = this.getStartOfPeriod(now, type);
-    const hasActivityToday = periods.some(date => 
+    const hasActivityToday = periods.some((date: Date) => 
       date.getTime() === todayPeriod.getTime()
     );
     
@@ -1094,12 +1094,12 @@ export class ScoringService {
     const criteria = achievement.criteria as any;
     
     // Special celebration for milestone achievements
-    if (achievement.pointsBonus >= 1000) {
+    if ((achievement.pointsBonus ?? 0) >= 1000) {
       return 'legendary'; // Fireworks, golden confetti, special sound
     }
     
     // High-value achievements
-    if (achievement.pointsBonus >= 500) {
+    if ((achievement.pointsBonus ?? 0) >= 500) {
       return 'epic'; // Confetti burst, celebration sound
     }
     
