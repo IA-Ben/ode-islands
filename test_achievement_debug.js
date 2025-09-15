@@ -3,15 +3,16 @@
  * This will help identify why achievements aren't being triggered
  */
 
-import { scoringService } from './server/scoringService.js';
-import { db } from './server/db.js';
-import { 
+// Use dynamic imports to handle ES modules properly
+const { scoringService } = await import('./server/scoringService.js');
+const { db } = await import('./server/db.js');
+const { 
   achievementDefinitions,
   userAchievements,
   fanScoreEvents,
   userFanScores 
-} from './shared/schema.js';
-import { eq, and } from 'drizzle-orm';
+} = await import('./shared/schema.js');
+const { eq, and } = await import('drizzle-orm');
 
 const TEST_USER_ID = 'ben-admin-user';
 
@@ -120,13 +121,15 @@ async function debugAchievements() {
   }
 }
 
-// Run the debug function
-debugAchievements()
-  .then(() => {
+// Run the debug function with proper error handling
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try {
+    await debugAchievements();
     console.log('\n✅ Debug completed');
     process.exit(0);
-  })
-  .catch(error => {
+  } catch (error) {
     console.error('❌ Fatal error:', error);
+    console.error(error.stack || error);
     process.exit(1);
-  });
+  }
+}

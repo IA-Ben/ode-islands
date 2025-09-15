@@ -1,8 +1,23 @@
 // Test script to verify end-to-end certificate functionality
-const baseUrl = 'http://localhost:5000';
+// Use environment variable for base URL with fallback
+const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:5000';
 
 async function testCertificateAPIs() {
   console.log('🧪 Testing Certificate APIs...\n');
+  console.log(`Using base URL: ${baseUrl}\n`);
+  
+  // Check if server is reachable first
+  try {
+    const healthCheck = await fetch(`${baseUrl}/api/csrf-token`, { method: 'GET' });
+    if (!healthCheck.ok && healthCheck.status !== 401) {
+      throw new Error(`Server not reachable at ${baseUrl}`);
+    }
+    console.log('✅ Server is reachable\n');
+  } catch (error) {
+    console.log(`❌ Server connection failed: ${error.message}`);
+    console.log('Make sure the development server is running before running this test.');
+    return;
+  }
 
   // Test 1: Check if public certificate API exists
   console.log('1. Testing Public Certificate API...');
@@ -14,6 +29,9 @@ async function testCertificateAPIs() {
     }
   } catch (error) {
     console.log(`   ❌ Public API failed: ${error.message}`);
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      console.log('   💡 Tip: Make sure the server is running on the correct port');
+    }
   }
 
   // Test 2: Check admin certificates API (requires auth)
@@ -73,5 +91,17 @@ async function testCertificateAPIs() {
   console.log('\n✅ All certificate APIs are now functional!');
 }
 
-// Run the test
-testCertificateAPIs().catch(console.error);
+// Run the test with better error handling
+if (import.meta.url === `file://${process.argv[1]}`) {
+  testCertificateAPIs()
+    .then(() => {
+      console.log('\n✅ Certificate API testing completed');
+    })
+    .catch(error => {
+      console.error('\n❌ Certificate API testing failed:', error.message);
+      process.exit(1);
+    });
+}
+
+// Export for use as a module
+export { testCertificateAPIs };

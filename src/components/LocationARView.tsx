@@ -146,8 +146,20 @@ export default function LocationARView({ ar, onClose, onError }: LocationARViewP
 
   // Initialize A-Frame scene (once)
   useEffect(() => {
+    // Enhanced safety checks for A-Frame availability
+    if (typeof window === 'undefined') {
+      onError('Window object not available (SSR context)');
+      return;
+    }
+    
     if (!window.AFRAME) {
-      onError('A-Frame library not loaded');
+      onError('A-Frame library not loaded. Please ensure A-Frame and AR.js are included in your page.');
+      return;
+    }
+
+    // Check for required A-Frame components
+    if (typeof document === 'undefined' || !document.createElement) {
+      onError('Document API not available');
       return;
     }
 
@@ -157,15 +169,23 @@ export default function LocationARView({ ar, onClose, onError }: LocationARViewP
     if (!container) return;
 
     try {
-      // Create A-Frame scene
+      // Create A-Frame scene with enhanced error handling
       const sceneEl = document.createElement('a-scene');
+      if (!sceneEl || typeof sceneEl.setAttribute !== 'function') {
+        throw new Error('Failed to create A-Frame scene element');
+      }
+      
       sceneEl.setAttribute('embedded', '');
       sceneEl.setAttribute('arjs', 'sourceType: webcam; debugUIEnabled: false;');
       sceneEl.style.width = '100%';
       sceneEl.style.height = '100%';
 
-      // Add GPS camera (remove problematic rotation-reader dependency)
+      // Add GPS camera with safety checks
       const cameraEl = document.createElement('a-camera');
+      if (!cameraEl || typeof cameraEl.setAttribute !== 'function') {
+        throw new Error('Failed to create A-Frame camera element');
+      }
+      
       cameraEl.setAttribute('gps-camera', 'gpsMinDistance: 5; gpsTimeInterval: 5000;');
       sceneEl.appendChild(cameraEl);
 
@@ -187,7 +207,8 @@ export default function LocationARView({ ar, onClose, onError }: LocationARViewP
 
     } catch (error) {
       console.error('Failed to initialize location AR:', error);
-      onError('Failed to initialize location-based AR.');
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      onError(`Failed to initialize location-based AR: ${errorMessage}. Please ensure A-Frame and AR.js libraries are properly loaded.`);
     }
   }, [permissionGranted, onError]);
 

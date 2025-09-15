@@ -1,6 +1,22 @@
-const { db } = require('./server/db');
-const { ScoringService } = require('./server/scoringService');
-const { ACTIVITY_TYPES } = require('./shared/constants');
+// Convert to proper ES module imports with error handling
+let db, ScoringService, ACTIVITY_TYPES, users, fanScoreEvents;
+
+try {
+  const dbModule = await import('./server/db.js');
+  const scoringModule = await import('./server/scoringService.js');
+  const constantsModule = await import('./shared/constants.js');
+  const schemaModule = await import('./shared/schema.js');
+  
+  db = dbModule.db;
+  ScoringService = scoringModule.ScoringService;
+  ACTIVITY_TYPES = constantsModule.ACTIVITY_TYPES;
+  users = schemaModule.users;
+  fanScoreEvents = schemaModule.fanScoreEvents;
+} catch (error) {
+  console.error('❌ Failed to import required modules:', error.message);
+  console.error('Make sure all dependencies are installed and the server is properly configured.');
+  process.exit(1);
+}
 
 /**
  * Comprehensive Fan Score System Testing
@@ -12,15 +28,23 @@ async function comprehensiveTest() {
   
   const scoringService = new ScoringService();
   
-  // Get test user ID
-  const users = await db.select().from(require('./shared/schema').users).limit(1);
-  if (users.length === 0) {
+  // Get test user ID with better error handling
+  let testUsers;
+  try {
+    testUsers = await db.select().from(users).limit(1);
+  } catch (error) {
+    console.error('❌ Failed to query users from database:', error.message);
+    console.error('Make sure the database is running and properly seeded.');
+    return { errors: ['Database connection failed'] };
+  }
+  if (testUsers.length === 0) {
     console.error('❌ No users found in database');
-    return;
+    console.error('Please run the database seeding process first.');
+    return { errors: ['No test users available'] };
   }
   
-  const userId = users[0].id;
-  console.log(`👤 Testing with user: ${users[0].email || users[0].id}\n`);
+  const userId = testUsers[0].id;
+  console.log(`👤 Testing with user: ${testUsers[0].email || testUsers[0].id}\n`);
 
   const testResults = {
     pointAwarding: {},
@@ -162,10 +186,13 @@ async function comprehensiveTest() {
   console.log('\n=== TEST 5: Data Integrity Verification ===');
   
   try {
-    // Check for any scoring events in database
-    const eventsCount = await db.select({ count: db.count() })
-      .from(require('./shared/schema').fanScoreEvents)
-      .where(db.eq(require('./shared/schema').fanScoreEvents.userId, userId));
+    // Check for any scoring events in database with proper imports
+    const { count } = await import('drizzle-orm');
+    const { eq } = await import('drizzle-orm');
+    
+    const eventsCount = await db.select({ count: count() })
+      .from(fanScoreEvents)
+      .where(eq(fanScoreEvents.userId, userId));
     
     console.log(`📊 Scoring events in database: ${eventsCount[0]?.count || 0}`);
     
@@ -196,18 +223,23 @@ async function comprehensiveTest() {
   return testResults;
 }
 
-// Export for use in other contexts
-if (require.main === module) {
-  comprehensiveTest()
-    .then(results => {
-      console.log('\n🎉 Comprehensive testing completed!');
-      console.log('Results available for review');
-      process.exit(0);
-    })
-    .catch(error => {
-      console.error('💥 Comprehensive testing failed:', error);
-      process.exit(1);
-    });
-}
+// Export for use in other contexts with ES module syntax
+export { comprehensiveTest };
 
-module.exports = { comprehensiveTest };
+// Run if this is the main module
+if (import.meta.url === `file://${process.argv[1]}`) {
+  try {
+    const results = await comprehensiveTest();
+    console.log('\n🎉 Comprehensive testing completed!');
+    console.log('Results available for review');
+    if (results?.errors?.length > 0) {
+      console.log('⚠️  Some errors were encountered during testing');
+      process.exit(1);
+    }
+    process.exit(0);
+  } catch (error) {
+    console.error('💥 Comprehensive testing failed:', error);
+    console.error(error.stack || error);
+    process.exit(1);
+  }
+}

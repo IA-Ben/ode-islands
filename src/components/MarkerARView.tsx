@@ -137,14 +137,31 @@ export default function MarkerARView({ ar, onClose, onError }: MarkerARViewProps
       return;
     }
 
-    if (!window.THREE || !window.MINDAR) {
-      onError('AR libraries not loaded');
+    // Enhanced safety checks for required global libraries
+    if (typeof window === 'undefined') {
+      onError('Window object not available (SSR context)');
       return;
     }
 
-    // Validate GLTFLoader availability
+    if (!window.THREE) {
+      onError('THREE.js library not loaded. Please ensure THREE.js is included in your page.');
+      return;
+    }
+
+    if (!window.MINDAR) {
+      onError('MindAR library not loaded. Please ensure MindAR is included in your page.');
+      return;
+    }
+
+    // Validate required THREE.js components
     if (!window.THREE.GLTFLoader) {
-      onError('GLTFLoader not available. Please ensure all AR libraries are loaded.');
+      onError('GLTFLoader not available. Please ensure THREE.js GLTFLoader is loaded.');
+      return;
+    }
+
+    // Validate MindAR components
+    if (!window.MINDAR.IMAGE || !window.MINDAR.IMAGE.MindARThree) {
+      onError('MindAR IMAGE component not available. Please ensure MindAR Image Tracking is loaded.');
       return;
     }
 
@@ -175,8 +192,10 @@ export default function MarkerARView({ ar, onClose, onError }: MarkerARViewProps
           return;
         }
 
-        // Initialize MindAR engine
-        const mindarThree = new window.MINDAR.IMAGE.MindARThree({
+        // Initialize MindAR engine with enhanced error handling
+        let mindarThree;
+        try {
+          mindarThree = new window.MINDAR.IMAGE.MindARThree({
           container,
           imageTargetSrc: targetSources,
           maxTrack: Math.min(ar.markers!.length, 3), // Limit to 3 simultaneous tracking for performance
@@ -186,6 +205,17 @@ export default function MarkerARView({ ar, onClose, onError }: MarkerARViewProps
           uiScanning: 'no',
           uiError: 'no'
         });
+
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown initialization error';
+          onError(`Failed to initialize MindAR: ${errorMessage}`);
+          return;
+        }
+
+        if (!mindarThree) {
+          onError('MindAR engine initialization failed');
+          return;
+        }
 
         const { renderer: newRenderer, scene: newScene, camera: newCamera } = mindarThree;
         
@@ -198,14 +228,24 @@ export default function MarkerARView({ ar, onClose, onError }: MarkerARViewProps
         newRenderer.setSize(container.clientWidth, container.clientHeight);
         newRenderer.setClearColor(0x000000, 0); // Transparent background
 
-        // Load 3D models for each marker
-        const loader = new window.THREE.GLTFLoader();
+        // Setup GLTF loader with enhanced safety checks
+        let loader;
+        try {
+          loader = new window.THREE.GLTFLoader();
+        } catch (error) {
+          onError('Failed to create GLTFLoader');
+          return;
+        }
         
         // Set up DRACO loader if available (for compressed models)
         if (window.THREE.DRACOLoader) {
-          const dracoLoader = new window.THREE.DRACOLoader();
-          dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
-          loader.setDRACOLoader(dracoLoader);
+          try {
+            const dracoLoader = new window.THREE.DRACOLoader();
+            dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+            loader.setDRACOLoader(dracoLoader);
+          } catch (error) {
+            console.warn('Failed to setup DRACO loader, continuing without DRACO support:', error);
+          }
         }
         
         for (let i = 0; i < ar.markers!.length; i++) {
