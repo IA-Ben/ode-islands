@@ -1,17 +1,34 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense, lazy } from "react";
 import PhaseNavigation from "@/components/PhaseNavigation";
-import EventMemoriesGallery from "@/components/EventMemoriesGallery";
-import CertificateManager from "@/components/CertificateManager";
-import MemoryWallet from "@/components/MemoryWallet";
-import ScoreProgressPanel from "@/components/ScoreProgressPanel";
-import Leaderboard from "@/components/Leaderboard";
-import ScoreBadge from "@/components/ScoreBadge";
-import HeroRecapCard from "@/components/HeroRecapCard";
 import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageLayout';
 import AnimateText from '@/components/AnimateText';
 import { useTheme } from '@/contexts/ThemeContext';
+
+// Lazy load heavy components for better performance
+const HeroRecapCard = lazy(() => import("@/components/HeroRecapCard"));
+const EventMemoriesGallery = lazy(() => import("@/components/EventMemoriesGallery"));
+const CertificateManager = lazy(() => import("@/components/CertificateManager"));
+const MemoryWallet = lazy(() => import("@/components/MemoryWallet"));
+const ScoreProgressPanel = lazy(() => import("@/components/ScoreProgressPanel"));
+const Leaderboard = lazy(() => import("@/components/Leaderboard"));
+const ScoreBadge = lazy(() => import("@/components/ScoreBadge"));
+
+// Skeleton loading component for better UX
+const ComponentSkeleton = ({ height = "400px" }: { height?: string }) => (
+  <div className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 animate-pulse" style={{ minHeight: height }}>
+    <div className="space-y-4">
+      <div className="h-8 bg-white/20 rounded w-3/4 animate-pulse"></div>
+      <div className="h-4 bg-white/20 rounded w-1/2 animate-pulse"></div>
+      <div className="space-y-2">
+        <div className="h-4 bg-white/20 rounded animate-pulse"></div>
+        <div className="h-4 bg-white/20 rounded w-5/6 animate-pulse"></div>
+        <div className="h-4 bg-white/20 rounded w-4/6 animate-pulse"></div>
+      </div>
+    </div>
+  </div>
+);
 
 // CMS Configuration Interface
 interface AfterExperienceConfig {
@@ -44,7 +61,7 @@ interface TabTheme {
 
 export default function AfterPage() {
   const { theme } = useTheme();
-  const [activeTab, setActiveTab] = useState<'overview' | 'message' | 'wallet' | 'gallery' | 'merch' | 'community'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'message' | 'wallet' | 'gallery' | 'merch' | 'community' | 'certificates' | 'fan-score' | 'insights' | 'memories' | 'memory-wallet'>('overview');
   const [animateIn, setAnimateIn] = useState(false);
   const [cmsConfig, setCmsConfig] = useState<AfterExperienceConfig | null>(null);
   const [isLoadingCms, setIsLoadingCms] = useState(true);
@@ -220,11 +237,13 @@ export default function AfterPage() {
               </h3>
               <p className="text-white/80 text-lg">Your captured moments from the journey</p>
             </div>
-            <EventMemoriesGallery 
-              showUploadButton={true}
-              showPrivateMemories={false}
-              className="w-full transform transition-all duration-300 hover:scale-[1.01]"
-            />
+            <Suspense fallback={<ComponentSkeleton height="500px" />}>
+              <EventMemoriesGallery 
+                showUploadButton={true}
+                showPrivateMemories={false}
+                className="w-full transform transition-all duration-300 hover:scale-[1.01]"
+              />
+            </Suspense>
           </div>
         );
       
@@ -248,10 +267,12 @@ export default function AfterPage() {
               </h3>
               <p className="text-white/80 text-lg">Fuse your collected memories into a Memory Crystal</p>
             </div>
-            <MemoryWallet 
-              showHeader={false}
-              className="w-full transform transition-all duration-300 hover:scale-[1.01]"
-            />
+            <Suspense fallback={<ComponentSkeleton height="300px" />}>
+              <MemoryWallet 
+                showHeader={false}
+                className="w-full transform transition-all duration-300 hover:scale-[1.01]"
+              />
+            </Suspense>
           </div>
         );
       
@@ -275,11 +296,13 @@ export default function AfterPage() {
               </h3>
               <p className="text-white/80 text-lg">Download and share your accomplishment certificates</p>
             </div>
-            <CertificateManager 
-              className="w-full transform transition-all duration-300 hover:scale-[1.01]"
-              showEligibility={true}
-              autoIssue={true}
-            />
+            <Suspense fallback={<ComponentSkeleton height="400px" />}>
+              <CertificateManager 
+                className="w-full transform transition-all duration-300 hover:scale-[1.01]"
+                showEligibility={true}
+                autoIssue={true}
+              />
+            </Suspense>
           </div>
         );
       
@@ -436,7 +459,9 @@ export default function AfterPage() {
         return (
           <div className="space-y-12">
             {/* Hero Recap Card */}
-            <HeroRecapCard className="w-full" />
+            <Suspense fallback={<ComponentSkeleton height="400px" />}>
+              <HeroRecapCard className="w-full" />
+            </Suspense>
             
             {/* Welcome Hero Section */}
             <div 
@@ -469,13 +494,15 @@ export default function AfterPage() {
                 }}
               >
                 <div className="flex items-center justify-center mb-8">
-                  <ScoreBadge 
-                    compact={false}
-                    showLevel={true}
-                    showPosition={true}
-                    onClick={() => setActiveTab('fan-score')}
-                    className="transform hover:scale-110 transition-all duration-300 cursor-pointer shadow-2xl"
-                  />
+                  <Suspense fallback={<div className="w-32 h-32 bg-white/20 rounded-full animate-pulse"></div>}>
+                    <ScoreBadge 
+                      compact={false}
+                      showLevel={true}
+                      showPosition={true}
+                      onClick={() => setActiveTab('fan-score')}
+                      className="transform hover:scale-110 transition-all duration-300 cursor-pointer shadow-2xl"
+                    />
+                  </Suspense>
                 </div>
                 <button
                   onClick={() => setActiveTab('fan-score')}
