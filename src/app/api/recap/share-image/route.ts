@@ -19,6 +19,20 @@ export async function POST(request: NextRequest) {
         completionPercentage: Math.round((completedChapters / totalChapters) * 100)
       };
 
+      // Safely escape text content to prevent XSS
+      function escapeXml(unsafe: string): string {
+        return unsafe.replace(/[<>&'"]/g, function (c) {
+          switch (c) {
+            case '<': return '&lt;';
+            case '>': return '&gt;';
+            case '&': return '&amp;';
+            case "'": return '&apos;';
+            case '"': return '&quot;';
+            default: return c;
+          }
+        });
+      }
+
       // Create SVG-based shareable image (1080x1920 portrait format as per spec)
       const svgContent = `
         <svg width="1080" height="1920" xmlns="http://www.w3.org/2000/svg">
@@ -42,12 +56,12 @@ export async function POST(request: NextRequest) {
           
           <!-- Event Title -->
           <text x="540" y="320" text-anchor="middle" fill="#e2e8f0" font-family="Arial, sans-serif" font-size="48" font-weight="600">
-            ${shareData.eventTitle}
+            ${escapeXml(shareData.eventTitle)}
           </text>
           
           <!-- Venue and Date -->
           <text x="540" y="400" text-anchor="middle" fill="#cbd5e0" font-family="Arial, sans-serif" font-size="36">
-            ${shareData.venue} • ${shareData.date}
+            ${escapeXml(shareData.venue)} • ${escapeXml(shareData.date)}
           </text>
           
           <!-- Progress Circle -->
@@ -73,7 +87,7 @@ export async function POST(request: NextRequest) {
           <!-- User Initials -->
           <circle cx="540" cy="1200" r="80" fill="#3b82f6" opacity="0.8"/>
           <text x="540" y="1220" text-anchor="middle" fill="white" font-family="Arial, sans-serif" font-size="48" font-weight="bold">
-            ${shareData.userInitials}
+            ${escapeXml(shareData.userInitials)}
           </text>
           
           <!-- Footer -->
@@ -96,7 +110,9 @@ export async function POST(request: NextRequest) {
         headers: {
           'Content-Type': 'image/svg+xml',
           'Content-Disposition': `attachment; filename="recap-${shareData.eventTitle.replace(/\s+/g, '-').toLowerCase()}.svg"`,
-          'Cache-Control': 'private, max-age=3600'
+          'Cache-Control': 'private, max-age=2592000', // 30 days
+          'X-Content-Type-Options': 'nosniff',
+          'Content-Security-Policy': "default-src 'none'"
         },
       });
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '../../../../../../server/auth';
+import { withAuth } from '../../../../../server/auth';
 
 export async function POST(request: NextRequest) {
   return withAuth(async (session: any) => {
@@ -30,30 +30,30 @@ export async function POST(request: NextRequest) {
 
       // In production, this would queue the job in a proper queue system
       // For now, simulate the process by storing in memory/cache
-      global.messageJobs = global.messageJobs || new Map();
-      global.messageJobs.set(jobId, messageJob);
+      (global as any).messageJobs = (global as any).messageJobs || new Map();
+      (global as any).messageJobs.set(jobId, messageJob);
 
       // Simulate job processing (in production, this would be handled by background workers)
       setTimeout(() => {
-        const job = global.messageJobs.get(jobId);
+        const job = (global as any).messageJobs.get(jobId);
         if (job) {
           job.status = 'processing';
           job.progress = 25;
-          global.messageJobs.set(jobId, job);
+          (global as any).messageJobs.set(jobId, job);
         }
       }, 5000);
 
       setTimeout(() => {
-        const job = global.messageJobs.get(jobId);
+        const job = (global as any).messageJobs.get(jobId);
         if (job) {
           job.status = 'processing';
           job.progress = 75;
-          global.messageJobs.set(jobId, job);
+          (global as any).messageJobs.set(jobId, job);
         }
       }, 30000);
 
       setTimeout(() => {
-        const job = global.messageJobs.get(jobId);
+        const job = (global as any).messageJobs.get(jobId);
         if (job) {
           job.status = 'completed';
           job.progress = 100;
@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
           // Set 30-day cache expiration
           job.expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
           
-          global.messageJobs.set(jobId, job);
+          (global as any).messageJobs.set(jobId, job);
         }
       }, 120000); // 2 minutes
 

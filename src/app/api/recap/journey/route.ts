@@ -15,23 +15,22 @@ interface JourneyEvent {
 }
 
 async function handleGET(request: NextRequest) {
-  const session = (request as any).session;
-  
-  try {
-    // Get user's latest progress and activities
-    const progressData = await db
-      .select()
-      .from(userProgress)
-      .where(eq(userProgress.userId, session.userId))
-      .orderBy(desc(userProgress.lastAccessed))
-      .limit(20);
+  return withAuth(async (session: any) => {
+    try {
+      // Get user's latest progress and activities
+      const progressData = await db
+        .select()
+        .from(userProgress)
+        .where(eq(userProgress.userId, session.user.id))
+        .orderBy(desc(userProgress.lastAccessed))
+        .limit(20);
 
-    // Get user's memories for keepsakes count
-    const memories = await db
-      .select()
-      .from(eventMemories)
-      .where(eq(eventMemories.createdBy, session.userId))
-      .orderBy(desc(eventMemories.createdAt));
+      // Get user's memories for keepsakes count
+      const memories = await db
+        .select()
+        .from(eventMemories)
+        .where(eq(eventMemories.createdBy, session.user.id))
+        .orderBy(desc(eventMemories.createdAt));
 
     // TODO: Add fan score data when available
 
@@ -68,34 +67,34 @@ async function handleGET(request: NextRequest) {
     const completedChapters = uniqueChapters.size;
     const totalKeepsakes = memories.length;
 
-    // Create recap data
-    const recapData = {
-      userId: session.userId,
-      eventTitle: 'The Ode Islands',
-      venue: 'Digital Experience',
-      date: new Date().toISOString().split('T')[0],
-      prologueTone: 'reflective', // Could be determined from user choices
-      journeyEvents: journeyEvents.slice(0, 10), // Limit to recent events
-      totalChapters,
-      completedChapters,
-      totalKeepsakes,
-      pollsAnswered: 0, // TODO: Add poll tracking
-      tasksCompleted: 0, // TODO: Add task tracking
-      overallProgress: Math.round((completedChapters / totalChapters) * 100)
-    };
+      // Create recap data
+      const recapData = {
+        userId: session.user.id,
+        eventTitle: 'The Ode Islands',
+        venue: 'Digital Experience',
+        date: new Date().toISOString().split('T')[0],
+        prologueTone: 'reflective', // Could be determined from user choices
+        journeyEvents: journeyEvents.slice(0, 10), // Limit to recent events
+        totalChapters,
+        completedChapters,
+        totalKeepsakes,
+        pollsAnswered: 0, // TODO: Add poll tracking
+        tasksCompleted: 0, // TODO: Add task tracking
+        overallProgress: Math.round((completedChapters / totalChapters) * 100)
+      };
 
-    return NextResponse.json({
-      success: true,
-      recap: recapData
-    });
+      return NextResponse.json({
+        success: true,
+        recap: recapData
+      });
 
-  } catch (error) {
-    console.error('Journey recap error:', error);
-    return NextResponse.json(
-      { success: false, message: 'Failed to generate journey recap' },
-      { status: 500 }
-    );
-  }
-}
+    } catch (error) {
+      console.error('Journey recap error:', error);
+      return NextResponse.json(
+        { success: false, message: 'Failed to generate journey recap' },
+        { status: 500 }
+      );
+    }
+  })(request);
 
-export const GET = withAuth(handleGET);
+export const GET = handleGET;

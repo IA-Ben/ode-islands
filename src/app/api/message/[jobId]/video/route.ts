@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '../../../../../../../server/auth';
+import { withAuth } from '../../../../../../server/auth';
 
 export async function GET(request: NextRequest, { params }: { params: { jobId: string } }) {
   return withAuth(async (session: any) => {
     try {
       const { jobId } = params;
       
-      global.messageJobs = global.messageJobs || new Map();
-      const job = global.messageJobs.get(jobId);
+      (global as any).messageJobs = (global as any).messageJobs || new Map();
+      const job = (global as any).messageJobs.get(jobId);
 
       if (!job || job.userId !== session.user.id) {
         return NextResponse.json(
