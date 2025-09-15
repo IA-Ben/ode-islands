@@ -639,7 +639,8 @@ export default function CMSPage() {
         </div>
       }
     >
-      <div className="space-y-8">
+      <div className="scroll-container">
+        <div className="space-y-8">
 
         {/* Professional Phase Navigation */}
         <div 
@@ -1226,6 +1227,7 @@ export default function CMSPage() {
           </div>
         </div>
 
+        </div>
       </div>
     </ImmersivePageLayout>
   );

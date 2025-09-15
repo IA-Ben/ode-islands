@@ -728,7 +728,8 @@ export default function AfterPage() {
           </div>
         }
       >
-        {/* Professional Tab Navigation */}
+        <div className="scroll-container">
+          {/* Professional Tab Navigation */}
         {activeTab !== 'overview' && (
           <div 
             className="bg-white/8 backdrop-blur-sm rounded-lg border border-white/20 p-1 mb-8"
@@ -821,8 +822,9 @@ export default function AfterPage() {
           </div>
         )}
         
-        {/* Tab Content */}
-        {renderContent()}
+          {/* Tab Content */}
+          {renderContent()}
+        </div>
       </ImmersivePageLayout>
     </>
   );
