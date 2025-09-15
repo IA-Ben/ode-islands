@@ -56,6 +56,8 @@ interface AfterExperienceConfig {
 
 export default function AfterExperienceCMS() {
   const router = useRouter();
+  const [previewMode, setPreviewMode] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [config, setConfig] = useState<AfterExperienceConfig>({
     eventId: 'default-event',
     tabs: [
@@ -140,8 +142,53 @@ export default function AfterExperienceCMS() {
   };
 
   const handlePreview = () => {
-    // Open After page in new tab for preview
-    window.open('/after', '_blank');
+    // Open After page in new tab for preview with live updates
+    const previewWindow = window.open('/after?preview=true', '_blank');
+    setPreviewMode(true);
+    setPreviewUrl('/after?preview=true');
+    
+    // Set up real-time communication
+    const sendConfigUpdate = () => {
+      if (previewWindow && !previewWindow.closed) {
+        previewWindow.postMessage({ 
+          type: 'CMS_CONFIG_UPDATE', 
+          config 
+        }, window.location.origin);
+      }
+    };
+    
+    // Send initial config after window loads
+    setTimeout(sendConfigUpdate, 1000);
+  };
+
+  const handleLiveUpdate = (field: string, value: any) => {
+    // Update config in real-time
+    const updatedConfig = { ...config };
+    const keys = field.split('.');
+    let current = updatedConfig;
+    
+    for (let i = 0; i < keys.length - 1; i++) {
+      if (!current[keys[i]]) current[keys[i]] = {};
+      current = current[keys[i]];
+    }
+    current[keys[keys.length - 1]] = value;
+    
+    setConfig(updatedConfig);
+    
+    // Send live update to preview window
+    if (previewMode && window.opener) {
+      const previewWindows = [];
+      try {
+        window.postMessage({ 
+          type: 'CMS_LIVE_UPDATE', 
+          field, 
+          value, 
+          config: updatedConfig 
+        }, window.location.origin);
+      } catch (e) {
+        console.log('Preview window communication error:', e);
+      }
+    }
   };
 
   return (
@@ -157,9 +204,13 @@ export default function AfterExperienceCMS() {
             <div className="flex space-x-4">
               <button
                 onClick={handlePreview}
-                className="px-4 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors"
+                className={`px-4 py-2 ${previewMode ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-500 hover:bg-gray-600'} text-white rounded-lg transition-colors flex items-center`}
               >
-                Preview
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                {previewMode ? 'Live Preview Active' : 'Preview'}
               </button>
               <button
                 onClick={handleSave}
