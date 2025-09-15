@@ -13,6 +13,26 @@ import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageL
 import AnimateText from '@/components/AnimateText';
 import { useTheme } from '@/contexts/ThemeContext';
 
+// CMS Configuration Interface
+interface AfterExperienceConfig {
+  eventId: string;
+  config: any;
+  tabs: Array<{
+    tabKey: string;
+    title: string;
+    displayOrder: number;
+    isVisible: boolean;
+    theme: any;
+  }>;
+  recapHero: any;
+  messageSettings: any;
+  communitySettings: any;
+  upcomingEvents: any[];
+  merchCollections: any[];
+  gallerySettings: any;
+  featureFlags: any[];
+}
+
 interface TabTheme {
   background: string;
   overlay: string;
@@ -26,9 +46,49 @@ export default function AfterPage() {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<'overview' | 'message' | 'wallet' | 'gallery' | 'merch' | 'community'>('overview');
   const [animateIn, setAnimateIn] = useState(false);
+  const [cmsConfig, setCmsConfig] = useState<AfterExperienceConfig | null>(null);
+  const [isLoadingCms, setIsLoadingCms] = useState(true);
   
-  // Tab-specific immersive themes - Professional Lumus-inspired palettes
-  const tabThemes: Record<string, TabTheme> = {
+  // Load CMS configuration
+  useEffect(() => {
+    async function loadCmsConfig() {
+      try {
+        // For demo, use a default event ID. In production, this would come from URL params or context
+        const eventId = 'default-event';
+        const response = await fetch(`/api/cms/after-config/${eventId}`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success) {
+            setCmsConfig(data.config);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load CMS config:', error);
+      } finally {
+        setIsLoadingCms(false);
+      }
+    }
+    
+    loadCmsConfig();
+  }, []);
+  
+  // Get tab themes from CMS or fallback to defaults
+  const getTabThemes = (): Record<string, TabTheme> => {
+    if (cmsConfig?.tabs) {
+      const themes: Record<string, TabTheme> = {};
+      cmsConfig.tabs.forEach(tab => {
+        themes[tab.tabKey] = tab.theme || getDefaultTabTheme(tab.tabKey);
+      });
+      return themes;
+    }
+    
+    // Fallback to default themes
+    return getDefaultTabThemes();
+  };
+  
+  // Default tab themes - Professional Lumus-inspired palettes
+  const getDefaultTabThemes = (): Record<string, TabTheme> => ({
     overview: {
       background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
       overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
@@ -77,8 +137,15 @@ export default function AfterPage() {
       description: '#bfdbfe',
       shadow: true
     }
+  });
+  
+  // Helper function for individual tab themes  
+  const getDefaultTabTheme = (tabKey: string): TabTheme => {
+    const defaultThemes = getDefaultTabThemes();
+    return defaultThemes[tabKey] || defaultThemes.overview;
   };
   
+  const tabThemes = getTabThemes();
   const currentTheme: ImmersiveTheme = tabThemes[activeTab] || tabThemes.overview;
   
   useEffect(() => {

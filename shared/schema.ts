@@ -587,6 +587,134 @@ export const userAchievements = pgTable("user_achievements", {
   uniqueIndex("idx_user_achievements_unique").on(table.userId, table.achievementId),
 ]);
 
+// After Experience CMS Tables
+export const afterEventConfig = pgTable("after_event_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  status: varchar("status").default('draft'), // 'draft', 'published'
+  version: integer("version").default(1),
+  publishedAt: timestamp("published_at"),
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const afterTabs = pgTable("after_tabs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  tabKey: varchar("tab_key").notNull(), // 'message', 'wallet', 'gallery', 'merch', 'community'
+  title: varchar("title").notNull(),
+  displayOrder: integer("display_order").notNull(),
+  isVisible: boolean("is_visible").default(true),
+  theme: jsonb("theme"), // Colors, styling configuration
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+export const recapHeroConfig = pgTable("recap_hero_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  copy: jsonb("copy"), // Titles, descriptions, labels
+  metrics: jsonb("metrics"), // Which metrics to show and thresholds
+  shareImage: jsonb("share_image"), // Theme, colors, logo, watermark settings
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const messageTemplates = pgTable("message_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name").notNull(),
+  description: text("description"),
+  allowedParams: jsonb("allowed_params"), // Whitelisted customization parameters
+  mediaRefs: jsonb("media_refs"), // References to background assets, music, etc.
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const eventMessageSettings = pgTable("event_message_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  templateId: varchar("template_id").references(() => messageTemplates.id).notNull(),
+  params: jsonb("params"), // Template customization parameters
+  flags: jsonb("flags"), // Feature flags and settings
+  isEnabled: boolean("is_enabled").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const communitySettings = pgTable("community_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  newsletter: jsonb("newsletter"), // Provider, list ID, copy
+  discord: jsonb("discord"), // Invite URL, server info
+  moderation: jsonb("moderation"), // Moderation settings and rules
+  socialLinks: jsonb("social_links"), // External social media links
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const upcomingEvents = pgTable("upcoming_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  eventDate: timestamp("event_date").notNull(),
+  link: varchar("link"),
+  imageRef: varchar("image_ref").references(() => mediaAssets.id),
+  isVisible: boolean("is_visible").default(true),
+  displayOrder: integer("display_order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const merchCollections = pgTable("merch_collections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  displayOrder: integer("display_order").default(0),
+  isVisible: boolean("is_visible").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const merchProducts = pgTable("merch_products", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  collectionId: varchar("collection_id").references(() => merchCollections.id).notNull(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  imageRefs: jsonb("image_refs"), // Array of media asset IDs
+  stripePriceId: varchar("stripe_price_id").notNull(), // Stripe price ID
+  badge: varchar("badge"), // 'limited', 'exclusive', 'new', etc.
+  displayOrder: integer("display_order").default(0),
+  isVisible: boolean("is_visible").default(true),
+  isAvailable: boolean("is_available").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const gallerySettings = pgTable("gallery_settings", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  uploadRules: jsonb("upload_rules"), // Max items, mime types, size limits
+  moderationMode: varchar("moderation_mode").default('auto'), // 'auto', 'manual', 'disabled'
+  visibilitySettings: jsonb("visibility_settings"), // Public/private rules
+  featuredItems: jsonb("featured_items"), // Curated featured content
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const featureFlags = pgTable("feature_flags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  flagKey: varchar("flag_key").notNull(),
+  isEnabled: boolean("is_enabled").default(false),
+  rolloutPercentage: integer("rollout_percentage").default(100), // 0-100
+  targetAudience: jsonb("target_audience"), // User criteria
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Export all types
 export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
@@ -625,3 +753,27 @@ export type AchievementDefinition = typeof achievementDefinitions.$inferSelect;
 export type UpsertAchievementDefinition = typeof achievementDefinitions.$inferInsert;
 export type UserAchievement = typeof userAchievements.$inferSelect;
 export type UpsertUserAchievement = typeof userAchievements.$inferInsert;
+
+// After Experience CMS Types
+export type AfterEventConfig = typeof afterEventConfig.$inferSelect;
+export type UpsertAfterEventConfig = typeof afterEventConfig.$inferInsert;
+export type AfterTab = typeof afterTabs.$inferSelect;
+export type UpsertAfterTab = typeof afterTabs.$inferInsert;
+export type RecapHeroConfig = typeof recapHeroConfig.$inferSelect;
+export type UpsertRecapHeroConfig = typeof recapHeroConfig.$inferInsert;
+export type MessageTemplate = typeof messageTemplates.$inferSelect;
+export type UpsertMessageTemplate = typeof messageTemplates.$inferInsert;
+export type EventMessageSettings = typeof eventMessageSettings.$inferSelect;
+export type UpsertEventMessageSettings = typeof eventMessageSettings.$inferInsert;
+export type CommunitySettings = typeof communitySettings.$inferSelect;
+export type UpsertCommunitySettings = typeof communitySettings.$inferInsert;
+export type UpcomingEvent = typeof upcomingEvents.$inferSelect;
+export type UpsertUpcomingEvent = typeof upcomingEvents.$inferInsert;
+export type MerchCollection = typeof merchCollections.$inferSelect;
+export type UpsertMerchCollection = typeof merchCollections.$inferInsert;
+export type MerchProduct = typeof merchProducts.$inferSelect;
+export type UpsertMerchProduct = typeof merchProducts.$inferInsert;
+export type GallerySettings = typeof gallerySettings.$inferSelect;
+export type UpsertGallerySettings = typeof gallerySettings.$inferInsert;
+export type FeatureFlag = typeof featureFlags.$inferSelect;
+export type UpsertFeatureFlag = typeof featureFlags.$inferInsert;
