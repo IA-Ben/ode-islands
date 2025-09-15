@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useAuth } from '@/hooks/useAuth';
 import odeIslandsData from '@/app/data/ode-islands.json';
 import ImmersivePageLayout, { ImmersiveTheme } from './ImmersivePageLayout';
 import AnimateText from './AnimateText';
@@ -48,13 +49,21 @@ interface TabTheme {
 export default function ProgressDashboard({ className = '' }: ProgressDashboardProps) {
   const router = useRouter();
   const { theme } = useTheme();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [progressData, setProgressData] = useState<UserProgress[]>([]);
   const [chapterProgress, setChapterProgress] = useState<ChapterProgress[]>([]);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [activeTab, setActiveTab] = useState<'certificates' | 'memories' | 'collection' | 'insights'>('collection');
   const [animateIn, setAnimateIn] = useState(false);
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!authLoading && !isAuthenticated) {
+      window.location.href = "/auth/login";
+      return;
+    }
+  }, [isAuthenticated, authLoading]);
   
   // Professional treasury themes for each tab
   const tabThemes: Record<string, TabTheme> = {
@@ -134,8 +143,8 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
       
       if (!response.ok) {
         if (response.status === 401) {
-          setIsAuthenticated(false);
-          setIsLoading(false);
+          // Redirect to login for authentication
+          window.location.href = "/auth/login";
           return;
         }
         throw new Error(`Failed to fetch progress: ${response.status}`);
@@ -144,17 +153,14 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
       const data = await response.json();
       
       if (data.success) {
-        setIsAuthenticated(true);
         setProgressData(data.progress || []);
         calculateChapterProgress(data.progress || []);
       } else {
         setError(data.message || 'Failed to load progress data');
-        setIsAuthenticated(false);
       }
     } catch (err) {
       console.error('Error fetching progress:', err);
       setError('Unable to load progress. Please try again.');
-      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
