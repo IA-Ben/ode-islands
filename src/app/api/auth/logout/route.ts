@@ -1,15 +1,15 @@
-import { NextRequest } from 'next/server';
-import { createLogoutResponse, getSessionFromHeaders } from '../../../../../server/auth';
+// SECURITY: Legacy authentication route - DISABLED  
+// All authentication now goes through unified Replit Auth system
+
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
-  try {
-    // Get session to invalidate server-side session
-    const session = await getSessionFromHeaders(request);
-    
-    // Clear the auth session cookie and invalidate server session
-    return await createLogoutResponse(session.sessionId);
-  } catch (error) {
-    console.error('Logout error:', error instanceof Error ? error.message : String(error));
-    return await createLogoutResponse(); // Still clear the session even if there's an error
-  }
+  return NextResponse.json(
+    { 
+      error: 'This authentication endpoint has been deprecated for security reasons.',
+      message: 'Please use the unified OAuth logout system.',
+      redirectTo: '/api/logout'
+    },
+    { status: 410 } // 410 Gone - Permanently removed
+  );
 }

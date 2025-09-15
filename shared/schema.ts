@@ -33,10 +33,13 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
-  passwordHash: varchar("password_hash"),
+  
+  // Legacy fields for backward compatibility
+  passwordHash: varchar("password_hash"), // Will be deprecated
   isAdmin: boolean("is_admin").default(false),
   emailVerified: boolean("email_verified").default(false),
   lastLoginAt: timestamp("last_login_at"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

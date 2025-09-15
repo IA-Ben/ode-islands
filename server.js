@@ -51,9 +51,9 @@ app.prepare().then(async () => {
     }
   });
 
-  // Import and setup authentication routes
-  const { registerRoutes, isAuthenticated, isAdmin } = await import('./server/routes.ts');
-  await registerRoutes(server);
+  // Import and setup unified authentication routes
+  const { registerUnifiedRoutes, isAuthenticated, isAdmin } = await import('./server/unifiedRoutes.ts');
+  await registerUnifiedRoutes(server);
 
   // Initialize WebSocket server
   const { webSocketManager } = await import('./server/websocket.ts');
