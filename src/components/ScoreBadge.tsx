@@ -190,12 +190,25 @@ export default function ScoreBadge({
   const progressPercentage = calculateProgressPercentage();
 
   if (immersive) {
+    const Component = onClick ? 'button' : 'div';
     return (
-      <div 
+      <Component
         className={`score-badge relative group ${onClick ? 'cursor-pointer' : ''} ${className}`}
         onClick={onClick}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
+        {...(onClick && Component === 'button' && { type: 'button' })}
+        {...(onClick && {
+          role: Component === 'button' ? undefined : 'button',
+          tabIndex: 0,
+          'aria-label': `View progress and achievements. Level ${level}, ${score.toLocaleString()} points`,
+          onKeyDown: (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              onClick();
+            }
+          }
+        })}
         style={{
           opacity: animate && !animateIn ? 0 : 1,
           transform: animate && !animateIn ? 'translateY(10px)' : 'translateY(0px)',
@@ -244,6 +257,16 @@ export default function ScoreBadge({
                     {score.toLocaleString()}
                   </span>
                 </div>
+                
+                {/* Progress indicator when clickable */}
+                {onClick && (
+                  <div className="flex items-center space-x-1 text-white/60 hover:text-white/80 transition-colors">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    <span className="text-xs font-medium">Progress</span>
+                  </div>
+                )}
                 
                 {showPosition && position > 0 && (
                   <span className="text-white/70 text-sm font-medium">
@@ -325,12 +348,15 @@ export default function ScoreBadge({
             )}
           </div>
           
-          {/* Click Indicator */}
+          {/* Enhanced Click Indicator for Progress */}
           {onClick && (
-            <div className="absolute bottom-2 right-2 opacity-50 group-hover:opacity-100 transition-opacity">
-              <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-              </svg>
+            <div className="absolute bottom-2 right-2 opacity-60 group-hover:opacity-100 transition-opacity">
+              <div className="flex items-center space-x-1 bg-black/30 backdrop-blur-sm rounded-lg px-2 py-1">
+                <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                </svg>
+                <span className="text-xs text-white/90 font-medium">View</span>
+              </div>
             </div>
           )}
         </div>
@@ -346,18 +372,31 @@ export default function ScoreBadge({
                 {currentScore.pointsToNextLevel} points to reach Level {currentScore.nextLevel}
               </div>
             )}
-            <div className="text-xs text-white/50 mt-1">Click to view detailed achievements</div>
+            <div className="text-xs text-white/50 mt-1">Click to view detailed progress & achievements</div>
           </div>
         )}
-      </div>
+      </Component>
     );
   }
 
-  // Original compact design for non-immersive mode
+  // Original compact design for non-immersive mode - with accessibility fixes
+  const Component = onClick ? 'button' : 'div';
   return (
-    <div 
-      className={`score-badge ${onClick ? 'cursor-pointer hover:scale-105' : ''} transition-all duration-200 ${className}`}
+    <Component
+      className={`score-badge relative ${onClick ? 'cursor-pointer hover:scale-105 focus-visible:ring-2 focus-visible:ring-white/50 focus-visible:ring-offset-2 focus-visible:ring-offset-black/50' : ''} transition-all duration-200 ${className}`}
       onClick={onClick}
+      {...(onClick && Component === 'button' && { type: 'button' })}
+      {...(onClick && {
+        role: Component === 'button' ? undefined : 'button',
+        tabIndex: 0,
+        'aria-label': `View progress and achievements. Level ${level}, ${score.toLocaleString()} points`,
+        onKeyDown: (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            onClick();
+          }
+        }
+      })}
     >
       <div 
         className={`flex items-center space-x-2 rounded-full border backdrop-blur-sm ${
@@ -418,6 +457,16 @@ export default function ScoreBadge({
         )}
       </div>
 
+      {/* Progress indicator when clickable */}
+      {onClick && (
+        <div className="flex items-center space-x-1 mt-2 text-white/60 hover:text-white/80 transition-colors">
+          <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span className="text-xs font-medium">Progress</span>
+        </div>
+      )}
+
       {/* Hover Tooltip */}
       {onClick && (
         <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1 bg-black/80 text-xs text-white/80 rounded opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none z-50">
@@ -425,8 +474,10 @@ export default function ScoreBadge({
           {currentScore.nextLevel && currentScore.pointsToNextLevel > 0 && (
             <span> • {currentScore.pointsToNextLevel} to level {currentScore.nextLevel}</span>
           )}
+          <br />
+          <span className="text-white/50">Click to view detailed progress & achievements</span>
         </div>
       )}
-    </div>
+    </Component>
   );
 }
