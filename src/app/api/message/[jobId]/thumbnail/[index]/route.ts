@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAuth } from '../../../../../../../../../server/auth';
+import { withAuth } from '../../../../../../../server/auth';
 
 export async function GET(request: NextRequest, { params }: { params: { jobId: string; index: string } }) {
   return withAuth(async (session: any) => {
