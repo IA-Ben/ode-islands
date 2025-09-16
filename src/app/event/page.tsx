@@ -5,6 +5,7 @@ import PhaseNavigation from "@/components/PhaseNavigation";
 import { useTheme } from '@/contexts/ThemeContext';
 import EventDashboard from '@/components/EventDashboard';
 import EventAudienceInterface from '@/components/EventAudienceInterface';
+import HelpSystem from '@/components/HelpSystem';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -288,6 +289,9 @@ export default function EventPage() {
           theme={theme}
         />
         
+        {/* Comprehensive Help System for Audience */}
+        <HelpSystem userRole="audience" />
+        
         {/* Admin access button (hidden, only for authenticated admins) */}
         {session?.isAuthenticated && session?.isAdmin && (
           <div className="fixed top-20 right-4 z-50">
@@ -328,6 +332,9 @@ export default function EventPage() {
           onEventsUpdate={fetchEvents}
           theme={theme}
         />
+        
+        {/* Comprehensive Help System for Admins */}
+        <HelpSystem userRole="admin" />
         
         {/* Switch to audience view button */}
         <div className="fixed top-20 right-4 z-50">

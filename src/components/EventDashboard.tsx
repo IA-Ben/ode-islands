@@ -9,6 +9,8 @@ import LivePollingInterface from './LivePollingInterface';
 import QAManagement from './QAManagement';
 import EventTimeline from './EventTimeline';
 import LiveChatInterface from './LiveChatInterface';
+import HelpButton from './HelpButton';
+import { useHelp } from '@/hooks/useHelp';
 
 // Type definitions
 interface LiveEvent {
@@ -50,6 +52,9 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
   const [selectedEvent, setSelectedEvent] = useState<LiveEvent | null>(null);
   const [realTimeEnabled, setRealTimeEnabled] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+  
+  // Initialize help system for admins
+  const help = useHelp('admin');
 
   // Get active events
   const activeEvents = events.filter(event => event.isActive);
@@ -198,6 +203,14 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
             </div>
             
             <div className="flex items-center gap-4">
+              {/* Help button */}
+              <HelpButton
+                onClick={() => help.openHelp('admin-dashboard', 'admin')}
+                tooltip="Get help with event management"
+                variant="outline"
+                className="text-blue-400 border-blue-400/30 hover:bg-blue-400/10"
+              />
+              
               {/* Real-time status */}
               <div className="flex items-center gap-3 bg-white/5 backdrop-blur-sm rounded-lg px-4 py-2 border border-white/10">
                 <Button
@@ -253,25 +266,55 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
         </div>
 
         {/* Navigation */}
-        <div className="mb-12">
-          <div className="flex flex-wrap gap-3">
+        <div className="mb-12" id="admin-navigation">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-white">Event Management Tools</h2>
+            <HelpButton
+              onClick={() => help.showContextHelp('admin-navigation')}
+              tooltip="Learn about event management features"
+              size="sm"
+            />
+          </div>
+          
+          <div className="flex flex-wrap gap-3" id="interactive-tabs">
             {navigationItems.map((item) => (
-              <Button
-                key={item.id}
-                variant="ghost"
-                onClick={() => setActiveView(item.id as ViewMode)}
-                disabled={item.disabled}
-                className={`px-6 py-3 rounded-lg font-medium transition-all ${
-                  activeView === item.id 
-                    ? 'bg-white/15 text-white border border-white/20 shadow-lg' 
-                    : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white'
-                } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
-              >
-                <div className="flex flex-col items-center gap-1">
-                  <span className="font-semibold">{item.label}</span>
-                  <span className="text-xs opacity-70">{item.description}</span>
-                </div>
-              </Button>
+              <div key={item.id} className="relative">
+                <Button
+                  variant="ghost"
+                  onClick={() => setActiveView(item.id as ViewMode)}
+                  disabled={item.disabled}
+                  className={`px-6 py-3 rounded-lg font-medium transition-all ${
+                    activeView === item.id 
+                      ? 'bg-white/15 text-white border border-white/20 shadow-lg' 
+                      : 'bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white'
+                  } ${item.disabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <div className="flex flex-col items-center gap-1">
+                    <span className="font-semibold">{item.label}</span>
+                    <span className="text-xs opacity-70">{item.description}</span>
+                  </div>
+                </Button>
+                
+                {/* Context help button for each feature */}
+                {!item.disabled && (
+                  <HelpButton
+                    onClick={() => {
+                      const helpTopics = {
+                        'overview': 'admin-dashboard',
+                        'polls': 'admin-live-polling',
+                        'qa': 'admin-qa-management',
+                        'chat': 'admin-live-chat',
+                        'timeline': 'admin-timeline-management',
+                        'create': 'admin-event-creation'
+                      };
+                      help.openHelp(helpTopics[item.id as keyof typeof helpTopics]);
+                    }}
+                    tooltip={`Help: ${item.label}`}
+                    size="sm"
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-blue-500/20 border border-blue-400/30 hover:bg-blue-500/30"
+                  />
+                )}
+              </div>
             ))}
           </div>
         </div>
@@ -282,11 +325,18 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
             <div className="space-y-12">
               {/* Active Events */}
               {activeEvents.length > 0 && (
-                <section>
+                <section id="event-list">
                   <div className="flex items-center justify-between mb-8">
                     <h2 className="text-3xl font-bold text-white">Active Events</h2>
-                    <div className="text-white/60">
-                      {activeEvents.length} event{activeEvents.length !== 1 ? 's' : ''} live
+                    <div className="flex items-center gap-4">
+                      <HelpButton
+                        onClick={() => help.openHelp('admin-event-activation')}
+                        tooltip="Learn about event activation and control"
+                        size="sm"
+                      />
+                      <div className="text-white/60">
+                        {activeEvents.length} event{activeEvents.length !== 1 ? 's' : ''} live
+                      </div>
                     </div>
                   </div>
                   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -429,6 +479,15 @@ export default function EventDashboard({ events, session, onEventsUpdate, theme 
           )}
         </div>
       </div>
+      
+      {/* Include HelpSystem component */}
+      {help.isOpen && (
+        <div className="fixed inset-0 z-50">
+          <div className="w-full h-full">
+            {/* Help system will render its own modal structure */}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

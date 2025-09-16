@@ -5,6 +5,8 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import QRScanner from './QRScanner';
+import HelpButton from './HelpButton';
+import { useHelp } from '@/hooks/useHelp';
 import { getCsrfToken, fetchCsrfToken } from '@/lib/csrfUtils';
 
 // Types for the Event audience experience
@@ -48,6 +50,9 @@ interface EventAudienceProps {
 }
 
 export default function EventAudienceInterface({ eventId, userId, theme }: EventAudienceProps) {
+  // Initialize help system for audience
+  const help = useHelp('audience');
+  
   // Session state
   const [session, setSession] = useState<ShowSession | null>(null);
   const [currentCue, setCurrentCue] = useState<ShowCue | null>(null);
@@ -1108,6 +1113,15 @@ export default function EventAudienceInterface({ eventId, userId, theme }: Event
       {/* Now/Next rail - fixed at top */}
       <div className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
         <div className="flex items-center justify-between px-4 py-3">
+          {/* Help button in top-right corner */}
+          <div className="absolute right-4 top-2 z-60">
+            <HelpButton
+              onClick={() => help.openHelp('audience-joining', 'audience')}
+              tooltip="Get help with the event experience"
+              size="sm"
+              className="text-blue-400 hover:text-blue-300"
+            />
+          </div>
           {/* Connection status */}
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${
@@ -1120,7 +1134,7 @@ export default function EventAudienceInterface({ eventId, userId, theme }: Event
 
           {/* Show clock */}
           {session && (
-            <div className="text-center">
+            <div className="text-center" id="timecode-display">
               <div className="text-lg font-mono">
                 {formatTime(isOffline ? localClock : displayTimecode)}
               </div>
@@ -1349,6 +1363,7 @@ function CueRenderer({
           </p>
           <Button 
             size="lg"
+            id="qr-scanner-button"
             className="bg-white/10 hover:bg-white/20 text-white border-white/20"
             onClick={onOpenQRScanner}
           >

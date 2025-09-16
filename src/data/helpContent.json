@@ -1,0 +1,621 @@
+{
+  "meta": {
+    "version": "1.0.0",
+    "lastUpdated": "2025-09-16",
+    "description": "Comprehensive help content for event interface"
+  },
+  "categories": {
+    "audience": {
+      "title": "Audience Experience",
+      "description": "Help for audience members participating in events",
+      "icon": "users",
+      "topics": [
+        {
+          "id": "audience-joining",
+          "title": "Joining an Event",
+          "category": "Getting Started",
+          "content": {
+            "description": "Learn how to join and participate in live events",
+            "steps": [
+              "Navigate to the event page when the event is active",
+              "The interface will automatically sync with the live show",
+              "Follow prompts and cues as they appear during the event",
+              "Use the QR scanner when prompted for interactive elements"
+            ],
+            "tips": [
+              "Keep your device connected to internet for real-time updates",
+              "Enable notifications to receive important event updates",
+              "If you experience sync issues, refresh the page"
+            ]
+          }
+        },
+        {
+          "id": "audience-timecode-sync",
+          "title": "Understanding Show Sync",
+          "category": "Technical",
+          "content": {
+            "description": "How the interface stays synchronized with the live performance",
+            "steps": [
+              "The interface receives heartbeat signals from the server",
+              "Your display shows the current show timecode",
+              "Cues appear automatically at specific moments",
+              "Offline mode preserves your place if connection drops"
+            ],
+            "troubleshooting": [
+              "If sync appears off, refresh the page",
+              "Check your internet connection for stability",
+              "Offline mode will queue actions until reconnected"
+            ]
+          }
+        },
+        {
+          "id": "audience-cues",
+          "title": "Interactive Cues & Prompts",
+          "category": "Participation",
+          "content": {
+            "description": "Responding to different types of interactive prompts during events",
+            "cueTypes": {
+              "TEXT": "Informational messages and story elements",
+              "QR_PROMPT": "Scan QR codes for special interactions",
+              "POLL": "Vote in real-time polls",
+              "TASK": "Complete interactive tasks",
+              "KEEPSAKE": "Capture memories and moments",
+              "BROADCAST": "Important announcements"
+            },
+            "tips": [
+              "Cues appear automatically at the right moment",
+              "Some cues have time limits - respond quickly",
+              "Your responses are saved even if you go offline",
+              "Check the timing display to see your sync status"
+            ]
+          }
+        },
+        {
+          "id": "audience-qr-scanner",
+          "title": "QR Code Scanning",
+          "category": "Interactive Features",
+          "content": {
+            "description": "Using the built-in QR scanner for event interactions",
+            "steps": [
+              "When a QR prompt appears, tap the scan button",
+              "Point your camera at the QR code",
+              "Wait for the scan to complete automatically",
+              "Follow any additional prompts that appear"
+            ],
+            "troubleshooting": [
+              "Ensure good lighting for QR code scanning",
+              "Hold device steady and at proper distance",
+              "Clean your camera lens if scanning fails",
+              "Some QR codes are only active during specific moments"
+            ]
+          }
+        },
+        {
+          "id": "audience-offline-mode",
+          "title": "Offline Mode",
+          "category": "Technical",
+          "content": {
+            "description": "What happens when your connection drops during an event",
+            "features": [
+              "Actions are queued locally when offline",
+              "Show timecode continues running independently",
+              "Reconnection happens automatically",
+              "Queued actions sync when connection returns"
+            ],
+            "indicators": [
+              "Offline indicator shows connection status",
+              "Timecode display changes color when offline",
+              "Actions show 'pending' status until synced"
+            ]
+          }
+        }
+      ]
+    },
+    "admin": {
+      "title": "Event Management",
+      "description": "Help for administrators managing events",
+      "icon": "shield",
+      "topics": [
+        {
+          "id": "admin-dashboard",
+          "title": "Event Dashboard Overview",
+          "category": "Getting Started",
+          "content": {
+            "description": "Navigate and understand the main event management interface",
+            "sections": {
+              "overview": "See all events and their current status",
+              "polls": "Create and manage live polls",
+              "qa": "Handle Q&A sessions and moderation",
+              "chat": "Monitor and moderate live chat",
+              "timeline": "View scheduled activities and progress",
+              "create": "Add new events to the system"
+            },
+            "features": [
+              "Real-time updates every 5 seconds",
+              "Event status indicators (active, upcoming, past)",
+              "Quick activation/deactivation controls",
+              "Event selection for focused management"
+            ]
+          }
+        },
+        {
+          "id": "admin-event-creation",
+          "title": "Creating Events",
+          "category": "Event Management",
+          "content": {
+            "description": "How to create and configure new events",
+            "steps": [
+              "Navigate to the 'Create Event' section",
+              "Enter event title and description",
+              "Set start and end times carefully",
+              "Configure event settings (optional)",
+              "Save the event (initially inactive)",
+              "Activate when ready to go live"
+            ],
+            "bestPractices": [
+              "Test events before going live",
+              "Set realistic time windows",
+              "Prepare content and materials in advance",
+              "Have backup plans for technical issues"
+            ]
+          }
+        },
+        {
+          "id": "admin-event-activation",
+          "title": "Event Activation & Control",
+          "category": "Event Management",
+          "content": {
+            "description": "Managing live event status and controls",
+            "activation": {
+              "steps": [
+                "Select the event you want to activate",
+                "Click the 'Activate' button",
+                "Confirm activation in the dialog",
+                "Monitor audience connection and sync"
+              ],
+              "effects": [
+                "Event appears to audience members",
+                "WebSocket connections establish",
+                "Real-time sync begins",
+                "Interactive features become available"
+              ]
+            },
+            "deactivation": {
+              "when": [
+                "Event has concluded",
+                "Technical issues require reset",
+                "Planned intermission or break"
+              ],
+              "effects": [
+                "Audience interface shows event ended",
+                "New connections are prevented",
+                "Data is preserved for analytics"
+              ]
+            }
+          }
+        },
+        {
+          "id": "admin-live-polling",
+          "title": "Live Polling System",
+          "category": "Interactive Features",
+          "content": {
+            "description": "Creating and managing real-time audience polls",
+            "creation": {
+              "steps": [
+                "Go to the Polls section",
+                "Click 'Create New Poll'",
+                "Write a clear, concise question",
+                "Add 2-6 answer options",
+                "Set poll type (multiple choice, ranking, etc.)",
+                "Optionally set correct answer for quizzes",
+                "Activate the poll to go live"
+              ]
+            },
+            "management": {
+              "features": [
+                "Real-time response tracking",
+                "Visual results display",
+                "Audience participation metrics",
+                "Export results for analysis"
+              ],
+              "controls": [
+                "Start/stop polling",
+                "Display results to audience",
+                "Moderate inappropriate responses",
+                "Archive completed polls"
+              ]
+            },
+            "bestPractices": [
+              "Keep questions short and clear",
+              "Limit to 4-5 answer options",
+              "Allow sufficient time for responses",
+              "Review results before sharing publicly"
+            ]
+          }
+        },
+        {
+          "id": "admin-qa-management",
+          "title": "Q&A Session Management",
+          "category": "Interactive Features",
+          "content": {
+            "description": "Facilitating audience questions and managing responses",
+            "workflow": {
+              "submission": [
+                "Audience submits questions through interface",
+                "Questions appear in admin Q&A panel",
+                "Questions can be upvoted by other audience members"
+              ],
+              "moderation": [
+                "Review questions for appropriateness",
+                "Mark inappropriate questions as moderated",
+                "Prioritize questions with high upvotes",
+                "Select questions for live response"
+              ],
+              "response": [
+                "Click on question to respond",
+                "Type answer in the response field",
+                "Submit answer to make it visible",
+                "Answered questions are marked as resolved"
+              ]
+            },
+            "features": [
+              "Real-time question submission",
+              "Upvoting system for popularity",
+              "Moderation controls for content",
+              "Answer history and archiving"
+            ],
+            "tips": [
+              "Acknowledge popular questions first",
+              "Keep answers concise and clear",
+              "Moderate proactively to maintain quality",
+              "Use moderation to filter duplicate questions"
+            ]
+          }
+        },
+        {
+          "id": "admin-live-chat",
+          "title": "Live Chat Moderation",
+          "category": "Interactive Features",
+          "content": {
+            "description": "Managing real-time audience chat during events",
+            "features": {
+              "realTime": [
+                "Messages appear instantly",
+                "Automatic refresh every 3 seconds",
+                "Scroll to latest messages",
+                "User identification (admin-only emails)"
+              ],
+              "moderation": [
+                "Flag inappropriate messages",
+                "Remove problematic content",
+                "Monitor chat activity levels",
+                "Respond as administrator"
+              ]
+            },
+            "controls": [
+              "Enable/disable chat for events",
+              "Moderate individual messages",
+              "Post admin announcements",
+              "Export chat logs for review"
+            ],
+            "bestPractices": [
+              "Monitor chat actively during events",
+              "Establish clear chat guidelines",
+              "Respond to questions when appropriate",
+              "Use moderation to maintain positive environment"
+            ]
+          }
+        },
+        {
+          "id": "admin-timeline-management",
+          "title": "Event Timeline & Scheduling",
+          "category": "Event Management",
+          "content": {
+            "description": "Managing scheduled activities and event progression",
+            "features": [
+              "Visual timeline of event activities",
+              "Scheduled cue delivery",
+              "Progress tracking through event",
+              "Real-time adjustments and updates"
+            ],
+            "scheduling": {
+              "types": [
+                "Text cues and information",
+                "Interactive polls and tasks",
+                "Q&A session periods",
+                "Break and intermission times"
+              ],
+              "timing": [
+                "Pre-schedule content delivery",
+                "Manual trigger overrides",
+                "Time-sensitive interactions",
+                "Progress checkpoints"
+              ]
+            },
+            "management": [
+              "Adjust timing on the fly",
+              "Skip or delay scheduled items",
+              "Monitor audience engagement",
+              "Track completion rates"
+            ]
+          }
+        },
+        {
+          "id": "admin-troubleshooting",
+          "title": "Common Issues & Solutions",
+          "category": "Troubleshooting",
+          "content": {
+            "description": "Resolving common problems during event management",
+            "connectivity": {
+              "issue": "Audience sync problems",
+              "solutions": [
+                "Check server WebSocket status",
+                "Verify event activation status",
+                "Restart event if necessary",
+                "Monitor connection logs"
+              ]
+            },
+            "polling": {
+              "issue": "Polls not appearing to audience",
+              "solutions": [
+                "Ensure poll is activated",
+                "Check poll expiration time",
+                "Verify audience is connected to correct event",
+                "Refresh audience interfaces"
+              ]
+            },
+            "chat": {
+              "issue": "Messages not updating",
+              "solutions": [
+                "Check real-time update settings",
+                "Verify WebSocket connections",
+                "Clear browser cache if needed",
+                "Restart chat interface"
+              ]
+            },
+            "general": {
+              "issue": "Event not responding",
+              "solutions": [
+                "Deactivate and reactivate event",
+                "Check event time settings",
+                "Verify database connectivity",
+                "Contact technical support if persistent"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "technical": {
+      "title": "Technical Information",
+      "description": "Technical details and troubleshooting",
+      "icon": "cog",
+      "topics": [
+        {
+          "id": "tech-websocket-sync",
+          "title": "WebSocket Synchronization",
+          "category": "Real-time Features",
+          "content": {
+            "description": "Understanding the real-time synchronization technology",
+            "howItWorks": [
+              "WebSocket connections maintain real-time links",
+              "Server sends heartbeat messages every few seconds",
+              "Client timecode syncs with server timing",
+              "Drift correction handles network latency"
+            ],
+            "indicators": [
+              "Connection status shows green when connected",
+              "Timecode displays show sync status",
+              "Offline indicator appears when disconnected",
+              "Retry attempts shown during reconnection"
+            ],
+            "troubleshooting": [
+              "Refresh page if sync appears broken",
+              "Check firewall settings for WebSocket ports",
+              "Ensure stable internet connection",
+              "Contact support for persistent issues"
+            ]
+          }
+        },
+        {
+          "id": "tech-browser-compatibility",
+          "title": "Browser Requirements",
+          "category": "Compatibility",
+          "content": {
+            "description": "Supported browsers and requirements for optimal experience",
+            "supported": {
+              "recommended": [
+                "Chrome 90+ (recommended)",
+                "Firefox 88+",
+                "Safari 14+",
+                "Edge 90+"
+              ],
+              "features": [
+                "WebSocket support required",
+                "Camera access for QR scanning",
+                "Local storage for offline mode",
+                "JavaScript enabled"
+              ]
+            },
+            "mobile": {
+              "iOS": "Safari 14+ or Chrome 90+",
+              "Android": "Chrome 90+ recommended",
+              "features": [
+                "Touch interactions supported",
+                "Camera permission for QR codes",
+                "Portrait and landscape modes"
+              ]
+            },
+            "troubleshooting": [
+              "Update browser to latest version",
+              "Enable JavaScript and cookies",
+              "Allow camera permissions for QR scanning",
+              "Clear cache if experiencing issues"
+            ]
+          }
+        },
+        {
+          "id": "tech-offline-capabilities",
+          "title": "Offline Mode Features",
+          "category": "Connectivity",
+          "content": {
+            "description": "What works when internet connection is lost",
+            "offlineFeatures": [
+              "Local timecode continues running",
+              "Actions queued for later synchronization",
+              "Interface remains responsive",
+              "Progress tracking maintained"
+            ],
+            "limitations": [
+              "No new real-time updates received",
+              "Cannot submit polls or chat messages",
+              "QR scanning may not validate",
+              "Live content won't update"
+            ],
+            "recovery": [
+              "Automatic reconnection attempts",
+              "Queued actions sync when online",
+              "Timecode corrects for lost time",
+              "Status indicators show sync progress"
+            ]
+          }
+        },
+        {
+          "id": "tech-data-privacy",
+          "title": "Data Privacy & Security",
+          "category": "Privacy",
+          "content": {
+            "description": "How your data is handled and protected",
+            "dataCollection": [
+              "Event participation tracked for analytics",
+              "Responses stored securely on servers",
+              "IP addresses logged for technical purposes",
+              "Device information collected for compatibility"
+            ],
+            "privacy": [
+              "No personal data required for participation",
+              "Chat messages visible to administrators",
+              "Poll responses are anonymous unless specified",
+              "Data retention follows platform policies"
+            ],
+            "security": [
+              "All connections use secure protocols",
+              "Data encrypted in transit and at rest",
+              "Access controls limit data visibility",
+              "Regular security updates applied"
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "onboarding": {
+    "audience": {
+      "title": "Welcome to Live Events",
+      "steps": [
+        {
+          "id": "welcome",
+          "title": "Welcome!",
+          "content": "You're about to join a live interactive experience. This quick guide will help you get the most out of the event.",
+          "action": "Get Started"
+        },
+        {
+          "id": "sync-explained",
+          "title": "Stay in Sync",
+          "content": "The interface automatically syncs with the live performance. You'll see prompts and activities at exactly the right moments.",
+          "highlight": "#timecode-display",
+          "action": "Continue"
+        },
+        {
+          "id": "interactive-cues",
+          "title": "Interactive Moments",
+          "content": "During the event, you'll see different types of prompts: polls to vote in, QR codes to scan, and tasks to complete.",
+          "action": "Continue"
+        },
+        {
+          "id": "qr-scanner",
+          "title": "QR Code Scanning",
+          "content": "When prompted, use the built-in scanner to interact with special moments in the performance.",
+          "highlight": "#qr-scanner-button",
+          "action": "Continue"
+        },
+        {
+          "id": "offline-mode",
+          "title": "Stay Connected",
+          "content": "If your connection drops, don't worry! The interface keeps working and will sync back up when reconnected.",
+          "action": "Ready to Begin"
+        }
+      ]
+    },
+    "admin": {
+      "title": "Event Management Guide",
+      "steps": [
+        {
+          "id": "dashboard-overview",
+          "title": "Dashboard Overview",
+          "content": "This is your event management hub. Use the navigation tabs to access different features.",
+          "highlight": "#admin-navigation",
+          "action": "Continue"
+        },
+        {
+          "id": "event-activation",
+          "title": "Activating Events",
+          "content": "To start an event, select it from the list and click 'Activate'. This opens it to your audience.",
+          "highlight": "#event-list",
+          "action": "Continue"
+        },
+        {
+          "id": "live-features",
+          "title": "Live Interactive Features",
+          "content": "Use the Polls, Q&A, and Chat tabs to engage with your audience in real-time during events.",
+          "highlight": "#interactive-tabs",
+          "action": "Continue"
+        },
+        {
+          "id": "monitoring",
+          "title": "Monitoring & Control",
+          "content": "Keep an eye on audience engagement and use moderation tools to maintain a positive experience.",
+          "action": "Continue"
+        },
+        {
+          "id": "troubleshooting",
+          "title": "Getting Help",
+          "content": "If you encounter issues, use the help system or check the troubleshooting guide for solutions.",
+          "action": "Start Managing Events"
+        }
+      ]
+    }
+  },
+  "quickHelp": {
+    "audience": {
+      "joining": "Navigate to the event page when live. The interface syncs automatically.",
+      "cues": "Follow prompts as they appear. Some have time limits - respond quickly!",
+      "qr": "When prompted, tap the scan button and point camera at QR code.",
+      "offline": "If connection drops, actions are saved and sync when reconnected.",
+      "sync": "The timecode shows your sync status. Refresh if it seems off."
+    },
+    "admin": {
+      "activation": "Select event and click 'Activate' to make it live for audience.",
+      "polls": "Create polls in advance, then activate them during your event.",
+      "qa": "Monitor questions, moderate content, and respond to popular ones.",
+      "chat": "Keep chat active during breaks, moderate inappropriate content.",
+      "troubleshooting": "Deactivate/reactivate event if experiencing sync issues."
+    }
+  },
+  "searchIndex": {
+    "keywords": {
+      "join": ["audience-joining", "audience-timecode-sync"],
+      "sync": ["audience-timecode-sync", "tech-websocket-sync"],
+      "qr": ["audience-qr-scanner", "audience-cues"],
+      "poll": ["admin-live-polling", "audience-cues"],
+      "chat": ["admin-live-chat"],
+      "offline": ["audience-offline-mode", "tech-offline-capabilities"],
+      "activate": ["admin-event-activation", "admin-dashboard"],
+      "create": ["admin-event-creation"],
+      "moderate": ["admin-qa-management", "admin-live-chat"],
+      "troubleshoot": ["admin-troubleshooting", "tech-websocket-sync"],
+      "browser": ["tech-browser-compatibility"],
+      "privacy": ["tech-data-privacy"]
+    }
+  }
+}
