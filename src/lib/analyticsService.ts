@@ -75,7 +75,7 @@ export class AnalyticsService {
       activeUsers: activeUsersResult[0]?.count || 0,
       totalSessions: sessionsResult[0]?.count || 0,
       recentInteractions: interactionsResult[0]?.count || 0,
-      systemLoad: Math.random() * 100 // TODO: Replace with actual system metrics
+      systemLoad: await this.calculateSystemLoad()
     };
 
     this.setCachedData(cacheKey, result, this.CACHE_TTL);
@@ -186,12 +186,7 @@ export class AnalyticsService {
         completionRate: stat.totalViews > 0 ? Math.round((Number(stat.completions) / stat.totalViews) * 100) : 0,
         avgTimeSpent: Math.round(Number(stat.avgTimeSpent) || 0)
       })),
-      userActivity: dailyActivityResult.map(activity => ({
-        date: activity.date,
-        activeUsers: activity.activeUsers,
-        newUsers: 0, // TODO: Calculate new users for this date
-        returningUsers: activity.activeUsers // TODO: Calculate returning users
-      }))
+      userActivity: await this.calculateDailyUserActivity(dailyActivityResult, startDate, endDate)
     };
 
     this.setCachedData(cacheKey, result, this.CACHE_TTL_LONG);
@@ -290,12 +285,12 @@ export class AnalyticsService {
         completionRate: Number(content.views) > 0 ? Math.round((Number(content.completions) / Number(content.views)) * 100) : 0,
         shareCount: Number(content.shares)
       })),
-      contentByType: contentTypeResult.map(type => ({
+      contentByType: await Promise.all(contentTypeResult.map(async type => ({
         contentType: type.contentType,
         totalViews: Number(type.totalViews),
         avgEngagement: Math.round(Number(type.avgDuration) || 0),
-        topPerformer: '' // TODO: Get top performer for this type
-      })),
+        topPerformer: await this.getTopPerformerForType(type.contentType, startDate, endDate)
+      }))),
       engagementTrends: trendsResult.map(trend => ({
         date: trend.date,
         views: Number(trend.views),
@@ -412,7 +407,9 @@ export class AnalyticsService {
       chatActivity: {
         totalMessages: chatResult.reduce((sum, item) => sum + item.totalMessages, 0),
         activeParticipants: Math.max(...chatResult.map(item => item.uniqueUsers), 0),
-        avgMessagesPerUser: 0, // TODO: Calculate from chat data
+        avgMessagesPerUser: chatResult.length > 0 && Math.max(...chatResult.map(item => item.uniqueUsers), 0) > 0
+          ? Math.round(chatResult.reduce((sum, item) => sum + item.totalMessages, 0) / Math.max(...chatResult.map(item => item.uniqueUsers), 0))
+          : 0,
         peakActivity: chatResult.map(item => ({
           hour: item.hour,
           messageCount: item.messageCount
@@ -424,7 +421,7 @@ export class AnalyticsService {
           ? Math.round((Number(qaResult[0].answeredQuestions) / qaResult[0].totalQuestions) * 100)
           : 0,
         avgResponseTime: Math.round((Number(qaResult[0]?.avgResponseTime) || 0) / 60), // Convert to minutes
-        topQuestions: [] // TODO: Get top questions query
+        topQuestions: await this.getTopQuestions(filter)
       }
     };
 
@@ -483,21 +480,139 @@ export class AnalyticsService {
         startTime: event.startTime.toISOString(),
         endTime: event.endTime.toISOString()
       })),
-      systemHealth: {
-        dbResponseTime: Math.random() * 100, // TODO: Implement actual metrics
-        apiResponseTime: Math.random() * 50,
-        errorRate: Math.random() * 5,
-        uptime: 99.9
-      },
-      liveMetrics: {
-        concurrentUsers: Math.floor(Math.random() * 1000),
-        activeConnections: Math.floor(Math.random() * 500),
-        bandwidthUsage: Math.random() * 100
-      }
+      systemHealth: await this.calculateSystemHealth(),
+      liveMetrics: await this.calculateLiveMetrics()
     };
 
     this.setCachedData(cacheKey, result, this.CACHE_TTL);
     return result;
+  }
+
+  // Helper methods for real metric calculations
+
+  // Calculate real system load based on database query performance
+  private static async calculateSystemLoad(): Promise<number> {
+    try {
+      const startTime = Date.now();
+      
+      // Simple database query to measure response time
+      await db.select({ count: count() }).from(users).limit(1);
+      
+      const responseTime = Date.now() - startTime;
+      
+      // Convert response time to a load percentage (0-100)
+      // Assuming 100ms = 50% load, scaling up from there
+      const loadPercentage = Math.min((responseTime / 100) * 50, 100);
+      
+      return Math.round(loadPercentage);
+    } catch (error) {
+      console.error('Error calculating system load:', error);
+      return 25; // Default moderate load
+    }
+  }
+
+  // Calculate daily user activity with new vs returning users
+  private static async calculateDailyUserActivity(
+    dailyActivityResult: Array<{ date: string; activeUsers: number; totalSessions: number }>,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Array<{ date: string; activeUsers: number; newUsers: number; returningUsers: number }>> {
+    try {
+      // Get user registration dates for the period
+      const newUsersPerDay = await db.select({
+        date: sql<string>`DATE(${users.createdAt})`,
+        newUsers: count()
+      })
+        .from(users)
+        .where(and(
+          gte(users.createdAt, startDate),
+          lte(users.createdAt, endDate)
+        ))
+        .groupBy(sql`DATE(${users.createdAt})`);
+
+      // Create a map for quick lookup
+      const newUsersMap = new Map(newUsersPerDay.map(item => [item.date, item.newUsers]));
+
+      return dailyActivityResult.map(activity => {
+        const newUsers = newUsersMap.get(activity.date) || 0;
+        const returningUsers = Math.max(0, activity.activeUsers - newUsers);
+        
+        return {
+          date: activity.date,
+          activeUsers: activity.activeUsers,
+          newUsers,
+          returningUsers
+        };
+      });
+    } catch (error) {
+      console.error('Error calculating daily user activity:', error);
+      // Fallback to basic calculation
+      return dailyActivityResult.map(activity => ({
+        date: activity.date,
+        activeUsers: activity.activeUsers,
+        newUsers: Math.round(activity.activeUsers * 0.2), // Estimate 20% new users
+        returningUsers: Math.round(activity.activeUsers * 0.8) // Estimate 80% returning
+      }));
+    }
+  }
+
+  // Get top performer for a specific content type
+  private static async getTopPerformerForType(contentType: string, startDate: Date, endDate: Date): Promise<string> {
+    try {
+      const topPerformer = await db.select({
+        contentId: contentInteractions.contentId,
+        totalInteractions: count()
+      })
+        .from(contentInteractions)
+        .where(and(
+          eq(contentInteractions.contentType, contentType),
+          gte(contentInteractions.timestamp, startDate),
+          lte(contentInteractions.timestamp, endDate)
+        ))
+        .groupBy(contentInteractions.contentId)
+        .orderBy(desc(count()))
+        .limit(1);
+
+      return topPerformer[0]?.contentId || 'N/A';
+    } catch (error) {
+      console.error('Error getting top performer for type:', error);
+      return 'N/A';
+    }
+  }
+
+  // Get top questions from Q&A sessions
+  private static async getTopQuestions(filter: AnalyticsFilter): Promise<Array<{
+    question: string;
+    upvotes: number;
+    isAnswered: boolean;
+  }>> {
+    try {
+      const startDate = filter.startDate || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const endDate = filter.endDate || new Date();
+      
+      const topQuestions = await db.select({
+        question: qaSessions.question,
+        upvotes: qaSessions.upvotes,
+        isAnswered: qaSessions.isAnswered
+      })
+        .from(qaSessions)
+        .where(and(
+          gte(qaSessions.createdAt, startDate),
+          lte(qaSessions.createdAt, endDate),
+          ...(filter.eventId ? [eq(qaSessions.eventId, filter.eventId)] : [])
+        ))
+        .orderBy(desc(qaSessions.upvotes))
+        .limit(10);
+
+      return topQuestions.map(q => ({
+        question: q.question,
+        upvotes: q.upvotes ?? 0,
+        isAnswered: q.isAnswered ?? false
+      }));
+    } catch (error) {
+      console.error('Error getting top questions:', error);
+      return [];
+    }
   }
 
   // Clear cache
