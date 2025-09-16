@@ -37,8 +37,8 @@ export default function CMSPage() {
   const [user, setUser] = useState<User | null>(null);
   const [selectedChapter, setSelectedChapter] = useState<string>('chapter-1');
   const [selectedPhase, setSelectedPhase] = useState<string>('before');
-  const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
+  const [csrfToken, setCsrfToken] = useState<string>('');
   const [animateIn, setAnimateIn] = useState(false);
   
   // Professional Lumus-inspired themes for different CMS phases
@@ -80,6 +80,7 @@ export default function CMSPage() {
 
   useEffect(() => {
     if (user?.isAdmin) {
+      fetchCSRFToken();
       fetchChapters();
     }
   }, [user]);
@@ -155,6 +156,26 @@ export default function CMSPage() {
     }
   };
 
+  const fetchCSRFToken = async () => {
+    try {
+      const response = await fetch('/api/csrf-token', {
+        credentials: 'same-origin'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.csrfToken) {
+          setCsrfToken(data.csrfToken);
+          console.log('CSRF token fetched successfully');
+        }
+      } else {
+        console.error('Failed to fetch CSRF token:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching CSRF token:', error);
+    }
+  };
+
   const fetchChapters = async () => {
     try {
       const response = await fetch('/api/cms/chapters', {
@@ -200,121 +221,51 @@ export default function CMSPage() {
     }
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
-    console.log('handleLogin called - form submitted');
-    e.preventDefault();
-    setLoginError('');
-    
-    if (!password || password.trim() === '') {
-      setLoginError('Please enter a password');
-      return;
-    }
-    
-    try {
-      console.log('Making login request with password:', password ? 'PRESENT' : 'MISSING');
-      const response = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ password }),
-      });
-
-      console.log('Login response status:', response.status);
-      
-      // Handle successful login
-      if (response.ok) {
-        try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            if (data.success) {
-              console.log('Login successful');
-              setPassword(''); // Clear password
-              checkAuthStatus(); // Refresh auth status
-            } else {
-              setLoginError(data.message || 'Login failed');
-            }
-          } else {
-            console.log('Login successful (non-JSON response)');
-            setPassword(''); // Clear password
-            checkAuthStatus(); // Refresh auth status
-          }
-        } catch (parseError) {
-          console.log('Login successful (JSON parse error ignored)');
-          setPassword(''); // Clear password
-          checkAuthStatus(); // Refresh auth status
-        }
-      } else {
-        // Handle login failure
-        try {
-          const contentType = response.headers.get('content-type');
-          if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            console.log('Login failed:', data);
-            setLoginError(data.message || 'Invalid password');
-          } else {
-            // Non-JSON error response (like HTML 404)
-            if (response.status === 404) {
-              setLoginError('Login service unavailable. Please try again later.');
-            } else if (response.status === 429) {
-              setLoginError('Too many login attempts. Please wait and try again.');
-            } else {
-              setLoginError('Authentication failed. Please check your password.');
-            }
-          }
-        } catch (parseError) {
-          console.error('Failed to parse error response:', parseError);
-          setLoginError('Authentication failed. Please try again.');
-        }
-      }
-    } catch (error) {
-      console.error('Network error during login:', error);
-      setLoginError('Connection failed. Please check your internet and try again.');
-    }
+  const handleLogin = () => {
+    console.log('Redirecting to Replit OAuth login...');
+    // Redirect to Replit OAuth login
+    window.location.href = '/api/login';
   };
 
   const handleLogout = async () => {
     try {
-      const response = await fetch('/api/auth/logout', { method: 'POST' });
-      
-      // Clear user state regardless of response (logout should always work client-side)
-      setUser(null);
-      setPassword('');
-      
-      if (response.ok) {
-        console.log('Logout successful');
-      } else {
-        console.warn('Logout request failed but clearing session anyway:', response.status);
-      }
-      
-      // Reload to clear any cached state
-      window.location.reload();
+      // For Replit OAuth, redirect to logout endpoint
+      window.location.href = '/api/logout';
     } catch (error) {
       console.error('Error during logout:', error);
-      // Still clear user state and reload even if logout request failed
+      // Fallback: clear user state and reload
       setUser(null);
-      setPassword('');
       window.location.reload();
     }
   };
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const saveChapter = async (chapterId: string, cards: CardData[]) => {
+    if (!csrfToken) {
+      alert('Security token not available. Please refresh the page.');
+      return;
+    }
+    
     try {
       const response = await fetch('/api/cms/chapters', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
         },
         body: JSON.stringify({ id: chapterId, cards }),
+        credentials: 'same-origin',
       });
       
       if (response.ok) {
         alert('Chapter saved successfully!');
         fetchChapters(); // Refresh data
       } else {
-        alert('Failed to save chapter');
+        if (response.status === 403) {
+          alert('Security token expired. Please refresh the page.');
+        } else {
+          alert('Failed to save chapter');
+        }
       }
     } catch (error) {
       console.error('Error saving chapter:', error);
@@ -402,18 +353,10 @@ export default function CMSPage() {
             
             <div className="space-y-6">
               <div>
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Admin Password"
-                  className="w-full px-6 py-4 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl text-white placeholder-white/60 focus:border-white/40 focus:outline-none focus:bg-white/15 transition-all duration-200 text-lg"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      handleLogin(e);
-                    }
-                  }}
-                />
+                <div className="text-center text-white/80 mb-6">
+                  <p className="text-lg">Sign in with your Replit account to access the CMS</p>
+                  <p className="text-sm text-white/60 mt-2">Admin permissions required</p>
+                </div>
               </div>
               
               {loginError && (
@@ -435,19 +378,15 @@ export default function CMSPage() {
               
               <button 
                 type="button"
-                className="group relative overflow-hidden w-full bg-white/20 hover:bg-white/30 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl backdrop-blur-sm border border-white/30 hover:border-white/50"
-                onClick={async (e) => {
-                  console.log('Button clicked!');
-                  e.preventDefault();
-                  await handleLogin(e);
-                }}
+                className="group relative overflow-hidden w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl backdrop-blur-sm border border-blue-500 hover:border-blue-400"
+                onClick={handleLogin}
               >
-                <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                <div className="absolute inset-0 bg-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative flex items-center justify-center space-x-3">
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                   </svg>
-                  <span className="text-lg">Access CMS</span>
+                  <span className="text-lg">Sign in with Replit</span>
                 </div>
               </button>
             </div>

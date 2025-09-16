@@ -98,6 +98,15 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     res.json({ success: true, csrfToken });
   });
 
+  // Auth status endpoint for checking authentication state
+  app.get('/api/auth/status', (req: any, res) => {
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      res.json({ authenticated: true });
+    } else {
+      res.status(401).json({ authenticated: false });
+    }
+  });
+
   // Unified auth routes that work with Replit Auth
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {

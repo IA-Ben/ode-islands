@@ -95,9 +95,7 @@ app.prepare().then(async () => {
     },
   }));
 
-  // Import and setup simple authentication for CMS admin access
-  const { setupSimpleAuth } = await import('./server/simpleAuth.ts');
-  setupSimpleAuth(server);
+  // Simple auth has been removed - using unified Replit OAuth system instead
 
   // Import and setup unified authentication routes
   const { registerUnifiedRoutes, isAuthenticated, isAdmin } = await import('./server/unifiedRoutes.ts');
@@ -120,6 +118,10 @@ app.prepare().then(async () => {
   // Initialize Content Scheduler
   const { schedulerManager } = await import('./server/schedulerManager.ts');
   await schedulerManager.initialize();
+
+  // Seed admin users from ADMIN_EMAILS environment variable
+  const { storage } = await import('./server/storage.ts');
+  await storage.seedAdminUsers();
 
   httpServer.listen(port, hostname, (err) => {
     if (err) throw err;

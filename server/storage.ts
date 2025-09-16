@@ -25,6 +25,48 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
+  // Admin seeding functionality
+  async seedAdminUsers(): Promise<void> {
+    const adminEmails = process.env.ADMIN_EMAILS;
+    if (!adminEmails) {
+      console.log('No ADMIN_EMAILS configured, skipping admin seeding');
+      return;
+    }
+
+    const emails = adminEmails.split(',').map(email => email.trim()).filter(email => email);
+    
+    for (const email of emails) {
+      try {
+        const existingUser = await this.getUserByEmail(email);
+        
+        if (existingUser) {
+          // Update existing user to admin if not already
+          if (!existingUser.isAdmin) {
+            await db.update(users)
+              .set({ isAdmin: true, updatedAt: new Date() })
+              .where(eq(users.email, email));
+            console.log(`✓ Promoted existing user ${email} to admin`);
+          } else {
+            console.log(`✓ User ${email} is already an admin`);
+          }
+        } else {
+          // Create placeholder admin user - will be populated when they first log in via OAuth
+          await db.insert(users)
+            .values({
+              email: email,
+              firstName: 'Admin',
+              lastName: 'User',
+              isAdmin: true,
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            });
+          console.log(`✓ Created admin placeholder for ${email} - will be populated on first OAuth login`);
+        }
+      } catch (error) {
+        console.error(`✗ Failed to seed admin user ${email}:`, error);
+      }
+    }
+  }
   // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
 
   async getUser(id: string): Promise<User | undefined> {
@@ -121,13 +163,44 @@ export class DatabaseStorage implements IStorage {
           // Preserve admin status from existing user
           isAdmin: existingUser.isAdmin || userData.isAdmin || false
         });
+      } else if (existingUser && existingUser.id === userData.id) {
+        // User exists with same ID, update but preserve admin status
+        const [updatedUser] = await db
+          .update(users)
+          .set({
+            email: userData.email,
+            firstName: userData.firstName,
+            lastName: userData.lastName,
+            profileImageUrl: userData.profileImageUrl,
+            updatedAt: new Date(),
+            // Don't overwrite admin status unless explicitly set
+            ...(userData.isAdmin !== undefined && { isAdmin: userData.isAdmin })
+          })
+          .where(eq(users.id, userData.id))
+          .returning();
+        return updatedUser;
+      }
+    }
+
+    // Check if this email is in ADMIN_EMAILS for auto-promotion
+    const adminEmails = process.env.ADMIN_EMAILS;
+    let shouldBeAdmin = userData.isAdmin || false;
+    
+    if (adminEmails && userData.email) {
+      const adminEmailList = adminEmails.split(',').map(email => email.trim());
+      if (adminEmailList.includes(userData.email)) {
+        shouldBeAdmin = true;
+        console.log(`Auto-promoting ${userData.email} to admin based on ADMIN_EMAILS`);
       }
     }
 
     // Normal upsert operation
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values({
+        ...userData,
+        isAdmin: shouldBeAdmin
+      })
       .onConflictDoUpdate({
         target: users.id,
         set: {
@@ -136,8 +209,8 @@ export class DatabaseStorage implements IStorage {
           lastName: userData.lastName,
           profileImageUrl: userData.profileImageUrl,
           updatedAt: new Date(),
-          // Don't overwrite admin status unless explicitly set
-          ...(userData.isAdmin !== undefined && { isAdmin: userData.isAdmin })
+          // Preserve existing admin status or apply ADMIN_EMAILS promotion
+          isAdmin: shouldBeAdmin
         },
       })
       .returning();
