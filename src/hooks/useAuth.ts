@@ -6,6 +6,7 @@ interface User {
   firstName: string;
   lastName: string;
   profileImageUrl?: string;
+  isAdmin?: boolean;
 }
 
 export function useAuth() {
@@ -37,5 +38,6 @@ export function useAuth() {
     user,
     isLoading,
     isAuthenticated: !!user,
+    isAdmin: !!user?.isAdmin,
   };
 }

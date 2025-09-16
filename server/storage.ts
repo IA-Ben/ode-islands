@@ -16,6 +16,11 @@ export interface IStorage {
   upsertUser(user: UpsertUser): Promise<User>;
   migrateUserToOIDC(oldUserId: string, newUserData: UpsertUser): Promise<User>;
   
+  // Admin user management operations
+  getAllUsers(): Promise<User[]>;
+  updateUser(id: string, updates: Partial<User>): Promise<User>;
+  deleteUser(id: string): Promise<void>;
+  
   // CMS-specific operations
   createContentBackup(filename: string, content: string, userId: string): Promise<ContentBackup>;
   getContentBackups(limit?: number): Promise<ContentBackup[]>;
@@ -215,6 +220,101 @@ export class DatabaseStorage implements IStorage {
       })
       .returning();
     return user;
+  }
+
+  // Admin user management operations
+  async getAllUsers(): Promise<User[]> {
+    return await db
+      .select()
+      .from(users)
+      .orderBy(sql`${users.createdAt} DESC`);
+  }
+
+  async updateUser(id: string, updates: Partial<User>): Promise<User> {
+    // Whitelist allowed fields for security
+    const allowedFields = {
+      firstName: updates.firstName,
+      lastName: updates.lastName,
+      profileImageUrl: updates.profileImageUrl,
+      isAdmin: updates.isAdmin,
+    };
+    
+    // Remove undefined fields
+    const filteredUpdates = Object.fromEntries(
+      Object.entries(allowedFields).filter(([_, value]) => value !== undefined)
+    );
+    
+    const [updatedUser] = await db
+      .update(users)
+      .set({
+        ...filteredUpdates,
+        updatedAt: new Date(),
+      })
+      .where(eq(users.id, id))
+      .returning();
+    
+    if (!updatedUser) {
+      throw new Error(`User with id ${id} not found`);
+    }
+    
+    return updatedUser;
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    // Use the same FK update approach as migrateUserToOIDC but set to null
+    // This handles FK constraints by nullifying references instead of failing
+    await db.transaction(async (tx) => {
+      const fkQueries = [
+        // [table_name, column_name] pairs for all user references
+        ['content_backups', 'created_by'],
+        ['media_assets', 'uploaded_by'],
+        ['user_progress', 'user_id'],
+        ['polls', 'created_by'],
+        ['poll_responses', 'user_id'],
+        ['live_events', 'created_by'],
+        ['qa_sessions', 'asked_by'],
+        ['qa_sessions', 'answered_by'],
+        ['live_chat_messages', 'user_id'],
+        ['event_memories', 'created_by'],
+        ['user_memory_wallet', 'user_id'],
+        ['memory_wallet_collections', 'user_id'],
+        ['certificates', 'user_id'],
+        ['user_sessions', 'user_id'],
+        ['content_interactions', 'user_id'],
+        ['notifications', 'user_id'],
+        ['content_schedules', 'created_by'],
+        ['content_schedules', 'last_modified_by'],
+        ['user_content_access', 'user_id'],
+        ['emergency_overrides', 'requested_by'],
+        ['emergency_overrides', 'approved_by'],
+        ['user_notes', 'user_id'],
+        ['forum_posts', 'user_id'],
+        ['forum_replies', 'user_id'],
+        ['feedback_surveys', 'created_by'],
+        ['survey_responses', 'user_id'],
+        ['fan_score_events', 'user_id'],
+        ['user_achievements', 'user_id']
+      ];
+      
+      // Set all FK references to null to maintain referential integrity
+      for (const [tableName, columnName] of fkQueries) {
+        try {
+          await tx.execute(sql`
+            UPDATE ${sql.identifier(tableName)}
+            SET ${sql.identifier(columnName)} = NULL
+            WHERE ${sql.identifier(columnName)} = ${id}
+          `);
+        } catch (error) {
+          // Some tables/columns might not exist, log but continue
+          console.warn(`Delete cleanup warning for ${tableName}.${columnName}:`, error);
+        }
+      }
+      
+      // Delete the user record after all FKs are cleaned up
+      await tx.delete(users).where(eq(users.id, id));
+    });
+    
+    console.log(`Successfully deleted user ${id} and cleaned up FK references`);
   }
 
   // CMS-specific operations

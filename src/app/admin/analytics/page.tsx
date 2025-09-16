@@ -76,14 +76,14 @@ export default function AdminAnalyticsPage() {
         if (userData.isAdmin) {
           setUser(userData);
         } else {
-          window.location.href = '/cms'; // Redirect to CMS if not admin
+          window.location.href = '/admin/cms'; // Redirect to CMS if not admin
         }
       } else {
-        window.location.href = '/cms'; // Redirect to login if not authenticated
+        window.location.href = '/admin/cms'; // Redirect to login if not authenticated
       }
     } catch (error) {
       console.error('Auth check error:', error);
-      window.location.href = '/cms';
+      window.location.href = '/admin/cms';
     } finally {
       setLoading(false);
     }
@@ -159,7 +159,7 @@ export default function AdminAnalyticsPage() {
         <div className="text-center">
           <h1 className="text-3xl font-bold mb-4">Access Denied</h1>
           <p className="text-gray-400 mb-6">Admin privileges required to access analytics dashboard.</p>
-          <Button onClick={() => window.location.href = '/cms'}>Return to CMS</Button>
+          <Button onClick={() => window.location.href = '/admin/cms'}>Return to CMS</Button>
         </div>
       </div>
     );
@@ -215,7 +215,7 @@ export default function AdminAnalyticsPage() {
               {/* Back to CMS */}
               <Button
                 variant="outline"
-                onClick={() => window.location.href = '/cms'}
+                onClick={() => window.location.href = '/admin/cms'}
                 className="text-gray-300 border-gray-600 hover:bg-gray-800"
               >
                 ← Back to CMS

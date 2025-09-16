@@ -91,11 +91,11 @@ export default function CardEditorPage() {
         const userData = await response.json();
         setUser(userData);
       } else {
-        router.push('/cms');
+        router.push('/admin/cms');
       }
     } catch (error: unknown) {
       console.error('Auth check failed:', error instanceof Error ? error.message : String(error));
-      router.push('/cms');
+      router.push('/admin/cms');
     }
   }, [router]);
 
@@ -208,7 +208,7 @@ export default function CardEditorPage() {
                 }]
               }));
               
-              alert(`Sub-chapter "${subChapterId}" created successfully! You can edit it by going to /cms/edit/${subChapterId}/0`);
+              alert(`Sub-chapter "${subChapterId}" created successfully! You can edit it by going to /admin/cms/edit/${subChapterId}/0`);
             } else {
               console.error('Failed to create sub-chapter');
             }
@@ -464,7 +464,7 @@ export default function CardEditorPage() {
                             ...prev,
                             cta: { ...prev.cta, url: `/${subChapterId}`, title: prev.cta?.title || 'Continue' }
                           }));
-                          alert(`Sub-chapter "${subChapterId}" will be created when you save. You can edit it by going to /cms/edit/${subChapterId}/new`);
+                          alert(`Sub-chapter "${subChapterId}" will be created when you save. You can edit it by going to /admin/cms/edit/${subChapterId}/new`);
                         }}
                         className="bg-indigo-600 hover:bg-indigo-700 text-xs px-3"
                       >

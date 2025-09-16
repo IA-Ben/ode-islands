@@ -156,7 +156,7 @@ export default function ThemeEditorPage() {
                 Reset Theme
               </button>
               <Link
-                href="/cms"
+                href="/admin/cms"
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
               >
                 Back to CMS

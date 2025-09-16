@@ -202,6 +202,103 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Admin User Management API Routes - all require admin access with CSRF protection
+  app.get("/api/admin/users", isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", isAdminWithCSRF, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const updates = req.body;
+      const updatedUser = await storage.updateUser(userId, updates);
+      res.json(updatedUser);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", isAdminWithCSRF, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      await storage.deleteUser(userId);
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Admin Theme Management API Routes - all require admin access with CSRF protection
+  app.get("/api/admin/theme", isAdmin, async (req, res) => {
+    try {
+      // For now, return the default theme or read from a config file
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const themePath = path.join(process.cwd(), 'src/config/theme.json');
+      
+      try {
+        const themeData = await fs.readFile(themePath, 'utf-8');
+        const theme = JSON.parse(themeData);
+        res.json(theme);
+      } catch (fileError) {
+        // If theme file doesn't exist, return default theme
+        const defaultTheme = {
+          brand: { primary: '#1e293b', secondary: '#334155', accent: '#3b82f6' },
+          fonts: { primary: 'Manrope', secondary: 'Inter' },
+          colors: { background: '#000000', foreground: '#ffffff', text: '#e2e8f0', muted: '#64748b' }
+        };
+        res.json(defaultTheme);
+      }
+    } catch (error) {
+      console.error("Error loading theme:", error);
+      res.status(500).json({ message: "Failed to load theme" });
+    }
+  });
+
+  app.post("/api/admin/theme", isAdminWithCSRF, async (req, res) => {
+    try {
+      const themeConfig = req.body;
+      const userId = req.user!.claims.sub;
+      
+      // Save theme to file
+      const fs = await import('fs/promises');
+      const path = await import('path');
+      const themePath = path.join(process.cwd(), 'src/config/theme.json');
+      
+      // Ensure config directory exists
+      await fs.mkdir(path.dirname(themePath), { recursive: true });
+      
+      // Create backup of current theme
+      try {
+        const currentTheme = await fs.readFile(themePath, 'utf-8');
+        await storage.createContentBackup(
+          `theme-backup-${Date.now()}.json`,
+          currentTheme,
+          userId
+        );
+      } catch (backupError) {
+        // Theme file might not exist yet, continue without backup
+        console.log('No existing theme to backup');
+      }
+      
+      // Save new theme configuration
+      await fs.writeFile(themePath, JSON.stringify(themeConfig, null, 2));
+      
+      res.json({ message: "Theme saved successfully" });
+    } catch (error) {
+      console.error("Error saving theme:", error);
+      res.status(500).json({ message: "Failed to save theme" });
+    }
+  });
+
   // Content Scheduler API Routes - all require admin access
   const { schedulerManager } = await import('./schedulerManager');
 
@@ -281,6 +378,101 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting schedule:", error);
       res.status(500).json({ success: false, message: "Failed to delete schedule" });
+    }
+  });
+
+  // Admin Theme Management API Routes
+  app.get("/api/admin/theme", isAdmin, async (req, res) => {
+    try {
+      // Default theme configuration
+      const defaultTheme = {
+        brand: {
+          primary: '#1e293b',
+          secondary: '#334155',
+          accent: '#3b82f6'
+        },
+        fonts: {
+          primary: 'Manrope',
+          secondary: 'Inter'
+        },
+        colors: {
+          background: '#000000',
+          foreground: '#ffffff',
+          text: '#e2e8f0',
+          muted: '#64748b'
+        }
+      };
+
+      // For now, return default theme. In a full implementation, 
+      // this would load from database or file system
+      res.json(defaultTheme);
+    } catch (error) {
+      console.error("Error fetching theme:", error);
+      res.status(500).json({ message: "Failed to fetch theme" });
+    }
+  });
+
+  app.post("/api/admin/theme", isAdminWithCSRF, async (req, res) => {
+    try {
+      const userId = req.user!.claims.sub;
+      const themeConfig = req.body;
+      
+      // In a full implementation, this would save to database or file system
+      // For now, just simulate success
+      console.log('Theme updated by admin:', userId, themeConfig);
+      
+      res.json({ success: true, message: "Theme saved successfully" });
+    } catch (error) {
+      console.error("Error saving theme:", error);
+      res.status(500).json({ message: "Failed to save theme" });
+    }
+  });
+
+  // Admin User Management API Routes
+  app.get("/api/admin/users", isAdmin, async (req, res) => {
+    try {
+      const users = await storage.getAllUsers();
+      res.json(users);
+    } catch (error) {
+      console.error("Error fetching users:", error);
+      res.status(500).json({ message: "Failed to fetch users" });
+    }
+  });
+
+  app.patch("/api/admin/users/:id", isAdminWithCSRF, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const updates = req.body;
+      const adminUserId = req.user!.claims.sub;
+
+      // Prevent admins from modifying their own admin status
+      if (userId === adminUserId && 'isAdmin' in updates) {
+        return res.status(400).json({ message: "Cannot modify your own admin status" });
+      }
+
+      await storage.updateUser(userId, updates);
+      res.json({ success: true, message: "User updated successfully" });
+    } catch (error) {
+      console.error("Error updating user:", error);
+      res.status(500).json({ message: "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/admin/users/:id", isAdminWithCSRF, async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const adminUserId = req.user!.claims.sub;
+
+      // Prevent admins from deleting themselves
+      if (userId === adminUserId) {
+        return res.status(400).json({ message: "Cannot delete your own account" });
+      }
+
+      await storage.deleteUser(userId);
+      res.json({ success: true, message: "User deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      res.status(500).json({ message: "Failed to delete user" });
     }
   });
 
