@@ -157,7 +157,9 @@ export default function CMSPage() {
 
   const fetchChapters = async () => {
     try {
-      const response = await fetch('/api/cms/chapters');
+      const response = await fetch('/api/cms/chapters', {
+        credentials: 'same-origin'
+      });
       
       if (response.ok) {
         try {
