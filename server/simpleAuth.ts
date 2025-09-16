@@ -2,6 +2,9 @@ import express from 'express';
 import session from 'express-session';
 import rateLimit from 'express-rate-limit';
 import crypto from 'crypto';
+import { db } from './db';
+import { users } from '../shared/schema';
+import { eq } from 'drizzle-orm';
 
 // Enforce required environment variables
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
@@ -21,7 +24,7 @@ const loginLimiter = rateLimit({
 
 export function setupSimpleAuth(app: express.Application) {
   // Login endpoint with rate limiting and timing-safe comparison
-  app.post('/api/auth/login', loginLimiter, (req, res) => {
+  app.post('/api/auth/login', loginLimiter, async (req, res) => {
     const { password } = req.body;
     
     if (!password) {
@@ -39,8 +42,36 @@ export function setupSimpleAuth(app: express.Application) {
     }
     
     if (isValid) {
-      req.session.isAuthenticated = true;
-      res.json({ success: true, message: 'Login successful' });
+      try {
+        // Find admin user in database - look for first admin user
+        const adminUsers = await db.select().from(users).where(eq(users.isAdmin, true)).limit(1);
+        
+        if (adminUsers.length > 0) {
+          const adminUser = adminUsers[0];
+          req.session.isAuthenticated = true;
+          req.session.userId = adminUser.id;
+          req.session.isAdmin = true;
+          res.json({ success: true, message: 'Login successful' });
+        } else {
+          // No admin user found - create one
+          const newAdmin = await db.insert(users).values({
+            email: 'admin@theodeislands.com',
+            firstName: 'Admin',
+            lastName: 'User',
+            isAdmin: true,
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          }).returning();
+          
+          req.session.isAuthenticated = true;
+          req.session.userId = newAdmin[0].id;
+          req.session.isAdmin = true;
+          res.json({ success: true, message: 'Login successful - admin user created' });
+        }
+      } catch (error) {
+        console.error('Database error during login:', error);
+        res.status(500).json({ success: false, message: 'Internal server error' });
+      }
     } else {
       res.status(401).json({ success: false, message: 'Invalid password' });
     }
@@ -65,16 +96,35 @@ export function setupSimpleAuth(app: express.Application) {
     }
   });
 
-  // Get user endpoint - fixed schema mismatch
-  app.get('/api/auth/user', (req, res) => {
-    if (req.session.isAuthenticated) {
-      res.json({ 
-        id: 'admin',
-        email: 'admin@theodeislands.com',
-        firstName: 'Admin', // Fixed: was first_name
-        lastName: 'User',   // Fixed: was last_name
-        isAdmin: true       // Fixed: was is_admin
-      });
+  // Get user endpoint - now fetches real user data from database
+  app.get('/api/auth/user', async (req, res) => {
+    if (req.session.isAuthenticated && req.session.userId) {
+      try {
+        // Fetch real user data from database
+        const [user] = await db.select().from(users).where(eq(users.id, req.session.userId));
+        
+        if (user) {
+          res.json({
+            id: user.id,
+            email: user.email || '',
+            firstName: user.firstName || '',
+            lastName: user.lastName || '',
+            isAdmin: user.isAdmin || false,
+            profileImageUrl: user.profileImageUrl || undefined,
+            emailVerified: user.emailVerified || false,
+            createdAt: user.createdAt
+          });
+        } else {
+          // User not found in database - invalid session
+          req.session.destroy((err) => {
+            if (err) console.error('Session destroy error:', err);
+          });
+          res.status(401).json({ error: 'User not found' });
+        }
+      } catch (error) {
+        console.error('Database error fetching user:', error);
+        res.status(500).json({ error: 'Internal server error' });
+      }
     } else {
       res.status(401).json({ error: 'Authentication required' });
     }
@@ -94,5 +144,7 @@ export function setupSimpleAuth(app: express.Application) {
 declare module 'express-session' {
   interface SessionData {
     isAuthenticated?: boolean;
+    userId?: string;
+    isAdmin?: boolean;
   }
 }
