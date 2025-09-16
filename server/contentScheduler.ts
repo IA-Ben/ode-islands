@@ -8,9 +8,12 @@ import {
   notifications,
   liveEvents,
   polls,
-  certificates
+  certificates,
+  userProgress,
+  pollResponses,
+  liveChatMessages
 } from '../shared/schema';
-import { eq, and, lte, or, isNull, inArray, desc } from 'drizzle-orm';
+import { eq, and, lte, or, isNull, inArray, desc, gte, isNotNull, count } from 'drizzle-orm';
 import { NotificationService } from '../src/lib/notificationService';
 
 export interface SchedulerConfig {
@@ -361,12 +364,415 @@ export class ContentScheduler {
    * Execute condition check job
    */
   private async executeConditionCheck(schedule: any, job: any): Promise<any> {
-    // This would check if conditions are met and create new jobs if needed
-    // For now, return a placeholder
+    console.log(`Evaluating conditions for schedule ${schedule.id}`);
+    
+    if (!schedule.conditions || !Array.isArray(schedule.conditions)) {
+      console.log('No conditions defined, marking as successful');
+      return {
+        conditionsChecked: true,
+        conditionsMet: true,
+        conditionsEvaluated: 0,
+        executedAt: new Date()
+      };
+    }
+
+    const conditions = schedule.conditions;
+    const conditionLogic = schedule.conditionLogic || 'AND';
+    const results = [];
+
+    // Evaluate each condition
+    for (const condition of conditions) {
+      try {
+        const result = await this.evaluateCondition(condition, schedule);
+        results.push(result);
+        console.log(`Condition "${condition.type}" evaluated to: ${result}`);
+      } catch (error) {
+        console.error(`Error evaluating condition ${condition.type}:`, error);
+        results.push(false);
+      }
+    }
+
+    // Apply logic (AND/OR)
+    let conditionsMet: boolean;
+    if (conditionLogic === 'OR') {
+      conditionsMet = results.some(result => result === true);
+    } else { // Default to AND
+      conditionsMet = results.every(result => result === true);
+    }
+
+    console.log(`Conditions evaluation: ${results.length} conditions, logic: ${conditionLogic}, result: ${conditionsMet}`);
+
+    // If conditions are met, create content release job
+    if (conditionsMet) {
+      await this.createScheduledJob({
+        scheduleId: schedule.id,
+        jobType: 'content_release',
+        scheduledFor: new Date(), // Release immediately
+        jobData: {
+          triggerType: 'condition_based',
+          conditionResults: results
+        }
+      });
+      console.log(`Created content release job for schedule ${schedule.id}`);
+    } else {
+      // Schedule another condition check for later (if not at max attempts)
+      const jobData = job.jobData || {};
+      const attemptCount = jobData.conditionCheckAttempt || 0;
+      const maxAttempts = schedule.maxExecutions || 10;
+
+      if (attemptCount < maxAttempts) {
+        const nextCheckTime = new Date(Date.now() + (schedule.conditionCheckInterval || 3600000)); // Default 1 hour
+        await this.createScheduledJob({
+          scheduleId: schedule.id,
+          jobType: 'condition_check',
+          scheduledFor: nextCheckTime,
+          jobData: {
+            conditionCheckAttempt: attemptCount + 1
+          }
+        });
+        console.log(`Scheduled next condition check for ${nextCheckTime.toISOString()}`);
+      } else {
+        console.log(`Max condition check attempts reached for schedule ${schedule.id}`);
+      }
+    }
+
     return {
       conditionsChecked: true,
+      conditionsMet,
+      conditionsEvaluated: results.length,
+      conditionResults: results,
+      conditionLogic,
       executedAt: new Date()
     };
+  }
+
+  /**
+   * Evaluate a single condition
+   */
+  private async evaluateCondition(condition: any, schedule: any): Promise<boolean> {
+    if (!condition.type) {
+      console.warn('Condition missing type, defaulting to false');
+      return false;
+    }
+
+    console.log(`Evaluating condition: ${condition.type}`, condition);
+
+    switch (condition.type) {
+      case 'user_action':
+        return await this.evaluateUserActionCondition(condition);
+      
+      case 'time_based':
+        return await this.evaluateTimeBasedCondition(condition);
+      
+      case 'content_access':
+        return await this.evaluateContentAccessCondition(condition);
+      
+      case 'poll_response':
+        return await this.evaluatePollResponseCondition(condition);
+      
+      case 'chapter_completion':
+        return await this.evaluateChapterCompletionCondition(condition);
+      
+      case 'event_participation':
+        return await this.evaluateEventParticipationCondition(condition);
+      
+      case 'user_attributes':
+        return await this.evaluateUserAttributesCondition(condition);
+      
+      case 'custom_sql':
+        return await this.evaluateCustomSQLCondition(condition);
+      
+      default:
+        console.warn(`Unknown condition type: ${condition.type}`);
+        return false;
+    }
+  }
+
+  /**
+   * Evaluate user action conditions
+   */
+  private async evaluateUserActionCondition(condition: any): Promise<boolean> {
+    const { action, threshold = 1, timeWindow } = condition;
+    
+    // Accumulate predicates to avoid overwriting .where() calls
+    const predicates = [];
+    
+    if (timeWindow) {
+      const timeWindowStart = new Date(Date.now() - timeWindow * 60 * 1000);
+      predicates.push(gte(userProgress.lastAccessed, timeWindowStart));
+    }
+    
+    if (action === 'chapter_completed') {
+      predicates.push(isNotNull(userProgress.completedAt));
+    }
+    
+    let query = db.select({ count: count() }).from(userProgress);
+    
+    if (predicates.length > 0) {
+      query = query.where(and(...predicates));
+    }
+    
+    const result = await query;
+    return (result[0]?.count || 0) >= threshold;
+  }
+
+  /**
+   * Evaluate time-based conditions
+   */
+  private async evaluateTimeBasedCondition(condition: any): Promise<boolean> {
+    const { timeType, value, operator = 'gte' } = condition;
+    const now = new Date();
+    
+    switch (timeType) {
+      case 'absolute':
+        const targetTime = new Date(value);
+        return operator === 'gte' ? now >= targetTime : now <= targetTime;
+      
+      case 'relative_hours':
+        const hoursAgo = new Date(now.getTime() - value * 60 * 60 * 1000);
+        return operator === 'gte' ? now >= hoursAgo : now <= hoursAgo;
+      
+      case 'day_of_week':
+        return now.getDay() === value;
+      
+      case 'hour_of_day':
+        return now.getHours() === value;
+      
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Evaluate content access conditions
+   */
+  private async evaluateContentAccessCondition(condition: any): Promise<boolean> {
+    const { contentType, contentId, accessType = 'any', threshold = 1 } = condition;
+    
+    // Accumulate predicates to avoid overwriting .where() calls
+    const predicates = [];
+    
+    if (contentType) {
+      predicates.push(eq(userContentAccess.contentType, contentType));
+    }
+    
+    if (contentId) {
+      predicates.push(eq(userContentAccess.contentId, contentId));
+    }
+    
+    let query = db.select({ count: count() }).from(userContentAccess);
+    
+    if (predicates.length > 0) {
+      query = query.where(and(...predicates));
+    }
+    
+    const result = await query;
+    return (result[0]?.count || 0) >= threshold;
+  }
+
+  /**
+   * Evaluate poll response conditions
+   */
+  private async evaluatePollResponseCondition(condition: any): Promise<boolean> {
+    const { pollId, responseValue, threshold = 1 } = condition;
+    
+    // Accumulate predicates to avoid overwriting .where() calls
+    const predicates = [];
+    
+    if (pollId) {
+      predicates.push(eq(pollResponses.pollId, pollId));
+    }
+    
+    if (responseValue !== undefined) {
+      // Fix schema field name: selectedOption instead of responseValue
+      predicates.push(eq(pollResponses.selectedOption, responseValue));
+    }
+    
+    let query = db.select({ count: count() }).from(pollResponses);
+    
+    if (predicates.length > 0) {
+      query = query.where(and(...predicates));
+    }
+    
+    const result = await query;
+    return (result[0]?.count || 0) >= threshold;
+  }
+
+  /**
+   * Evaluate chapter completion conditions
+   */
+  private async evaluateChapterCompletionCondition(condition: any): Promise<boolean> {
+    const { chapterId, completionRate, userCount } = condition;
+    
+    if (userCount) {
+      // Check if specific number of users completed
+      const completedPredicates = [isNotNull(userProgress.completedAt)];
+      if (chapterId) {
+        completedPredicates.push(eq(userProgress.chapterId, chapterId));
+      }
+      
+      const completedQuery = db.select({ count: count() })
+        .from(userProgress)
+        .where(and(...completedPredicates));
+      
+      const completed = await completedQuery;
+      return (completed[0]?.count || 0) >= userCount;
+    }
+    
+    if (completionRate) {
+      // Check completion rate percentage
+      const completedPredicates = [isNotNull(userProgress.completedAt)];
+      const totalPredicates = [];
+      
+      if (chapterId) {
+        completedPredicates.push(eq(userProgress.chapterId, chapterId));
+        totalPredicates.push(eq(userProgress.chapterId, chapterId));
+      }
+      
+      const [completedResult, totalResult] = await Promise.all([
+        db.select({ count: count() })
+          .from(userProgress)
+          .where(and(...completedPredicates)),
+        totalPredicates.length > 0 
+          ? db.select({ count: count() })
+              .from(userProgress)
+              .where(and(...totalPredicates))
+          : db.select({ count: count() })
+              .from(userProgress)
+      ]);
+      
+      const completed = completedResult[0]?.count || 0;
+      const total = totalResult[0]?.count || 0;
+      
+      if (total === 0) return false;
+      
+      const actualRate = (completed / total) * 100;
+      return actualRate >= completionRate;
+    }
+    
+    return false;
+  }
+
+  /**
+   * Evaluate event participation conditions
+   */
+  private async evaluateEventParticipationCondition(condition: any): Promise<boolean> {
+    const { eventId, participationType, threshold = 1 } = condition;
+    
+    switch (participationType) {
+      case 'chat_messages':
+        let chatQuery = db.select({ count: count() }).from(liveChatMessages);
+        if (eventId) {
+          chatQuery = chatQuery.where(eq(liveChatMessages.eventId, eventId));
+        }
+        const chatResult = await chatQuery;
+        return (chatResult[0]?.count || 0) >= threshold;
+      
+      case 'poll_responses':
+        if (eventId) {
+          // Join with polls to filter by event
+          const pollQuery = db.select({ count: count() })
+            .from(pollResponses)
+            .innerJoin(polls, eq(pollResponses.pollId, polls.id))
+            .where(eq(polls.eventId, eventId));
+          
+          const pollResult = await pollQuery;
+          return (pollResult[0]?.count || 0) >= threshold;
+        } else {
+          // No event filter, count all poll responses
+          const pollQuery = db.select({ count: count() }).from(pollResponses);
+          const pollResult = await pollQuery;
+          return (pollResult[0]?.count || 0) >= threshold;
+        }
+      
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Evaluate user attributes conditions
+   */
+  private async evaluateUserAttributesCondition(condition: any): Promise<boolean> {
+    const { attribute, operator = 'eq', value, threshold = 1 } = condition;
+    
+    if (!attribute) {
+      console.warn('User attributes condition missing attribute, defaulting to false');
+      return false;
+    }
+    
+    // Build predicates based on user attributes
+    const predicates = [];
+    
+    switch (attribute) {
+      case 'isAdmin':
+        if (operator === 'eq') {
+          predicates.push(eq(users.isAdmin, Boolean(value)));
+        }
+        break;
+      case 'emailVerified':
+        if (operator === 'eq') {
+          predicates.push(eq(users.emailVerified, Boolean(value)));
+        }
+        break;
+      case 'email':
+        if (operator === 'eq' && value) {
+          predicates.push(eq(users.email, String(value)));
+        } else if (operator === 'contains' && value) {
+          // This would require SQL LIKE - skip for now
+          console.warn('Email contains operator not implemented yet');
+          return false;
+        }
+        break;
+      case 'createdAt':
+        if (operator === 'gte' && value) {
+          predicates.push(gte(users.createdAt, new Date(value)));
+        } else if (operator === 'lte' && value) {
+          predicates.push(lte(users.createdAt, new Date(value)));
+        }
+        break;
+      default:
+        console.warn(`Unknown user attribute: ${attribute}`);
+        return false;
+    }
+    
+    if (predicates.length === 0) {
+      console.warn('No valid predicates for user attributes condition');
+      return false;
+    }
+    
+    const query = db.select({ count: count() })
+      .from(users)
+      .where(and(...predicates));
+    
+    const result = await query;
+    return (result[0]?.count || 0) >= threshold;
+  }
+
+  /**
+   * Evaluate custom SQL conditions (advanced)
+   */
+  private async evaluateCustomSQLCondition(condition: any): Promise<boolean> {
+    const { query: sqlQuery, expectedValue = true } = condition;
+    
+    try {
+      // For security, this would need proper validation/whitelisting in production
+      console.warn('Custom SQL conditions should be carefully validated for security');
+      
+      // Basic safety check - only allow SELECT statements
+      if (!sqlQuery.trim().toLowerCase().startsWith('select')) {
+        console.error('Custom SQL condition must be a SELECT statement');
+        return false;
+      }
+      
+      // For now, return false for security - this would need proper implementation
+      console.log('Custom SQL conditions not fully implemented for security reasons');
+      return false;
+      
+    } catch (error) {
+      console.error('Error evaluating custom SQL condition:', error);
+      return false;
+    }
   }
 
   /**
