@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '../../../../../server/auth';
 import { db } from '../../../../../server/db';
-import { userProgress, eventMemories } from '../../../../../shared/schema';
-import { eq, desc, and } from 'drizzle-orm';
+import { userProgress, eventMemories, pollResponses, contentInteractions, userFanScores } from '../../../../../shared/schema';
+import { eq, desc, and, count } from 'drizzle-orm';
 
 interface JourneyEvent {
   id: string;
@@ -32,7 +32,33 @@ export async function GET(request: NextRequest) {
         .where(eq(eventMemories.createdBy, session.user.id))
         .orderBy(desc(eventMemories.createdAt));
 
-    // TODO: Add fan score data when available
+    // Get user's poll responses count
+    const [pollsResult] = await db
+      .select({ count: count() })
+      .from(pollResponses)
+      .where(eq(pollResponses.userId, session.user.id));
+
+    // Get user's completed tasks count
+    const [tasksResult] = await db
+      .select({ count: count() })
+      .from(contentInteractions)
+      .where(and(
+        eq(contentInteractions.userId, session.user.id),
+        eq(contentInteractions.interactionType, 'complete')
+      ));
+
+    // Get user's fan score data
+    const [fanScoreResult] = await db
+      .select({
+        totalScore: userFanScores.totalScore,
+        level: userFanScores.level
+      })
+      .from(userFanScores)
+      .where(and(
+        eq(userFanScores.userId, session.user.id),
+        eq(userFanScores.scopeType, 'global'),
+        eq(userFanScores.scopeId, 'all')
+      ));
 
     // Transform progress data into journey events
     const journeyEvents: JourneyEvent[] = progressData.map((progress, index) => ({
@@ -78,8 +104,10 @@ export async function GET(request: NextRequest) {
         totalChapters,
         completedChapters,
         totalKeepsakes,
-        pollsAnswered: 0, // TODO: Add poll tracking
-        tasksCompleted: 0, // TODO: Add task tracking
+        pollsAnswered: pollsResult?.count || 0,
+        tasksCompleted: tasksResult?.count || 0,
+        fanScore: fanScoreResult?.totalScore || 0,
+        fanLevel: fanScoreResult?.level || 1,
         overallProgress: Math.round((completedChapters / totalChapters) * 100)
       };
 
