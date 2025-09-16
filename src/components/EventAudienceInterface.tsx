@@ -336,6 +336,61 @@ export default function EventAudienceInterface({ eventId, userId, theme }: Event
     });
   }, []);
 
+  // CRC32 implementation for offline QR validation
+  const crc32 = useCallback((data: string): number => {
+    const table = [];
+    let crc = 0;
+    
+    // Generate CRC32 table
+    for (let i = 0; i < 256; i++) {
+      crc = i;
+      for (let j = 0; j < 8; j++) {
+        crc = (crc & 1) ? (0xEDB88320 ^ (crc >>> 1)) : (crc >>> 1);
+      }
+      table[i] = crc;
+    }
+    
+    crc = 0xFFFFFFFF;
+    
+    for (let i = 0; i < data.length; i++) {
+      crc = table[(crc ^ data.charCodeAt(i)) & 0xFF] ^ (crc >>> 8);
+    }
+    
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }, []);
+
+  // Generate CRC32 checksum for QR code data
+  const generateQRCRC = useCallback((qrData: string): string => {
+    // Remove CRC field if present to calculate base checksum
+    const baseData = qrData.replace(/\|CRC:[^|]*/, '');
+    const checksum = crc32(baseData);
+    return checksum.toString(16).padStart(8, '0').toUpperCase();
+  }, [crc32]);
+
+  // Validate QR CRC checksum for offline validation
+  const validateQRCRC = useCallback((qrData: string): boolean => {
+    try {
+      const parts = qrData.split('|');
+      const crcPart = parts.find(p => p.startsWith('CRC:'));
+      
+      if (!crcPart) {
+        console.warn('No CRC found in QR code for offline validation');
+        return false; // Require CRC for offline validation
+      }
+      
+      const providedCrc = crcPart.substring(4).toUpperCase();
+      const expectedCrc = generateQRCRC(qrData);
+      
+      const isValid = providedCrc === expectedCrc;
+      console.log(`CRC validation: provided=${providedCrc}, expected=${expectedCrc}, valid=${isValid}`);
+      
+      return isValid;
+    } catch (error) {
+      console.error('CRC validation error:', error);
+      return false;
+    }
+  }, [generateQRCRC]);
+
   // Process offline queue when connection is restored
   const processOfflineQueue = useCallback(async () => {
     if (offlineQueue.length === 0) return;
@@ -385,60 +440,244 @@ export default function EventAudienceInterface({ eventId, userId, theme }: Event
     }
   }, [offlineQueue, csrfToken, showFeedback]);
 
-  // Handle QR scan results
+  // Enhanced offline QR dictionary with CRC validation data
+  const getOfflineQRDictionary = useCallback((): Map<string, { eventId: string; chapterId: string; sequenceId: string; timestamp: number; crcValidated: boolean }> => {
+    try {
+      const stored = localStorage.getItem('qr-offline-dictionary-v2'); // Use v2 for enhanced format
+      if (stored) {
+        const data = JSON.parse(stored);
+        return new Map(data);
+      }
+      return new Map();
+    } catch (error) {
+      console.warn('Failed to load offline QR dictionary:', error);
+      return new Map();
+    }
+  }, []);
+
+  // Update offline QR dictionary with enhanced validation data
+  const updateOfflineQRDictionary = useCallback((validQRCodes: string[]) => {
+    try {
+      const dictionary = getOfflineQRDictionary();
+      
+      validQRCodes.forEach(qrCode => {
+        // Parse QR to extract metadata
+        const parts = qrCode.split('|');
+        const eventId = parts.find(p => p.startsWith('E:'))?.substring(2) || '';
+        const chapterId = parts.find(p => p.startsWith('C:'))?.substring(2) || '';
+        const sequenceId = parts.find(p => p.startsWith('S:'))?.substring(2) || '';
+        
+        // Validate CRC for this QR code
+        const crcValidated = validateQRCRC(qrCode);
+        
+        dictionary.set(qrCode, {
+          eventId,
+          chapterId,
+          sequenceId,
+          timestamp: Date.now(),
+          crcValidated
+        });
+      });
+      
+      // Store as array of [key, value] pairs for JSON serialization
+      localStorage.setItem('qr-offline-dictionary-v2', JSON.stringify([...dictionary]));
+      
+      console.log(`Updated offline QR dictionary with ${validQRCodes.length} codes`);
+    } catch (error) {
+      console.warn('Failed to update offline QR dictionary:', error);
+    }
+  }, [getOfflineQRDictionary, validateQRCRC]);
+
+  // Validate QR code using server API with offline fallback
+  const validateQRCode = useCallback(async (qrCode: string): Promise<{
+    isValid: boolean;
+    eventId?: string;
+    chapterId?: string;
+    sequenceId?: string;
+    points?: number;
+    alreadyCollected?: boolean;
+    error?: string;
+    wasOfflineValidation?: boolean;
+  }> => {
+    try {
+      // Try server-side validation first
+      const response = await fetch('/api/qr-validation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(csrfToken && { 'X-CSRF-Token': csrfToken })
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+          qrData: qrCode,
+          eventId: eventId
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.isValid) {
+          // Update offline dictionary with valid QR
+          updateOfflineQRDictionary([qrCode]);
+        }
+        return {
+          isValid: result.isValid,
+          eventId: result.eventId,
+          chapterId: result.chapterId,
+          sequenceId: result.sequenceId,
+          points: result.points,
+          alreadyCollected: result.alreadyCollected,
+          error: result.error
+        };
+      } else {
+        throw new Error(`Server validation failed: ${response.status}`);
+      }
+    } catch (networkError) {
+      console.warn('Server QR validation failed, trying offline validation:', networkError);
+      
+      // Enhanced offline validation with CRC verification
+      console.log('Attempting offline QR validation with CRC verification');
+      
+      // First, validate CRC checksum to ensure QR integrity
+      const crcValid = validateQRCRC(qrCode);
+      if (!crcValid) {
+        return {
+          isValid: false,
+          error: 'QR code CRC checksum validation failed - possible corruption or tampering'
+        };
+      }
+      
+      // Check offline dictionary for pre-validated QR codes
+      const offlineDictionary = getOfflineQRDictionary();
+      const qrMetadata = offlineDictionary.get(qrCode);
+      
+      if (qrMetadata) {
+        // Verify the stored metadata also had valid CRC
+        if (!qrMetadata.crcValidated) {
+          console.warn('QR found in offline dictionary but was not CRC validated when stored');
+          return {
+            isValid: false,
+            error: 'QR code found in offline cache but lacks proper validation'
+          };
+        }
+        
+        // Additional check: verify event ID matches current context if provided
+        if (eventId && qrMetadata.eventId !== eventId) {
+          return {
+            isValid: false,
+            error: 'QR code is for a different event context'
+          };
+        }
+        
+        console.log('Offline QR validation successful:', qrMetadata);
+        return {
+          isValid: true,
+          eventId: qrMetadata.eventId,
+          chapterId: qrMetadata.chapterId,
+          sequenceId: qrMetadata.sequenceId,
+          points: 10, // Default points for offline validation
+          alreadyCollected: false, // Cannot check offline (but server will catch duplicates)
+          wasOfflineValidation: true
+        };
+      } else {
+        // CRC is valid but QR not in offline dictionary
+        // This could be a new valid QR that wasn't pre-cached
+        console.warn('QR has valid CRC but not found in offline dictionary');
+        
+        // Parse QR for basic validation in emergency offline mode
+        const parts = qrCode.split('|');
+        const eventPart = parts.find(p => p.startsWith('E:'))?.substring(2);
+        const chapterPart = parts.find(p => p.startsWith('C:'))?.substring(2);
+        const sequencePart = parts.find(p => p.startsWith('S:'))?.substring(2);
+        
+        // Only allow if all required parts are present and event matches
+        if (eventPart && chapterPart && sequencePart && (!eventId || eventPart === eventId)) {
+          console.log('Emergency offline validation - QR structure valid and CRC verified');
+          return {
+            isValid: true,
+            eventId: eventPart,
+            chapterId: chapterPart,
+            sequenceId: sequencePart,
+            points: 5, // Reduced points for emergency validation
+            alreadyCollected: false,
+            wasOfflineValidation: true
+          };
+        }
+        
+        return {
+          isValid: false,
+          error: 'QR code not in offline whitelist and server validation failed'
+        };
+      }
+    }
+  }, [eventId, csrfToken, getOfflineQRDictionary, updateOfflineQRDictionary]);
+
+  // Handle QR scan results with enhanced validation
   const handleQRResult = useCallback(async (result: { text: string }) => {
     setIsQRScannerOpen(false);
     
     try {
-      // Parse QR code format: E:<eventShort>|C:<chapter>|S:<seq>|V:1|H:<crc>
       const qrCode = result.text;
       console.log('QR scanned:', qrCode);
       
-      // Validate QR format (basic validation)
-      if (qrCode.startsWith('E:') && qrCode.includes('|C:')) {
-        // TODO: Validate against offline dictionary and CRC
-        
-        // Extract chapter info
-        const parts = qrCode.split('|');
-        const eventPart = parts.find(p => p.startsWith('E:'))?.substring(2);
-        const chapterPart = parts.find(p => p.startsWith('C:'))?.substring(2);
-        
-        if (chapterPart) {
-          // Award chapter stamp (integrate with existing Memory Wallet system)
-          const success = await collectChapterStamp(chapterPart, qrCode);
-          
-          if (success) {
-            showFeedback('success', `Chapter ${chapterPart} stamp collected!`);
-          } else {
-            showFeedback('info', 'Chapter stamp queued for when you\'re online');
-          }
-        }
-      } else {
-        // Invalid QR code
-        console.warn('Invalid QR code format');
+      // Basic format validation
+      if (!qrCode.startsWith('E:') || !qrCode.includes('|C:')) {
         showFeedback('error', 'Invalid QR code format');
+        return;
+      }
+
+      // Comprehensive server-side validation with offline fallback
+      const validation = await validateQRCode(qrCode);
+      
+      if (!validation.isValid) {
+        showFeedback('error', validation.error || 'QR code validation failed');
+        return;
+      }
+
+      if (validation.alreadyCollected) {
+        showFeedback('info', `Chapter ${validation.chapterId} stamp already collected!`);
+        return;
+      }
+
+      // Award chapter stamp (integrate with existing Memory Wallet system)
+      const success = await collectChapterStamp(
+        validation.chapterId || '', 
+        qrCode, 
+        validation.wasOfflineValidation
+      );
+      
+      if (success) {
+        const offlineNote = validation.wasOfflineValidation ? ' (verified offline)' : '';
+        showFeedback('success', `Chapter ${validation.chapterId} stamp collected${offlineNote}!`);
+      } else {
+        showFeedback('info', 'Chapter stamp queued for when you\'re online');
       }
     } catch (error) {
       console.error('QR processing error:', error);
       showFeedback('error', 'Failed to process QR code');
     }
-  }, [showFeedback]);
+  }, [showFeedback, validateQRCode]);
 
   // Collect chapter stamp using existing Memory Wallet system
-  const collectChapterStamp = async (chapterId: string, qrCode: string): Promise<boolean> => {
+  const collectChapterStamp = async (chapterId: string, qrCode: string, wasOfflineValidation = false): Promise<boolean> => {
     const stampData = {
       sourceType: 'chapter',
       sourceId: chapterId,
+      chapterId: chapterId, // Explicit chapter ID for validation
+      eventId: eventId, // Explicit event ID for validation
       title: `Chapter ${chapterId} Stamp`,
-      description: `Collected during live event via QR scan`,
+      description: `Collected during live event via QR scan${wasOfflineValidation ? ' (offline validation)' : ''}`,
       category: 'chapter_stamp',
       collectionTrigger: 'qr_scan',
       collectionContext: {
         scanTime: Date.now(),
         eventId: eventId,
         qrCode: qrCode,
-        timecode: serverTimecode
-      }
+        timecode: serverTimecode,
+        validationMethod: wasOfflineValidation ? 'offline_dictionary' : 'server_hmac_verification'
+      },
+      // SECURITY: Pass QR data for server-side validation
+      qrData: qrCode
     };
 
     try {

@@ -5,7 +5,38 @@ import { eq, and } from 'drizzle-orm';
 import { withAuth } from '../../../../server/auth';
 import crypto from 'crypto';
 
-// QR Code format: E:<eventShort>|C:<chapter>|S:<seq>|V:1|H:<hmac>|T:<timestamp>|N:<nonce>
+// CRC32 implementation for offline QR validation
+function crc32(data: string): number {
+  const table = [];
+  let crc = 0;
+  
+  // Generate CRC32 table
+  for (let i = 0; i < 256; i++) {
+    crc = i;
+    for (let j = 0; j < 8; j++) {
+      crc = (crc & 1) ? (0xEDB88320 ^ (crc >>> 1)) : (crc >>> 1);
+    }
+    table[i] = crc;
+  }
+  
+  crc = 0xFFFFFFFF;
+  
+  for (let i = 0; i < data.length; i++) {
+    crc = table[(crc ^ data.charCodeAt(i)) & 0xFF] ^ (crc >>> 8);
+  }
+  
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+// Generate CRC32 checksum for QR code data (for offline validation)
+function generateQRCRC(qrData: string): string {
+  // Remove CRC field if present to calculate base checksum
+  const baseData = qrData.replace(/\|CRC:[^|]*/, '');
+  const checksum = crc32(baseData);
+  return checksum.toString(16).padStart(8, '0').toUpperCase();
+}
+
+// QR Code format: E:<eventShort>|C:<chapter>|S:<seq>|V:1|H:<hmac>|T:<timestamp>|N:<nonce>|CRC:<checksum>
 
 // QR Code Security Configuration
 const QR_SECRET = process.env.QR_SECRET || (() => {
@@ -45,6 +76,7 @@ function parseQRCode(qrData: string): {
   hmac: string;
   timestamp?: string;
   nonce?: string;
+  crc?: string;
 } | null {
   try {
     if (!qrData.startsWith('E:')) {
@@ -78,6 +110,9 @@ function parseQRCode(qrData: string): {
         case 'N':
           parsed.nonce = value;
           break;
+        case 'CRC':
+          parsed.crc = value;
+          break;
       }
     }
 
@@ -94,8 +129,8 @@ function parseQRCode(qrData: string): {
   }
 }
 
-// Cryptographically verify QR code integrity
-function verifyQRIntegrity(parsedQR: any): boolean {
+// Cryptographically verify QR code integrity (HMAC + CRC)
+function verifyQRIntegrity(parsedQR: any, originalQRData: string): { isValid: boolean; hasValidHmac: boolean; hasValidCrc: boolean } {
   try {
     // Reconstruct the data that should have been signed
     let dataToSign = `E:${parsedQR.eventId}|C:${parsedQR.chapterId}|S:${parsedQR.sequenceId}|V:${parsedQR.version}`;
@@ -108,17 +143,34 @@ function verifyQRIntegrity(parsedQR: any): boolean {
       dataToSign += `|N:${parsedQR.nonce}`;
     }
 
-    // Calculate expected HMAC
+    // HMAC validation (primary security check)
     const expectedHmac = crypto
       .createHmac('sha256', QR_SECRET)
       .update(dataToSign)
       .digest('hex')
       .substring(0, 16); // Use first 16 chars to keep QR codes readable
 
-    return parsedQR.hmac === expectedHmac;
+    const hasValidHmac = parsedQR.hmac === expectedHmac;
+
+    // CRC validation (for offline validation fallback)
+    let hasValidCrc = true;
+    if (parsedQR.crc) {
+      const expectedCrc = generateQRCRC(originalQRData);
+      hasValidCrc = parsedQR.crc.toUpperCase() === expectedCrc;
+    }
+
+    return {
+      isValid: hasValidHmac && hasValidCrc,
+      hasValidHmac,
+      hasValidCrc
+    };
   } catch (error) {
     console.error('QR integrity verification error:', error);
-    return false;
+    return {
+      isValid: false,
+      hasValidHmac: false,
+      hasValidCrc: false
+    };
   }
 }
 
@@ -246,14 +298,21 @@ async function handlePOST(request: NextRequest) {
       } as QRValidationResponse, { status: 400 });
     }
 
-    // Step 2: Verify cryptographic integrity
-    if (!verifyQRIntegrity(parsedQR)) {
-      console.warn(`QR integrity check failed for user ${session.userId}: ${qrData}`);
+    // Step 2: Verify cryptographic integrity (HMAC + CRC)
+    const integrityCheck = verifyQRIntegrity(parsedQR, qrData);
+    if (!integrityCheck.isValid) {
+      console.warn(`QR integrity check failed for user ${session.userId}: HMAC=${integrityCheck.hasValidHmac}, CRC=${integrityCheck.hasValidCrc}`);
+      
+      const errorType = !integrityCheck.hasValidHmac ? 'HMAC_FAILED' : 'CRC_FAILED';
+      const message = !integrityCheck.hasValidHmac 
+        ? 'QR code cryptographic signature verification failed'
+        : 'QR code checksum verification failed';
+        
       return NextResponse.json({
         success: false,
-        message: 'QR code integrity verification failed',
+        message,
         isValid: false,
-        error: 'INTEGRITY_FAILED',
+        error: errorType,
       } as QRValidationResponse, { status: 400 });
     }
 
