@@ -10,7 +10,7 @@ interface Poll {
   chapterId?: string;
   cardIndex?: number;
   question: string;
-  options: string[];
+  options: string;
   pollType: string;
   isLive: boolean;
   correctAnswer?: string;
@@ -64,6 +64,17 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
   const [error, setError] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState<NodeJS.Timeout | null>(null);
+
+  // Helper function to safely parse poll options
+  const parsePollOptions = (optionsJson: string): string[] => {
+    try {
+      const parsed = JSON.parse(optionsJson);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch (error) {
+      console.error('Failed to parse poll options:', error, 'Raw options:', optionsJson);
+      return [];
+    }
+  };
 
   // Get CSRF token from cookies
   const getCsrfToken = (): string => {
@@ -188,7 +199,7 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
     }
   };
 
-  // Initialize and set up real-time updates
+  // Initialize component - runs once
   useEffect(() => {
     const initialize = async () => {
       setLoading(true);
@@ -197,23 +208,35 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
     };
 
     initialize();
-
-    // Set up real-time updates every 3 seconds
-    const interval = setInterval(() => {
-      fetchPolls();
-      if (activePoll) {
-        fetchPollResponses(activePoll.id);
-      }
-    }, 3000);
-
-    setRefreshInterval(interval);
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
   }, []);
 
-  // Fetch responses when active poll changes
+  // Set up real-time polling interval - recreates when activePoll changes
+  useEffect(() => {
+    // Always poll for new polls every 3 seconds
+    const pollsInterval = setInterval(() => {
+      fetchPolls();
+    }, 3000);
+
+    // Only poll for responses if we have an active poll
+    let responsesInterval: NodeJS.Timeout | null = null;
+    if (activePoll) {
+      responsesInterval = setInterval(() => {
+        fetchPollResponses(activePoll.id);
+      }, 3000);
+    }
+
+    // Store the main interval for cleanup in other parts of component
+    setRefreshInterval(pollsInterval);
+
+    return () => {
+      clearInterval(pollsInterval);
+      if (responsesInterval) {
+        clearInterval(responsesInterval);
+      }
+    };
+  }, [activePoll]); // Recreate when activePoll changes
+
+  // Fetch responses immediately when active poll changes
   useEffect(() => {
     if (activePoll) {
       fetchPollResponses(activePoll.id);
@@ -362,7 +385,7 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
                 
                 <CardContent>
                   <div className="space-y-4">
-                    {JSON.parse(activePoll.options).map((option: string, index: number) => {
+                    {parsePollOptions(activePoll.options).map((option: string, index: number) => {
                       const responseData = activeResponses.find(r => r.selectedOption === option);
                       const count = responseData?.count || 0;
                       const percentage = totalResponses > 0 ? (count / totalResponses) * 100 : 0;
@@ -423,6 +446,12 @@ export default function LivePollingInterface({ event, session, theme }: LivePoll
                         Updated: {new Date().toLocaleTimeString()}
                       </span>
                     </div>
+                    {/* Debug info for development */}
+                    {process.env.NODE_ENV === 'development' && (
+                      <div className="mt-2 text-xs text-white/30">
+                        Options: {parsePollOptions(activePoll.options).length} parsed
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -463,7 +492,7 @@ function PollCreationForm({ onCreatePoll, onCancel, theme }: { onCreatePoll: (da
 
     onCreatePoll({
       question: formData.question,
-      options: validOptions,
+      options: validOptions, // Send as array, not JSON string
       pollType: formData.pollType,
       correctAnswer: formData.pollType === 'quiz' ? formData.correctAnswer : undefined,
       expiresAt: formData.expiresAt || undefined
