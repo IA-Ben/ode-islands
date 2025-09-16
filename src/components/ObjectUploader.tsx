@@ -12,9 +12,14 @@ interface ObjectUploaderProps {
   maxNumberOfFiles?: number;
   maxFileSize?: number;
   allowedFileTypes?: string[];
-  onGetUploadParameters: () => Promise<{
+  onGetUploadParameters: (file: {
+    name: string;
+    type: string;
+    size: number;
+  }) => Promise<{
     method: "PUT";
     url: string;
+    headers?: Record<string, string>;
   }>;
   onComplete?: (
     result: UploadResult<Record<string, unknown>, Record<string, unknown>>
@@ -48,7 +53,25 @@ export function ObjectUploader({
     })
       .use(AwsS3, {
         shouldUseMultipart: false,
-        getUploadParameters: onGetUploadParameters,
+        getUploadParameters: async (file) => {
+          const params = await onGetUploadParameters({
+            name: file.name || 'unknown',
+            type: file.type || 'application/octet-stream',
+            size: file.size || 0
+          });
+          
+          // Ensure Content-Type header is set for proper upload handling
+          const headers = {
+            'Content-Type': file.type || 'application/octet-stream',
+            ...params.headers
+          };
+          
+          return {
+            method: params.method,
+            url: params.url,
+            headers
+          };
+        },
       })
       .on("complete", (result) => {
         onComplete?.(result);

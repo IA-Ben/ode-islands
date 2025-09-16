@@ -73,8 +73,12 @@ export class ObjectStorageService {
     }
   }
 
-  // Gets the upload URL for an object entity.
-  async getObjectEntityUploadURL(): Promise<string> {
+  // Gets the upload URL for an object entity with content constraints.
+  async getObjectEntityUploadURL(constraints?: {
+    contentType?: string;
+    maxSize?: number;
+    fileName?: string;
+  }): Promise<string> {
     const privateObjectDir = this.getPrivateObjectDir();
     
     const objectId = randomUUID();
@@ -82,12 +86,13 @@ export class ObjectStorageService {
 
     const { bucketName, objectName } = parseObjectPath(fullPath);
 
-    // Sign URL for PUT method with TTL
+    // Sign URL for PUT method with TTL and content constraints
     return signObjectURL({
       bucketName,
       objectName,
       method: "PUT",
       ttlSec: 900, // 15 minutes
+      constraints,
     });
   }
 
@@ -168,18 +173,36 @@ async function signObjectURL({
   objectName,
   method,
   ttlSec,
+  constraints,
 }: {
   bucketName: string;
   objectName: string;
   method: "GET" | "PUT" | "DELETE" | "HEAD";
   ttlSec: number;
+  constraints?: {
+    contentType?: string;
+    maxSize?: number;
+    fileName?: string;
+  };
 }): Promise<string> {
-  const request = {
+  const request: any = {
     bucket_name: bucketName,
     object_name: objectName,
     method,
     expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
   };
+
+  // Add content constraints to the request if provided
+  // Note: These may or may not be supported by the Replit sidecar
+  if (constraints) {
+    if (constraints.contentType) {
+      request.content_type = constraints.contentType;
+    }
+    if (constraints.maxSize) {
+      request.content_length_range = [0, constraints.maxSize];
+    }
+  }
+
   const response = await fetch(
     `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
     {

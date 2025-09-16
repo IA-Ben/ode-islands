@@ -36,7 +36,7 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
     }));
   };
 
-  const getUploadParameters = async () => {
+  const getUploadParameters = async (file: { name: string; type: string; size: number }) => {
     try {
       // Get CSRF token
       const csrfResponse = await fetch('/api/csrf-token');
@@ -46,7 +46,7 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
         throw new Error('Failed to get CSRF token');
       }
 
-      // Get upload URL with a dummy file (Uppy will provide actual file info)
+      // Get upload URL with real file information
       const response = await fetch('/api/memories/upload', {
         method: 'POST',
         headers: {
@@ -54,9 +54,9 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
           'X-CSRF-Token': csrfData.token,
         },
         body: JSON.stringify({
-          fileName: 'temp.jpg', // This will be replaced by actual file info
-          fileType: 'image/jpeg',
-          fileSize: 1024
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size
         }),
       });
 

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import ClientCard from '@/components/ClientCard';
+import { ObjectUploader } from '@/components/ObjectUploader';
 import type { CardData } from '@/@typings';
 
 type ChapterData = {
@@ -31,9 +32,12 @@ export default function CardEditorPage() {
   const [saving, setSaving] = useState(false);
   const [cardData, setCardData] = useState<CardData>({});
   const [user, setUser] = useState<User | null>(null);
-  const [uploadedVideoFile, setUploadedVideoFile] = useState<File | null>(null);
-  const [uploadedAudioFile, setUploadedAudioFile] = useState<File | null>(null);
-  const [processing, setProcessing] = useState(false);
+  const [uploadedMedia, setUploadedMedia] = useState<{
+    url: string;
+    type: string;
+    objectId: string;
+  } | null>(null);
+  const [csrfToken, setCsrfToken] = useState<string>('');
   
   const isNewCard = cardIndex === 'new';
   const cardIndexNum = isNewCard ? -1 : parseInt(cardIndex);
@@ -44,6 +48,7 @@ export default function CardEditorPage() {
 
   useEffect(() => {
     if (user?.isAdmin) {
+      fetchCSRFToken();
       fetchChapters();
     }
   }, [user]);
@@ -98,6 +103,23 @@ export default function CardEditorPage() {
       router.push('/admin/cms');
     }
   }, [router]);
+
+  const fetchCSRFToken = async () => {
+    try {
+      const response = await fetch('/api/csrf-token', {
+        credentials: 'same-origin'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.csrfToken) {
+          setCsrfToken(data.csrfToken);
+        }
+      }
+    } catch (error: unknown) {
+      console.error('Error fetching CSRF token:', error instanceof Error ? error.message : String(error));
+    }
+  };
 
   const fetchChapters = async () => {
     try {
@@ -233,80 +255,82 @@ export default function CardEditorPage() {
     }
   };
 
-  const handleVideoUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'video/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        setUploadedVideoFile(file);
-      }
-    };
-    input.click();
-  };
-
-  const handleAudioUpload = () => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = 'audio/*';
-    input.onchange = (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (file) {
-        setUploadedAudioFile(file);
-      }
-    };
-    input.click();
-  };
-
-  const handleProcessMedia = async () => {
-    if (!uploadedVideoFile) {
-      alert('Please upload a video file first');
-      return;
-    }
-
-    setProcessing(true);
+  const getUploadParameters = async (file: { name: string; type: string; size: number }) => {
     try {
-      const formData = new FormData();
-      formData.append('video', uploadedVideoFile);
-      if (uploadedAudioFile) {
-        formData.append('audio', uploadedAudioFile);
+      if (!csrfToken) {
+        throw new Error('CSRF token not available');
       }
 
-      const response = await fetch('/api/cms/process-media', {
+      // Get upload URL with real file information
+      const response = await fetch('/api/memories/upload', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size
+        }),
       });
 
-      if (response.ok) {
-        const result = await response.json();
-        
-        // Update card data with the processed video URL
+      const data = await response.json();
+      
+      if (!data.success) {
+        throw new Error(data.message || 'Failed to get upload URL');
+      }
+
+      return {
+        method: 'PUT' as const,
+        url: data.uploadUrl,
+      };
+    } catch (error) {
+      console.error('Upload parameters error:', error);
+      throw new Error('Failed to prepare upload');
+    }
+  };
+
+  const handleUploadComplete = (result: any) => {
+    if (result.successful && result.successful.length > 0) {
+      const file = result.successful[0];
+      const mediaUrl = file.uploadURL?.split('?')[0] || '';
+      const mediaType = file.type.split('/')[0]; // Get main type: image, video, audio
+      
+      setUploadedMedia({
+        url: mediaUrl,
+        type: mediaType,
+        objectId: file.uploadURL?.split('/').pop()?.split('?')[0] || ''
+      });
+
+      // Update card data with the uploaded media URL
+      if (mediaType === 'video') {
         setCardData(prev => ({
           ...prev,
           video: {
             ...prev.video,
-            url: result.videoId,
-            width: result.width || 1920,
-            height: result.height || 1080,
-            audio: result.hasAudio
+            url: mediaUrl,
+            width: prev.video?.width || 1920,
+            height: prev.video?.height || 1080,
+            audio: true // Assume uploaded videos have audio
           }
         }));
-
-        // Clear uploaded files
-        setUploadedVideoFile(null);
-        setUploadedAudioFile(null);
-        
-        alert(`Video processed successfully! Video ID: ${result.videoId}`);
-      } else {
-        const error = await response.json();
-        alert(`Processing temporarily unavailable: ${error.message}\n\nPlease use the existing video transcoding system for now.`);
+      } else if (mediaType === 'audio') {
+        setCardData(prev => ({
+          ...prev,
+          audio: {
+            ...prev.audio,
+            url: mediaUrl
+          }
+        }));
+      } else if (mediaType === 'image') {
+        setCardData(prev => ({
+          ...prev,
+          backgroundImage: mediaUrl
+        }));
       }
-    } catch (error: unknown) {
-      console.error('Error processing media:', error instanceof Error ? error.message : String(error));
-      alert('Error processing media. Please try again.');
-    } finally {
-      setProcessing(false);
+
+      alert(`${mediaType} uploaded successfully!`);
     }
   };
 
@@ -500,53 +524,48 @@ export default function CardEditorPage() {
                 <CardContent className="space-y-6">
                   {/* File Upload Section */}
                   <div className="p-4 bg-gray-900 rounded-lg border border-gray-600">
-                    <h3 className="text-sm font-semibold mb-3 text-gray-200">Upload & Process New Media</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <h3 className="text-sm font-semibold mb-3 text-gray-200">Upload Media Files</h3>
+                    <div className="space-y-4">
                       <div>
-                        <label className="block text-xs font-medium mb-2 text-gray-400">Video File</label>
-                        <div className="space-y-2">
-                          <button
-                            onClick={() => handleVideoUpload()}
-                            className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 rounded text-white text-sm flex items-center justify-center gap-2"
-                          >
-                            📹 Upload Video
-                          </button>
-                          <p className="text-xs text-gray-500">MP4, MOV, AVI (max 500MB)</p>
-                        </div>
+                        <label className="block text-xs font-medium mb-2 text-gray-400">
+                          Upload Image, Video, or Audio
+                        </label>
+                        <ObjectUploader
+                          maxNumberOfFiles={1}
+                          maxFileSize={100 * 1024 * 1024} // 100MB
+                          allowedFileTypes={[
+                            'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+                            'video/mp4', 'video/mov', 'video/quicktime', 'video/avi', 'video/x-msvideo', 'video/webm',
+                            'audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/ogg', 'audio/m4a', 'audio/mp4', 'audio/x-m4a'
+                          ]}
+                          onGetUploadParameters={getUploadParameters}
+                          onComplete={handleUploadComplete}
+                          buttonClassName="w-full bg-blue-600 hover:bg-blue-700 border border-blue-500 rounded text-white text-sm"
+                        >
+                          <div className="flex items-center justify-center py-3 gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                            {uploadedMedia ? 'Change Media File' : '📁 Upload Media'}
+                          </div>
+                        </ObjectUploader>
+                        <p className="text-xs text-gray-500 mt-2">
+                          Images (JPG, PNG, GIF, WebP), Videos (MP4, MOV, AVI, WebM), Audio (MP3, WAV, OGG, M4A). Max 100MB.
+                        </p>
                       </div>
-                      <div>
-                        <label className="block text-xs font-medium mb-2 text-gray-400">Audio File (Optional)</label>
-                        <div className="space-y-2">
-                          <button
-                            onClick={() => handleAudioUpload()}
-                            className="w-full px-3 py-2 bg-green-600 hover:bg-green-700 border border-green-500 rounded text-white text-sm flex items-center justify-center gap-2"
-                          >
-                            🎵 Upload Audio
-                          </button>
-                          <p className="text-xs text-gray-500">MP3, WAV, AAC (max 100MB)</p>
+                      
+                      {uploadedMedia && (
+                        <div className="p-3 bg-gray-800 rounded border">
+                          <h4 className="text-sm font-medium text-gray-200 mb-2">Uploaded Successfully</h4>
+                          <div className="text-xs text-gray-400">
+                            📄 Type: {uploadedMedia.type} • ID: {uploadedMedia.objectId}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-1 break-all">
+                            URL: {uploadedMedia.url}
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </div>
-                    {(uploadedVideoFile || uploadedAudioFile) && (
-                      <div className="mt-4 p-3 bg-gray-800 rounded border">
-                        <div className="flex items-center justify-between mb-2">
-                          <h4 className="text-sm font-medium text-gray-200">Ready to Process</h4>
-                          <button
-                            onClick={handleProcessMedia}
-                            disabled={processing}
-                            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 rounded text-white text-sm flex items-center gap-2"
-                          >
-                            {processing ? '⏳ Processing...' : '🚀 Process & Upload'}
-                          </button>
-                        </div>
-                        {uploadedVideoFile && (
-                          <div className="text-xs text-gray-400 mb-1">📹 Video: {uploadedVideoFile.name}</div>
-                        )}
-                        {uploadedAudioFile && (
-                          <div className="text-xs text-gray-400">🎵 Audio: {uploadedAudioFile.name}</div>
-                        )}
-                      </div>
-                    )}
                   </div>
 
                   <div className="border-t border-gray-600 pt-4">

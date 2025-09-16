@@ -4,8 +4,18 @@ import { withUserAuthAndCSRF } from '../../../../../server/auth';
 
 // Supported file types for memories
 const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
-const SUPPORTED_VIDEO_TYPES = ['video/mp4', 'video/mov', 'video/avi', 'video/webm'];
-const SUPPORTED_AUDIO_TYPES = ['audio/mp3', 'audio/wav', 'audio/ogg', 'audio/m4a'];
+const SUPPORTED_VIDEO_TYPES = [
+  'video/mp4', 
+  'video/mov', 'video/quicktime',  // Both common and standard MIME types for .mov files
+  'video/avi', 'video/x-msvideo',  // Both common and standard MIME types for .avi files
+  'video/webm'
+];
+const SUPPORTED_AUDIO_TYPES = [
+  'audio/mp3', 'audio/mpeg',       // Both common and standard MIME types for .mp3 files
+  'audio/wav', 
+  'audio/ogg', 
+  'audio/m4a', 'audio/mp4', 'audio/x-m4a'  // Various MIME types for .m4a files
+];
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100MB
 const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB for images
@@ -65,9 +75,13 @@ async function handlePOST(request: NextRequest) {
       );
     }
 
-    // Generate upload URL using object storage service
+    // Generate upload URL using object storage service with content constraints
     const objectStorageService = new ObjectStorageService();
-    const uploadUrl = await objectStorageService.getObjectEntityUploadURL();
+    const uploadUrl = await objectStorageService.getObjectEntityUploadURL({
+      contentType: fileType,
+      maxSize: maxSize,
+      fileName: fileName
+    });
     
     // Extract object ID from the upload URL for later reference
     const objectId = uploadUrl.split('/').pop()?.split('?')[0];
