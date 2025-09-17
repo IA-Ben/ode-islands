@@ -11,6 +11,7 @@ const HeroRecapCard = lazy(() => import("@/components/HeroRecapCard"));
 const EventMemoriesGallery = lazy(() => import("@/components/EventMemoriesGallery"));
 const CertificateManager = lazy(() => import("@/components/CertificateManager"));
 const MemoryWallet = lazy(() => import("@/components/MemoryWallet"));
+const CollectionGrid = lazy(() => import("@/components/CollectionGrid"));
 const ScoreProgressPanel = lazy(() => import("@/components/ScoreProgressPanel"));
 const Leaderboard = lazy(() => import("@/components/Leaderboard"));
 const ScoreBadge = lazy(() => import("@/components/ScoreBadge"));
@@ -262,16 +263,13 @@ export default function AfterPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
                 <AnimateText active={animateIn} delay={1800}>
-                  Memory Wallet v2
+                  Memory Wallet Collectibles
                 </AnimateText>
               </h3>
-              <p className="text-white/80 text-lg">Fuse your collected memories into a Memory Crystal</p>
+              <p className="text-white/80 text-lg">Your digital passport with Story Cards, Show Activations, and Chapter Stamps</p>
             </div>
-            <Suspense fallback={<ComponentSkeleton height="300px" />}>
-              <MemoryWallet 
-                showHeader={false}
-                className="w-full transform transition-all duration-300 hover:scale-[1.01]"
-              />
+            <Suspense fallback={<ComponentSkeleton height="500px" />}>
+              <CollectionGrid eventId="default-event" className="w-full" />
             </Suspense>
           </div>
         );
@@ -549,22 +547,21 @@ export default function AfterPage() {
                 </p>
               </button>
               
-              
               <button
-                onClick={() => setActiveTab('memory-wallet')}
+                onClick={() => setActiveTab('gallery')}
                 className="group bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 text-left transform transition-all duration-300 hover:scale-105 hover:bg-white/15 hover:border-white/30 hover:shadow-2xl"
                 style={{
                   opacity: 0,
-                  animation: animateIn ? 'animButtonIn 0.6s 2.3s ease forwards' : 'none'
+                  animation: animateIn ? 'animButtonIn 0.6s 2.4s ease forwards' : 'none'
                 }}
               >
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mb-6 group-hover:bg-white/30 transition-colors">
                   <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 712.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 712.828 0L16 16m-2-2l1.586-1.586a2 2 0 712.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-white mb-4 group-hover:text-blue-200 transition-colors">
-                  Memory Wallet
+                  Memory Gallery
                 </h3>
                 <p className="text-white/70 leading-relaxed">
                   Browse, share, and relive your favorite captured moments and experiences from your journey through The Ode Islands.
