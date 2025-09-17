@@ -235,6 +235,160 @@ export const memoryWalletItems = pgTable("memory_wallet_items", {
   displayOrder: integer("display_order"),
 });
 
+// Collection Grid - Gamified Collectibles System (Memory Wallet Feature)
+export const collectibleDefinitions = pgTable("collectible_definitions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(), // Made required for consistency
+  
+  // Collectible identity
+  name: varchar("name").notNull(),
+  description: text("description"),
+  type: varchar("type").notNull(), // 'story_card', 'chapter_stamp', 'show_activation'
+  shape: varchar("shape").notNull(), // 'rectangle', 'circle', 'hexagon'
+  
+  // Grid positioning with constraints
+  gridPosition: integer("grid_position").notNull(), // 1-12 for 3x4 grid
+  gridRow: integer("grid_row").notNull(), // 1-4  
+  gridColumn: integer("grid_column").notNull(), // 1-3
+  
+  // Visual properties
+  imageUrl: varchar("image_url"), // Unlocked collectible image
+  thumbnailUrl: varchar("thumbnail_url"), // Small preview
+  silhouetteUrl: varchar("silhouette_url"), // Grey locked version
+  primaryColor: varchar("primary_color"), // Hex color for theming
+  accentColor: varchar("accent_color"), // Secondary color
+  
+  // Unlock conditions
+  unlockTrigger: varchar("unlock_trigger").notNull(), // 'chapter_complete', 'card_view', 'event_attend', 'poll_answer', 'manual'
+  unlockConditions: jsonb("unlock_conditions"), // Specific requirements
+  triggerSourceId: varchar("trigger_source_id"), // ID of source that triggers unlock
+  
+  // Bonus properties
+  isBonus: boolean("is_bonus").default(false), // Holographic bonus collectibles
+  bonusType: varchar("bonus_type"), // 'holographic', 'animated', 'special'
+  rarity: varchar("rarity").default('common'), // 'common', 'rare', 'epic', 'legendary'
+  
+  // Content details for detail view
+  fullContentUrl: varchar("full_content_url"), // Full-screen image/video
+  contentType: varchar("content_type"), // 'image', 'video', 'animation', 'ar'
+  caption: text("caption"), // Description for detail modal
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    // Critical: Prevent overlapping grid positions within same event
+    uniqueEventGridPosition: uniqueIndex("unique_event_grid_position").on(table.eventId, table.gridPosition),
+    // Performance indexes for common query patterns
+    eventIdIndex: index("collectible_definitions_event_id_idx").on(table.eventId),
+    typeIndex: index("collectible_definitions_type_idx").on(table.type),
+  };
+});
+
+// User's collectible unlock status and progress
+export const userCollectibles = pgTable("user_collectibles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  collectibleId: varchar("collectible_id").references(() => collectibleDefinitions.id).notNull(),
+  // Removed eventId - it's redundant since it's already implied through collectible_id → definition
+  
+  // Unlock status
+  isUnlocked: boolean("is_unlocked").default(false),
+  unlockedAt: timestamp("unlocked_at"),
+  unlockContext: jsonb("unlock_context"), // Details about how it was unlocked
+  
+  // Animation and display
+  animationViewed: boolean("animation_viewed").default(false), // Has user seen unlock animation
+  lastViewedAt: timestamp("last_viewed_at"),
+  viewCount: integer("view_count").default(0),
+  
+  // User customization
+  isFavorite: boolean("is_favorite").default(false),
+  userNotes: text("user_notes"), // Personal notes about this collectible
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    // Critical: Prevent duplicate unlock records per user/collectible
+    uniqueUserCollectible: uniqueIndex("unique_user_collectible").on(table.userId, table.collectibleId),
+    // Performance indexes for common queries
+    userIdIndex: index("user_collectibles_user_id_idx").on(table.userId),
+    collectibleIdIndex: index("user_collectibles_collectible_id_idx").on(table.collectibleId),
+  };
+});
+
+// Collection Grid progress tracking per event (passport pages)
+export const collectibleProgress = pgTable("collectible_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  
+  // Progress metrics
+  totalCollectibles: integer("total_collectibles").default(0), // Total available for this event
+  unlockedCount: integer("unlocked_count").default(0), // Currently unlocked
+  completionPercentage: integer("completion_percentage").default(0), // 0-100
+  
+  // Milestones and celebrations
+  hasCompletedGrid: boolean("has_completed_grid").default(false), // 100% completion
+  completionCelebrationViewed: boolean("completion_celebration_viewed").default(false),
+  completedAt: timestamp("completed_at"),
+  
+  // Timeline tracking
+  firstUnlockAt: timestamp("first_unlock_at"), // When user got their first collectible
+  lastUnlockAt: timestamp("last_unlock_at"), // Most recent unlock
+  
+  // Export and sharing
+  hasExportedPassport: boolean("has_exported_passport").default(false),
+  lastExportedAt: timestamp("last_exported_at"),
+  exportCount: integer("export_count").default(0),
+  sharedCount: integer("shared_count").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    // Critical: Prevent duplicate progress records per user/event
+    uniqueUserEventProgress: uniqueIndex("unique_user_event_progress").on(table.userId, table.eventId),
+    // Performance indexes for common queries
+    userIdIndex: index("collectible_progress_user_id_idx").on(table.userId),
+    eventIdIndex: index("collectible_progress_event_id_idx").on(table.eventId),
+  };
+});
+
+// Export configurations and generated files
+export const collectibleExports = pgTable("collectible_exports", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  
+  // Export details
+  exportType: varchar("export_type").notNull(), // 'passport_page', 'grid_collage', 'timeline', 'animated_gif'
+  format: varchar("format").notNull(), // 'png', 'jpg', 'gif', 'mp4', 'pdf'
+  fileUrl: varchar("file_url").notNull(), // Generated file location
+  thumbnailUrl: varchar("thumbnail_url"), // Preview image
+  
+  // Generation metadata
+  dimensions: jsonb("dimensions"), // {width, height}
+  fileSize: integer("file_size"), // bytes
+  duration: integer("duration"), // seconds for animated exports
+  includeAnimation: boolean("include_animation").default(false),
+  
+  // Sharing configuration
+  socialFormat: varchar("social_format"), // 'instagram_story', 'instagram_post', 'tiktok', 'twitter'
+  includeWatermark: boolean("include_watermark").default(true),
+  customMessage: text("custom_message"),
+  
+  // Status tracking
+  generationStatus: varchar("generation_status").default('pending'), // 'pending', 'processing', 'completed', 'failed'
+  processingStartedAt: timestamp("processing_started_at"),
+  completedAt: timestamp("completed_at"),
+  errorMessage: text("error_message"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 export const certificates = pgTable("certificates", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id").references(() => users.id).notNull(),
@@ -780,3 +934,13 @@ export type GallerySettings = typeof gallerySettings.$inferSelect;
 export type UpsertGallerySettings = typeof gallerySettings.$inferInsert;
 export type FeatureFlag = typeof featureFlags.$inferSelect;
 export type UpsertFeatureFlag = typeof featureFlags.$inferInsert;
+
+// Memory Wallet Collection Grid Types
+export type CollectibleDefinition = typeof collectibleDefinitions.$inferSelect;
+export type UpsertCollectibleDefinition = typeof collectibleDefinitions.$inferInsert;
+export type UserCollectible = typeof userCollectibles.$inferSelect;
+export type UpsertUserCollectible = typeof userCollectibles.$inferInsert;
+export type CollectibleProgress = typeof collectibleProgress.$inferSelect;
+export type UpsertCollectibleProgress = typeof collectibleProgress.$inferInsert;
+export type CollectibleExport = typeof collectibleExports.$inferSelect;
+export type UpsertCollectibleExport = typeof collectibleExports.$inferInsert;
