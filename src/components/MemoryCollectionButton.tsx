@@ -29,7 +29,12 @@ const MemoryCollectionButton: React.FC<MemoryCollectionButtonProps> = ({
   const memoryConfig = cardData.memory;
   const isEnabled = memoryConfig?.enabled === true; // Default to disabled unless explicitly enabled
   
-  // Critical: Don't render if cardId is missing to prevent bad data
+  // First, short-circuit when disabled (prevents unnecessary warnings)
+  if (!isEnabled) {
+    return null;
+  }
+  
+  // Only warn if feature is enabled and cardId is missing to prevent bad data
   if (!cardId) {
     console.warn('MemoryCollectionButton: cardId is required but missing. Skipping render to prevent data corruption.');
     return null;
