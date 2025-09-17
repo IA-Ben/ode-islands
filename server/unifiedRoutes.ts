@@ -98,6 +98,55 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     res.json({ success: true, csrfToken });
   });
 
+  // Development authentication bypass - ONLY in development
+  if (process.env.NODE_ENV !== 'production') {
+    app.get('/api/dev-login', (req: any, res) => {
+      // Create a mock user session for development
+      const mockUser = {
+        claims: {
+          sub: 'dev-user-123',
+          email: 'dev@theodeislands.com',
+          first_name: 'Dev',
+          last_name: 'User',
+          profile_image_url: null,
+          iat: Math.floor(Date.now() / 1000),
+          exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 1 week
+        },
+        access_token: 'dev-access-token',
+        refresh_token: 'dev-refresh-token',
+        expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
+      };
+      
+      // Set up the session
+      req.login(mockUser, async (err: any) => {
+        if (err) {
+          console.error('Dev login error:', err);
+          return res.status(500).json({ error: 'Failed to create dev session' });
+        }
+        
+        try {
+          // Ensure user exists in database
+          await storage.upsertUser({
+            id: 'dev-user-123',
+            email: 'dev@theodeislands.com',
+            firstName: 'Dev',
+            lastName: 'User',
+            profileImageUrl: null,
+            isAdmin: true, // Make dev user an admin
+          });
+          
+          console.log('✅ Development user authenticated successfully');
+          res.redirect('/');
+        } catch (dbError) {
+          console.error('Database error during dev login:', dbError);
+          res.status(500).json({ error: 'Failed to create dev user' });
+        }
+      });
+    });
+    
+    console.log('🔧 Development authentication bypass enabled at /api/dev-login');
+  }
+
   // Auth status endpoint for checking authentication state
   app.get('/api/auth/status', (req: any, res) => {
     if (req.isAuthenticated && req.isAuthenticated()) {

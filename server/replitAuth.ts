@@ -25,8 +25,14 @@ declare global {
   }
 }
 
+// Allow bypass in development if REPLIT_DOMAINS not provided
 if (!process.env.REPLIT_DOMAINS) {
-  throw new Error("Environment variable REPLIT_DOMAINS not provided");
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error("Environment variable REPLIT_DOMAINS not provided");
+  } else {
+    console.warn('⚠️  REPLIT_DOMAINS not provided - using development bypass');
+    process.env.REPLIT_DOMAINS = 'localhost,127.0.0.1';
+  }
 }
 
 const getOidcConfig = memoize(
