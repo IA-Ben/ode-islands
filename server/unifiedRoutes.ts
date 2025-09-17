@@ -157,8 +157,13 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   });
 
   // Unified auth routes that work with Replit Auth
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/auth/user', async (req: any, res) => {
     try {
+      // Check if user is authenticated
+      if (!req.isAuthenticated || !req.isAuthenticated()) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+      
       const userId = req.user!.claims.sub;
       const user = await storage.getUser(userId);
       
