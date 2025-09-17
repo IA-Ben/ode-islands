@@ -129,7 +129,8 @@ export class DatabaseStorage implements IStorage {
         ['feedback_surveys', 'created_by'],
         ['survey_responses', 'user_id'],
         ['fan_score_events', 'user_id'],
-        ['user_achievements', 'user_id']
+        ['user_achievements', 'user_id'],
+        ['user_fan_scores', 'user_id']
       ];
       
       // Step 4: Update all FK references using safe parameterized queries
