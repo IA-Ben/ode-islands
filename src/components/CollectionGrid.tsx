@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
@@ -117,6 +117,12 @@ export default function CollectionGrid({ eventId, className = "" }: CollectionGr
   const [error, setError] = useState<string | null>(null);
   const [selectedCollectible, setSelectedCollectible] = useState<CollectibleDefinition | null>(null);
   const [activeTab, setActiveTab] = useState<'all' | 'timeline' | 'shows'>('all');
+  const [animatingCollectibles, setAnimatingCollectibles] = useState<Set<string>>(new Set());
+  const [sparkles, setSparkles] = useState<Array<{id: string, collectibleId: string, x: number, y: number}>>([]);
+  
+  // Track previously unlocked collectibles to prevent animation spam
+  const previouslyUnlocked = useRef<Set<string>>(new Set());
+  const hasInitiallyLoaded = useRef(false);
 
   useEffect(() => {
     fetchCollectionData();
@@ -197,7 +203,69 @@ export default function CollectionGrid({ eventId, className = "" }: CollectionGr
     return userCollectible?.isUnlocked || false;
   };
 
-  const getShapeClasses = (shape: string, isUnlocked: boolean): string => {
+  // Track unlock animations when collectible state changes
+  useEffect(() => {
+    // Skip animations on initial load to prevent animation spam
+    if (!hasInitiallyLoaded.current) {
+      hasInitiallyLoaded.current = true;
+      // Initialize previously unlocked set with current state
+      const currentUnlocked = new Set(
+        collectibles.filter(c => isCollectibleUnlocked(c.id)).map(c => c.id)
+      );
+      previouslyUnlocked.current = currentUnlocked;
+      return;
+    }
+
+    // Get currently unlocked collectibles
+    const currentUnlocked = new Set(
+      collectibles.filter(c => isCollectibleUnlocked(c.id)).map(c => c.id)
+    );
+    
+    // Find newly unlocked collectibles (current - previous)
+    const newlyUnlocked = [...currentUnlocked].filter(id => 
+      !previouslyUnlocked.current.has(id)
+    );
+    
+    // Trigger animations only for newly unlocked collectibles
+    newlyUnlocked.forEach(collectibleId => {
+      const collectible = collectibles.find(c => c.id === collectibleId);
+      if (collectible) {
+        triggerUnlockAnimation(collectibleId, collectible);
+      }
+    });
+    
+    // Update previously unlocked state
+    previouslyUnlocked.current = currentUnlocked;
+  }, [userCollectibles, collectibles]);
+
+  const triggerUnlockAnimation = (collectibleId: string, collectible: CollectibleDefinition) => {
+    // Add to animating set
+    setAnimatingCollectibles(prev => new Set(prev).add(collectibleId));
+    
+    // Create sparkle particles
+    const newSparkles = Array.from({ length: 8 }, (_, i) => ({
+      id: `sparkle-${collectibleId}-${i}-${Date.now()}`,
+      collectibleId,
+      x: (Math.random() - 0.5) * 100,
+      y: (Math.random() - 0.5) * 100,
+    }));
+    
+    setSparkles(prev => [...prev, ...newSparkles]);
+    
+    // Remove animation state after animation completes
+    setTimeout(() => {
+      setAnimatingCollectibles(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(collectibleId);
+        return newSet;
+      });
+      
+      // Remove sparkles
+      setSparkles(prev => prev.filter(s => s.collectibleId !== collectibleId));
+    }, 1000); // Animation duration matches CSS
+  };
+
+  const getShapeClasses = (shape: string, isUnlocked: boolean, collectibleId?: string): string => {
     const baseClasses = "relative flex items-center justify-center transition-all duration-300 hover:scale-105 cursor-pointer";
     const lockedClasses = "bg-white/5 border-2 border-dashed border-white/20";
     const unlockedClasses = "bg-gradient-to-br shadow-lg";
@@ -210,7 +278,11 @@ export default function CollectionGrid({ eventId, className = "" }: CollectionGr
 
     const stateClasses = isUnlocked ? unlockedClasses : lockedClasses;
     
-    return `${baseClasses} ${shapeSpecific[shape as keyof typeof shapeSpecific]} ${stateClasses}`;
+    // Add combined animation class if this collectible is currently animating
+    const isAnimating = collectibleId && animatingCollectibles.has(collectibleId);
+    const animationClasses = isAnimating ? "mw-unlock-anim" : "";
+    
+    return `${baseClasses} ${shapeSpecific[shape as keyof typeof shapeSpecific]} ${stateClasses} ${animationClasses}`;
   };
 
   const getTypeIcon = (type: string) => {
@@ -241,11 +313,12 @@ export default function CollectionGrid({ eventId, className = "" }: CollectionGr
   const renderCollectibleSlot = (collectible: CollectibleDefinition) => {
     const isUnlocked = isCollectibleUnlocked(collectible.id);
     const userCollectible = userCollectibles.find(uc => uc.collectibleId === collectible.id);
+    const collectibleSparkles = sparkles.filter(s => s.collectibleId === collectible.id);
     
     return (
       <div
         key={collectible.id}
-        className={getShapeClasses(collectible.shape, isUnlocked)}
+        className={getShapeClasses(collectible.shape, isUnlocked, collectible.id)}
         style={{
           clipPath: collectible.shape === 'hexagon' ? 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' : undefined,
           background: isUnlocked && collectible.primaryColor 
@@ -254,6 +327,20 @@ export default function CollectionGrid({ eventId, className = "" }: CollectionGr
         }}
         onClick={() => isUnlocked && setSelectedCollectible(collectible)}
       >
+        {/* Sparkle Particles */}
+        {collectibleSparkles.map(sparkle => (
+          <div
+            key={sparkle.id}
+            className="absolute w-2 h-2 bg-yellow-400 rounded-full pointer-events-none"
+            style={{
+              left: '50%',
+              top: '50%',
+              '--dx': `${sparkle.x}px`,
+              '--dy': `${sparkle.y}px`,
+              animation: 'sparkleParticle 1s ease-out forwards',
+            } as React.CSSProperties}
+          />
+        ))}
         {isUnlocked ? (
           <div className="flex flex-col items-center justify-center p-2 text-white">
             {collectible.thumbnailUrl ? (
