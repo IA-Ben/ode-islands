@@ -108,21 +108,17 @@ app.prepare().then(async () => {
 
   // Add dedicated health check endpoints for fast deployment health check response
   server.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.status(200).json({ status: 'ok' });
   });
   
   server.get('/healthz', (req, res) => {
-    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+    res.status(200).json({ status: 'ok' });
   });
   
-  // Optimize root endpoint for health checks while preserving Next.js functionality
+  // Simple root endpoint health check - prioritize health checks over complex detection
   server.get('/', (req, res, next) => {
-    // Check if this is a health check request (simple request without browser headers)
-    const userAgent = req.get('User-Agent') || '';
-    const accept = req.get('Accept') || '';
-    
-    // If it looks like a health check (no Mozilla user agent and no text/html accept)
-    if (!userAgent.includes('Mozilla') && !accept.includes('text/html')) {
+    // Simple health check detection - if no query params and basic request, respond as health check
+    if (Object.keys(req.query).length === 0 && !req.get('Accept')?.includes('text/html')) {
       return res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
     }
     
