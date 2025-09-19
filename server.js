@@ -106,6 +106,30 @@ app.prepare().then(async () => {
 
   // Note: CMS page now handles authentication on the client side
 
+  // Add dedicated health check endpoints for fast deployment health check response
+  server.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+  
+  server.get('/healthz', (req, res) => {
+    res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+  
+  // Optimize root endpoint for health checks while preserving Next.js functionality
+  server.get('/', (req, res, next) => {
+    // Check if this is a health check request (simple request without browser headers)
+    const userAgent = req.get('User-Agent') || '';
+    const accept = req.get('Accept') || '';
+    
+    // If it looks like a health check (no Mozilla user agent and no text/html accept)
+    if (!userAgent.includes('Mozilla') && !accept.includes('text/html')) {
+      return res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+    }
+    
+    // Otherwise, let Next.js handle the request
+    return handle(req, res);
+  });
+
   // Handle Next.js requests (except API routes which are handled by Express)
   server.use((req, res) => {
     return handle(req, res);
