@@ -1,0 +1,145 @@
+Spec — Chapters, Sub-Chapters & Custom Buttons (no code)
+A) Information Architecture & Routing
+
+Routes
+
+Chapter List: /before/stories
+
+Chapter Detail: /before/story/:chapterId
+
+Sub-Chapter Detail: /before/story/:chapterId/:subId
+
+AR in Chapters (index): /before/ar
+
+Navigation
+
+Breadcrumb in chapter views: Chapter › Sub-chapter
+
+Global tabs (Before / Event / After) and the persistent Memory Wallet button remain visible everywhere.
+
+B) Content Model (conceptual)
+
+Chapter
+
+Title, summary
+
+Ordered Story Cards (text, image, video, mixed)
+
+Optional AR items attached to cards (scenes, filters)
+
+Optional Sub-Chapters (each with its own content and buttons)
+
+Sub-Chapter
+
+Title, summary
+
+Content blocks (text, media)
+
+Optional AR items, optional unlock conditions
+
+Story Card Buttons
+
+Customisable label, style/variant, optional icon
+
+Destination types: Sub-chapter, Chapter, AR item, Event route, Wallet, Presents, External link
+
+Optional conditions: requires stamp/task, time window, geofence, sign-in
+
+C) Pages
+1) Chapter List (/before/stories)
+
+Purpose: Browse chapters; see which have Sub-Chapters or AR.
+
+Layout: Card list with badges (e.g., “AR”, “Sub-Chapters 3”).
+
+Action: Tap chapter → Chapter Detail.
+
+2) Chapter Detail (/before/story/:chapterId)
+
+Purpose: Read chapter content and launch Sub-Chapters/AR from buttons.
+
+Layout:
+
+Header with breadcrumb
+
+Vertical stack of Story Cards (each may show AR badge)
+
+Optional horizontal Sub-Chapters strip with lock states
+
+Interactions:
+
+Tap Story Card Buttons to open Sub-Chapters, AR, Wallet, or Event routes
+
+If Sub-Chapter is locked, show requirement hint (e.g., “Scan Act I stamp during Event”)
+
+3) Sub-Chapter Detail (/before/story/:chapterId/:subId)
+
+Purpose: Deeper narrative node with its own actions.
+
+Layout:
+
+Breadcrumb: Chapter › Sub-chapter
+
+Content blocks (text/media)
+
+Button group (Next, AR action, Back to Chapter)
+
+Interactions: Launch AR; navigate Next/Prev sub-chapter; return to Chapter.
+
+4) AR in Story Chapters (/before/ar)
+
+Purpose: Central index of all chapter-linked AR items.
+
+Layout:
+
+Filter chips: All / Scenes / Filters
+
+Grouped by Chapter with quick actions (Launch AR, Open Chapter)
+
+Interactions: Launch AR directly or jump to the associated chapter.
+
+D) Custom Button System (global component)
+
+Placement: Inside Story Cards (in Chapters and Sub-Chapters).
+
+Styling: Variants (primary/secondary/link/ghost), optional icon, size presets; theme-aware and AA contrast.
+
+Destinations: Sub-Chapter, Chapter, AR item, Event route (Info/Live/Stamps/Tasks), Wallet overlay, Presents, External link.
+
+Conditions & Locking:
+
+Requires one or more: collected stamp, completed task, specific time/date, within geofence, signed-in state.
+
+Locked state shows a lock icon and a short “How to unlock” hint.
+
+Analytics: Each button emits a click event with context (chapter, sub-chapter, destination type).
+
+E) Unlock & Progress Rules
+
+Unlock Sources:
+
+Event interactions: QR stamp collected; mini task completed
+
+Time-based: content unlocks on a schedule (e.g., D+1)
+
+Location: venue geofence or on-site checkpoints
+
+Auth: sign-in or ticket validation
+
+Feedback: On unlock, show toast; if a reward is granted, animate to the Memory Wallet and update the progress ring.
+
+Progress Accounting: Sub-Chapter completion increments Chapter progress and the Before section progress.
+
+F) AR Integration (shared behaviours)
+
+Types:
+
+Scenes (world/plane/image-tracked; Three.js/PlayCanvas/WebXR)
+
+Filters (face/body; WebAR or native wrapper)
+
+Launch Points: From Story Cards, Sub-Chapters, or AR index.
+
+Completion: May grant a keepsake or points; triggers fly-to-Wallet animation and progress update.
+
+Fallbacks: If device lacks a capability, offer a demo video or non-AR viewer; allow asset preloading.
