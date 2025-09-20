@@ -40,6 +40,7 @@
     "bufferutil": "^4.0.9",
     "clsx": "^2.1.1",
     "connect-pg-simple": "^10.0.0",
+    "cookie-parser": "^1.4.7",
     "crypto-js": "^4.2.0",
     "date-fns": "^4.1.0",
     "drizzle-kit": "^0.31.4",
