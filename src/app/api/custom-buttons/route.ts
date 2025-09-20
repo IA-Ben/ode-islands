@@ -123,3 +123,36 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json({ error: 'Failed to create custom button' }, { status: 500 });
   }
 });
+
+export const PUT = withAuth(async (request: NextRequest) => {
+  try {
+    const data = await request.json();
+    const { id, ...updateData } = data;
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Button ID required' }, { status: 400 });
+    }
+    
+    const button = await storage.updateCustomButton(id, updateData);
+    return NextResponse.json(button);
+  } catch (error) {
+    console.error('Error updating custom button:', error);
+    return NextResponse.json({ error: 'Failed to update custom button' }, { status: 500 });
+  }
+});
+
+export const DELETE = withAuth(async (request: NextRequest) => {
+  try {
+    const id = request.nextUrl.searchParams.get('id');
+    
+    if (!id) {
+      return NextResponse.json({ error: 'Button ID required' }, { status: 400 });
+    }
+    
+    await storage.deleteCustomButton(id);
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting custom button:', error);
+    return NextResponse.json({ error: 'Failed to delete custom button' }, { status: 500 });
+  }
+});

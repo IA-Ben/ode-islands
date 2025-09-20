@@ -4,7 +4,7 @@ const http = require('http');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = '0.0.0.0';
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || (dev ? 5000 : 3000);
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
@@ -230,19 +230,27 @@ app.prepare().then(async () => {
   const httpServer = http.createServer(server);
   webSocketManager.initialize(httpServer);
 
-  // Initialize Content Scheduler
-  const { schedulerManager } = await import('./server/schedulerManager.ts');
-  await schedulerManager.initialize();
-
-  // Seed admin users from ADMIN_EMAILS environment variable
-  const { storage } = await import('./server/storage.ts');
-  await storage.seedAdminUsers();
-
-  httpServer.listen(port, hostname, (err) => {
+  // Start the server immediately for health checks
+  httpServer.listen(port, hostname, async (err) => {
     if (err) throw err;
     console.log(`> Ready on http://${hostname}:${port}`);
     console.log(`> WebSocket server ready on ws://${hostname}:${port}/ws`);
-    console.log(`> Content scheduler initialized and running`);
+    
+    // Initialize background services after server starts
+    try {
+      // Initialize Content Scheduler
+      const { schedulerManager } = await import('./server/schedulerManager.ts');
+      await schedulerManager.initialize();
+      console.log(`> Content scheduler initialized and running`);
+      
+      // Seed admin users from ADMIN_EMAILS environment variable
+      const { storage } = await import('./server/storage.ts');
+      await storage.seedAdminUsers();
+      console.log(`> Admin users seeded successfully`);
+    } catch (error) {
+      console.error('Error initializing background services:', error);
+      // Don't crash the server if background services fail
+    }
   });
 
   // Graceful shutdown handling

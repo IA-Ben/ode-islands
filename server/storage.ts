@@ -588,6 +588,13 @@ export class DatabaseStorage implements IStorage {
       .orderBy(asc(customButtons.order));
   }
 
+  async getAllCustomButtons(): Promise<CustomButton[]> {
+    return await db
+      .select()
+      .from(customButtons)
+      .orderBy(asc(customButtons.parentType), asc(customButtons.parentId), asc(customButtons.order));
+  }
+
   async getCustomButton(id: string): Promise<CustomButton | undefined> {
     const [button] = await db
       .select()

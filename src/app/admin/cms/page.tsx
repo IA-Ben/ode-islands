@@ -648,6 +648,45 @@ export default function CMSPage() {
           </div>
         </div>
 
+        {/* Quick Action Cards - CMS Tools */}
+        <div 
+          className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-4"
+          style={{
+            opacity: 0,
+            animation: animateIn ? 'animButtonIn 0.8s 1.4s ease forwards' : 'none'
+          }}
+        >
+          <Link href="/admin/cms/custom-buttons">
+            <Card className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-md border-white/20 hover:from-blue-500/30 hover:to-purple-500/30 transition-all cursor-pointer h-full">
+              <CardContent className="p-6 text-center">
+                <div className="text-3xl mb-2">🎯</div>
+                <h3 className="text-white text-lg font-semibold mb-2">Custom Buttons Manager</h3>
+                <p className="text-white/70 text-sm">Configure interactive buttons across all content</p>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/admin/cms/scheduler">
+            <Card className="bg-gradient-to-br from-green-500/20 to-teal-500/20 backdrop-blur-md border-white/20 hover:from-green-500/30 hover:to-teal-500/30 transition-all cursor-pointer h-full">
+              <CardContent className="p-6 text-center">
+                <div className="text-3xl mb-2">⏰</div>
+                <h3 className="text-white text-lg font-semibold mb-2">Content Scheduler</h3>
+                <p className="text-white/70 text-sm">Manage time-based content availability</p>
+              </CardContent>
+            </Card>
+          </Link>
+          
+          <Link href="/admin/cms/after-experience">
+            <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-md border-white/20 hover:from-orange-500/30 hover:to-red-500/30 transition-all cursor-pointer h-full">
+              <CardContent className="p-6 text-center">
+                <div className="text-3xl mb-2">🎭</div>
+                <h3 className="text-white text-lg font-semibold mb-2">After Experience</h3>
+                <p className="text-white/70 text-sm">Configure post-event content and features</p>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
         {/* Before Phase Content */}
         {selectedPhase === 'before' && (
           <>
