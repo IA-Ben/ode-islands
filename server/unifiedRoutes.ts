@@ -161,7 +161,8 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     try {
       // Check if user is authenticated
       if (!req.isAuthenticated || !req.isAuthenticated()) {
-        return res.status(401).json({ message: "Not authenticated" });
+        // Return expected format when not authenticated
+        return res.json({ isAuthenticated: false });
       }
       
       const userId = req.user!.claims.sub;
@@ -178,13 +179,122 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
         };
         
         const newUser = await storage.upsertUser(userData);
-        return res.json(newUser);
+        
+        // Get user's fan score
+        let fanScoreData = null;
+        try {
+          const { userFanScores } = await import('../shared/schema');
+          const { eq, and } = await import('drizzle-orm');
+          const { db } = await import('./db');
+          
+          const globalScore = await db
+            .select({
+              totalScore: userFanScores.totalScore,
+              level: userFanScores.level,
+            })
+            .from(userFanScores)
+            .where(
+              and(
+                eq(userFanScores.userId, userId),
+                eq(userFanScores.scopeType, 'global'),
+                eq(userFanScores.scopeId, 'global')
+              )
+            )
+            .limit(1);
+
+          if (globalScore.length > 0) {
+            fanScoreData = {
+              totalScore: globalScore[0].totalScore,
+              level: globalScore[0].level
+            };
+          } else {
+            // Default fan score if no score exists yet
+            fanScoreData = {
+              totalScore: 0,
+              level: 1
+            };
+          }
+        } catch (scoreError) {
+          console.error('Error fetching fan score:', scoreError);
+          // Continue without fan score data if there's an error
+          fanScoreData = {
+            totalScore: 0,
+            level: 1
+          };
+        }
+        
+        // Return authenticated response with expected format
+        return res.json({
+          isAuthenticated: true,
+          user: {
+            id: newUser.id,
+            email: newUser.email || '',
+            firstName: newUser.firstName || '',
+            lastName: newUser.lastName || '',
+            isAdmin: newUser.isAdmin || false
+          },
+          fanScore: fanScoreData
+        });
       }
       
-      res.json(user);
+      // Get user's fan score
+      let fanScoreData = null;
+      try {
+        const { userFanScores } = await import('../shared/schema');
+        const { eq, and } = await import('drizzle-orm');
+        const { db } = await import('./db');
+        
+        const globalScore = await db
+          .select({
+            totalScore: userFanScores.totalScore,
+            level: userFanScores.level,
+          })
+          .from(userFanScores)
+          .where(
+            and(
+              eq(userFanScores.userId, userId),
+              eq(userFanScores.scopeType, 'global'),
+              eq(userFanScores.scopeId, 'global')
+            )
+          )
+          .limit(1);
+
+        if (globalScore.length > 0) {
+          fanScoreData = {
+            totalScore: globalScore[0].totalScore,
+            level: globalScore[0].level
+          };
+        } else {
+          // Default fan score if no score exists yet
+          fanScoreData = {
+            totalScore: 0,
+            level: 1
+          };
+        }
+      } catch (scoreError) {
+        console.error('Error fetching fan score:', scoreError);
+        // Continue without fan score data if there's an error
+        fanScoreData = {
+          totalScore: 0,
+          level: 1
+        };
+      }
+      
+      // Return authenticated response with expected format
+      res.json({
+        isAuthenticated: true,
+        user: {
+          id: user.id,
+          email: user.email || '',
+          firstName: user.firstName || '',
+          lastName: user.lastName || '',
+          isAdmin: user.isAdmin || false
+        },
+        fanScore: fanScoreData
+      });
     } catch (error) {
       console.error("Error fetching user:", error);
-      res.status(500).json({ message: "Failed to fetch user" });
+      res.status(500).json({ isAuthenticated: false, error: "Failed to fetch user" });
     }
   });
 

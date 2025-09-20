@@ -3,9 +3,11 @@
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useMobile } from '@/contexts/MobileContext';
+import { useAuth } from '@/hooks/useAuth';
 import NotificationCenter from './NotificationCenter';
 import ScoreBadge from './ScoreBadge';
 import DataSaverToggle from './DataSaverToggle';
+import { Button } from '@/components/ui/button';
 import { useState } from 'react';
 
 export type Phase = 'before' | 'event' | 'after';
@@ -18,6 +20,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
   const router = useRouter();
   const { theme } = useTheme();
   const { isMobile, navigationCollapsed, setNavigationCollapsed, isDataSaverEnabled, toggleDataSaver } = useMobile();
+  const { user, isAuthenticated, isLoading } = useAuth();
   const [showDataSaverToggle, setShowDataSaverToggle] = useState(false);
 
   const handlePhaseChange = (phase: Phase) => {
@@ -26,7 +29,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
     // Navigate to the appropriate phase route
     switch (phase) {
       case 'before':
-        router.push('/before/chapter-1');
+        router.push('/before');
         break;
       case 'event':
         router.push('/event');
@@ -118,6 +121,64 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
 
             {/* Right Side Actions */}
             <div className="flex items-center space-x-2">
+              {/* Login/Progress Toggle */}
+              {!isLoading && (
+                <>
+                  {isAuthenticated ? (
+                    // Show Progress button with score when authenticated
+                    <button
+                      onClick={handleProgressClick}
+                      className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all duration-200"
+                    >
+                      <ScoreBadge 
+                        compact={true}
+                        showLevel={true}
+                        showPosition={false}
+                        className=""
+                      />
+                      <span className="text-sm font-medium">Progress</span>
+                    </button>
+                  ) : (
+                    // Show Login button when not authenticated
+                    <Button
+                      onClick={() => router.push('/auth/login')}
+                      className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg"
+                    >
+                      Login
+                    </Button>
+                  )}
+                </>
+              )}
+
+              {/* Memory Wallet Link - Only show when authenticated */}
+              {isAuthenticated && (
+                <button
+                  onClick={() => router.push('/memory-wallet')}
+                  className="p-2 text-white/80 hover:text-white transition-colors hover:bg-white/10 rounded-lg"
+                  aria-label="Memory Wallet"
+                  title="Memory Wallet"
+                >
+                  <svg 
+                    className="w-5 h-5"
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" 
+                    />
+                  </svg>
+                </button>
+              )}
+              
+              {/* Notification Center - Hidden when collapsed on mobile */}
+              <div className={isMobile && navigationCollapsed ? 'hidden' : ''}>
+                <NotificationCenter />
+              </div>
+
               {/* Mobile Navigation Toggle */}
               {isMobile && (
                 <button
@@ -135,21 +196,6 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                   </svg>
                 </button>
               )}
-              
-              {/* Fan Score Badge - Always visible but compact on mobile */}
-              <ScoreBadge 
-                compact={isMobile}
-                showLevel={true}
-                showPosition={false}
-                onClick={handleProgressClick}
-                className="hover:scale-105 transition-transform duration-200"
-              />
-              
-              {/* Notification Center - Hidden when collapsed on mobile */}
-              <div className={isMobile && navigationCollapsed ? 'hidden' : ''}>
-                <NotificationCenter />
-              </div>
-
             </div>
           </div>
           

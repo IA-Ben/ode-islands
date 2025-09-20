@@ -96,37 +96,86 @@ export function setupSimpleAuth(app: express.Application) {
     }
   });
 
-  // Get user endpoint - now fetches real user data from database
+  // Get user endpoint - returns user data with authentication status and fan score
   app.get('/api/auth/user', async (req, res) => {
     if (req.session.isAuthenticated && req.session.userId) {
       try {
+        // Import userFanScores from schema
+        const { userFanScores } = await import('../shared/schema');
+        const { and } = await import('drizzle-orm');
+        
         // Fetch real user data from database
         const [user] = await db.select().from(users).where(eq(users.id, req.session.userId));
         
         if (user) {
+          // Get user's global fan score
+          let fanScoreData = null;
+          try {
+            const globalScore = await db
+              .select({
+                totalScore: userFanScores.totalScore,
+                level: userFanScores.level,
+              })
+              .from(userFanScores)
+              .where(
+                and(
+                  eq(userFanScores.userId, req.session.userId),
+                  eq(userFanScores.scopeType, 'global'),
+                  eq(userFanScores.scopeId, 'global')
+                )
+              )
+              .limit(1);
+
+            if (globalScore.length > 0) {
+              fanScoreData = {
+                totalScore: globalScore[0].totalScore,
+                level: globalScore[0].level
+              };
+            } else {
+              // Default fan score if no score exists yet
+              fanScoreData = {
+                totalScore: 0,
+                level: 1
+              };
+            }
+          } catch (scoreError) {
+            console.error('Error fetching fan score:', scoreError);
+            // Continue without fan score data if there's an error
+            fanScoreData = {
+              totalScore: 0,
+              level: 1
+            };
+          }
+          
+          // Return authenticated response with expected format
           res.json({
-            id: user.id,
-            email: user.email || '',
-            firstName: user.firstName || '',
-            lastName: user.lastName || '',
-            isAdmin: user.isAdmin || false,
-            profileImageUrl: user.profileImageUrl || undefined,
-            emailVerified: user.emailVerified || false,
-            createdAt: user.createdAt
+            isAuthenticated: true,
+            user: {
+              id: user.id,
+              email: user.email || '',
+              firstName: user.firstName || '',
+              lastName: user.lastName || '',
+              isAdmin: user.isAdmin || false,
+              profileImageUrl: user.profileImageUrl || undefined,
+              emailVerified: user.emailVerified || false,
+              createdAt: user.createdAt
+            },
+            fanScore: fanScoreData
           });
         } else {
           // User not found in database - invalid session
           req.session.destroy((err) => {
             if (err) console.error('Session destroy error:', err);
           });
-          res.status(401).json({ error: 'User not found' });
+          res.json({ isAuthenticated: false });
         }
       } catch (error) {
         console.error('Database error fetching user:', error);
-        res.status(500).json({ error: 'Internal server error' });
+        res.status(500).json({ isAuthenticated: false, error: 'Internal server error' });
       }
     } else {
-      res.status(401).json({ error: 'Authentication required' });
+      // Not authenticated - return expected format
+      res.json({ isAuthenticated: false });
     }
   });
 
