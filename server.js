@@ -15,40 +15,100 @@ app.prepare().then(async () => {
   // Trust proxy for production deployments (required for secure cookies behind proxy)
   server.set('trust proxy', 1);
 
-  // Add JSON body parsing middleware (include Express API routes, exclude only Next.js App Router routes)
-  // Express routes need body parsing, but Next.js App Router routes handle their own
+  // Add basic security headers
   server.use((req, res, next) => {
-    // Allow Express API routes (auth, cms, content, scheduler, csrf-token) to have body parsing
-    if (req.path.startsWith('/api/auth/') || 
-        req.path.startsWith('/api/cms/') || 
-        req.path.startsWith('/api/content/') || 
-        req.path.startsWith('/api/scheduler/') ||
-        req.path === '/api/csrf-token') {
-      // Apply Express body parsing for Express API routes
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'DENY');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    if (!dev) {
+      res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+    }
+    next();
+  });
+
+  // Add cookie parser for CSRF token validation
+  const cookieParser = require('cookie-parser');
+  server.use(cookieParser());
+
+  // Add rate limiting for authentication endpoints (only mutating operations)
+  const rateLimit = require('express-rate-limit');
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 10, // increased limit for mutating operations only
+    message: {
+      status: 'error',
+      message: 'Too many authentication attempts, please try again later.',
+      retryAfter: '15 minutes'
+    },
+    standardHeaders: true,
+    legacyHeaders: false,
+    // Only apply to mutating HTTP methods, not GET requests
+    skip: (req) => req.method === 'GET'
+  });
+
+  // Apply rate limiting to all auth endpoints (covers both Express and Next.js auth routes)
+  server.use('/api/auth/', authLimiter);
+  server.use('/api/dev-login', authLimiter);
+
+  // Body parsing middleware - Express handles unified auth/admin routes, Next.js handles the rest
+  server.use((req, res, next) => {
+    // Express routes that need body parsing (handled by unifiedRoutes.ts):
+    // - /api/auth/* (login, logout, user info)
+    // - /api/csrf-token
+    // - /api/admin/* (admin user/theme management)  
+    // - /api/cms/* (content management)
+    // - /api/content/* (content availability)
+    // - /api/scheduler/* (content scheduling)
+    // - /api/dev-login (development only)
+    
+    const expressApiPaths = [
+      '/api/auth/',
+      '/api/admin/', 
+      '/api/cms/',
+      '/api/content/',
+      '/api/scheduler/',
+      '/api/csrf-token',
+      '/api/dev-login'
+    ];
+    
+    const isExpressRoute = expressApiPaths.some(path => 
+      req.path === path || req.path.startsWith(path)
+    );
+    
+    if (isExpressRoute) {
+      // Apply Express body parsing for unified Express routes
       express.json()(req, res, next);
     } else if (req.path.startsWith('/api/')) {
-      // Skip Express body parsing for Next.js App Router API routes
+      // Skip body parsing for Next.js App Router API routes (they handle their own)
       return next();
     } else {
-      // Apply Express body parsing for non-API routes
+      // Apply body parsing for non-API routes
       express.json()(req, res, next);
     }
   });
   
   server.use((req, res, next) => {
-    // Allow Express API routes to have URL encoding
-    if (req.path.startsWith('/api/auth/') || 
-        req.path.startsWith('/api/cms/') || 
-        req.path.startsWith('/api/content/') || 
-        req.path.startsWith('/api/scheduler/') ||
-        req.path === '/api/csrf-token') {
-      // Apply Express URL encoding for Express API routes
+    // URL encoding middleware with same logic
+    const expressApiPaths = [
+      '/api/auth/',
+      '/api/admin/', 
+      '/api/cms/',
+      '/api/content/',
+      '/api/scheduler/',
+      '/api/csrf-token',
+      '/api/dev-login'
+    ];
+    
+    const isExpressRoute = expressApiPaths.some(path => 
+      req.path === path || req.path.startsWith(path)
+    );
+    
+    if (isExpressRoute) {
       express.urlencoded({ extended: true })(req, res, next);
     } else if (req.path.startsWith('/api/')) {
-      // Skip Express URL encoding for Next.js App Router API routes
       return next();
     } else {
-      // Apply Express URL encoding for non-API routes
       express.urlencoded({ extended: true })(req, res, next);
     }
   });
@@ -61,6 +121,12 @@ app.prepare().then(async () => {
   const SESSION_SECRET = process.env.SESSION_SECRET;
   if (!SESSION_SECRET) {
     console.error('FATAL: SESSION_SECRET environment variable is required');
+    process.exit(1);
+  }
+
+  // Enforce DATABASE_URL in production environment
+  if (!dev && !process.env.DATABASE_URL) {
+    console.error('FATAL: DATABASE_URL environment variable is required in production');
     process.exit(1);
   }
 
@@ -107,13 +173,26 @@ app.prepare().then(async () => {
   // Note: CMS page now handles authentication on the client side
 
   // Add dedicated health check endpoints for fast deployment health check response
-  server.get('/health', (req, res) => {
-    res.status(200).json({ status: 'ok' });
-  });
+  const healthHandler = (req, res) => {
+    try {
+      const healthData = { status: 'ok', timestamp: new Date().toISOString() };
+      
+      // For HEAD requests, just send status code
+      if (req.method === 'HEAD') {
+        res.status(200).end();
+      } else {
+        res.status(200).json(healthData);
+      }
+    } catch (error) {
+      console.error('Health check error:', error);
+      res.status(503).json({ status: 'error', message: 'Service unavailable' });
+    }
+  };
   
-  server.get('/healthz', (req, res) => {
-    res.status(200).json({ status: 'ok' });
-  });
+  server.get('/health', healthHandler);
+  server.head('/health', healthHandler);
+  server.get('/healthz', healthHandler);
+  server.head('/healthz', healthHandler);
   
   // Simple root endpoint health check - prioritize health checks over complex detection
   server.get('/', (req, res, next) => {
@@ -124,6 +203,22 @@ app.prepare().then(async () => {
     
     // Otherwise, let Next.js handle the request
     return handle(req, res);
+  });
+
+  // Global error handler for Express routes
+  server.use((err, req, res, next) => {
+    console.error('Express error:', err);
+    
+    // Don't send error details in production
+    const errorMessage = dev ? err.message : 'Internal server error';
+    
+    if (!res.headersSent) {
+      res.status(err.status || 500).json({
+        status: 'error',
+        message: errorMessage,
+        timestamp: new Date().toISOString()
+      });
+    }
   });
 
   // Handle Next.js requests (except API routes which are handled by Express)

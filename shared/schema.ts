@@ -74,6 +74,12 @@ export const userProgress = pgTable("user_progress", {
   completedAt: timestamp("completed_at").defaultNow(),
   timeSpent: integer("time_spent"), // seconds
   lastAccessed: timestamp("last_accessed").defaultNow(),
+}, (table) => {
+  return {
+    userIdIndex: index("user_progress_user_id_idx").on(table.userId),
+    chapterIdIndex: index("user_progress_chapter_id_idx").on(table.chapterId),
+    completedAtIndex: index("user_progress_completed_at_idx").on(table.completedAt),
+  };
 });
 
 // Interactive Polls and Quizzes
@@ -114,6 +120,12 @@ export const pollResponses = pgTable("poll_responses", {
   selectedOption: varchar("selected_option").notNull(),
   isCorrect: boolean("is_correct"), // For quiz responses
   submittedAt: timestamp("submitted_at").defaultNow(),
+}, (table) => {
+  return {
+    pollIdIndex: index("poll_responses_poll_id_idx").on(table.pollId),
+    userIdIndex: index("poll_responses_user_id_idx").on(table.userId),
+    submittedAtIndex: index("poll_responses_submitted_at_idx").on(table.submittedAt),
+  };
 });
 
 // Live Event Features
@@ -141,6 +153,12 @@ export const qaSessions = pgTable("qa_sessions", {
   upvotes: integer("upvotes").default(0),
   createdAt: timestamp("created_at").defaultNow(),
   answeredAt: timestamp("answered_at"),
+}, (table) => {
+  return {
+    eventIdIndex: index("qa_sessions_event_id_idx").on(table.eventId),
+    askedByIndex: index("qa_sessions_asked_by_idx").on(table.askedBy),
+    createdAtIndex: index("qa_sessions_created_at_idx").on(table.createdAt),
+  };
 });
 
 export const liveChatMessages = pgTable("live_chat_messages", {
@@ -151,6 +169,12 @@ export const liveChatMessages = pgTable("live_chat_messages", {
   messageType: varchar("message_type").default('text'), // 'text', 'reaction', 'system'
   isModerated: boolean("is_moderated").default(false),
   sentAt: timestamp("sent_at").defaultNow(),
+}, (table) => {
+  return {
+    eventIdIndex: index("live_chat_messages_event_id_idx").on(table.eventId),
+    userIdIndex: index("live_chat_messages_user_id_idx").on(table.userId),
+    sentAtIndex: index("live_chat_messages_sent_at_idx").on(table.sentAt),
+  };
 });
 
 // Event Memories and Post-Event Content
@@ -206,6 +230,14 @@ export const userMemoryWallet = pgTable("user_memory_wallet", {
   
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    userIdIndex: index("user_memory_wallet_user_id_idx").on(table.userId),
+    eventIdIndex: index("user_memory_wallet_event_id_idx").on(table.eventId),
+    sourceTypeIndex: index("user_memory_wallet_source_type_idx").on(table.sourceType),
+    collectedAtIndex: index("user_memory_wallet_collected_at_idx").on(table.collectedAt),
+    isFavoriteIndex: index("user_memory_wallet_is_favorite_idx").on(table.isFavorite),
+  };
 });
 
 // Memory Wallet Collections - For organizing memories into themed groups
