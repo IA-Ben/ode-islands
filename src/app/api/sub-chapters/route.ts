@@ -29,9 +29,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function handlePOST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    const session = (request as any).session;
     const data = await request.json();
     const subChapter = await storage.createSubChapter({
       chapterId: data.chapterId,
@@ -46,6 +45,4 @@ async function handlePOST(request: NextRequest) {
     console.error('Error creating sub-chapter:', error);
     return NextResponse.json({ error: 'Failed to create sub-chapter' }, { status: 500 });
   }
-}
-
-export const POST = withAuth(handlePOST);
+});

@@ -102,9 +102,8 @@ export async function GET(request: NextRequest) {
   }
 }
 
-async function handlePOST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    const session = (request as any).session;
     const data = await request.json();
     const button = await storage.createCustomButton({
       parentType: data.parentType,
@@ -123,6 +122,4 @@ async function handlePOST(request: NextRequest) {
     console.error('Error creating custom button:', error);
     return NextResponse.json({ error: 'Failed to create custom button' }, { status: 500 });
   }
-}
-
-export const POST = withAuth(handlePOST);
+});
