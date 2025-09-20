@@ -222,6 +222,35 @@ class WebSocketManager {
         this.handleUpdateTimecode(ws, message.payload);
         break;
 
+      // Interactive Choice System messages
+      case 'choice_response_submitted':
+        this.handleChoiceResponseSubmitted(ws, message.payload);
+        break;
+
+      case 'choice_activated':
+        if (!ws.isAuthenticated || !ws.isAdmin) {
+          this.sendMessage(ws, {
+            type: 'error',
+            payload: { message: 'Admin privileges required for choice administration' },
+            timestamp: Date.now(),
+          });
+          return;
+        }
+        this.handleChoiceActivated(ws, message.payload);
+        break;
+
+      case 'choice_deactivated':
+        if (!ws.isAuthenticated || !ws.isAdmin) {
+          this.sendMessage(ws, {
+            type: 'error',
+            payload: { message: 'Admin privileges required for choice administration' },
+            timestamp: Date.now(),
+          });
+          return;
+        }
+        this.handleChoiceDeactivated(ws, message.payload);
+        break;
+
       default:
         console.log(`Unknown message type: ${message.type}`);
     }
@@ -509,6 +538,108 @@ class WebSocketManager {
 
   public updateEventTimecode(eventId: string, timecode: number) {
     this.eventTimecodes[eventId] = timecode;
+  }
+
+  // Interactive Choice System WebSocket handlers
+  private handleChoiceResponseSubmitted(ws: AuthenticatedWebSocket, payload: any) {
+    const { choiceId, eventId, responseStats } = payload;
+    
+    if (!eventId) {
+      console.error('No eventId provided for choice response');
+      return;
+    }
+    
+    // Broadcast real-time update to all participants in the event
+    this.broadcastToEvent(eventId, {
+      type: 'choice_response_update',
+      payload: {
+        choiceId,
+        responseStats,
+        timestamp: Date.now(),
+      },
+      timestamp: Date.now(),
+    });
+    
+    console.log(`Choice response submitted for choice ${choiceId} in event ${eventId}`);
+  }
+
+  private handleChoiceActivated(ws: AuthenticatedWebSocket, payload: any) {
+    const { choiceId, eventId, choice } = payload;
+    
+    if (!eventId) {
+      console.error('No eventId provided for choice activation');
+      return;
+    }
+    
+    // Broadcast to all participants that a new choice is active
+    this.broadcastToEvent(eventId, {
+      type: 'choice_activated',
+      payload: {
+        choiceId,
+        choice,
+        timestamp: Date.now(),
+      },
+      timestamp: Date.now(),
+    });
+    
+    console.log(`Choice ${choiceId} activated in event ${eventId}`);
+  }
+
+  private handleChoiceDeactivated(ws: AuthenticatedWebSocket, payload: any) {
+    const { choiceId, eventId } = payload;
+    
+    if (!eventId) {
+      console.error('No eventId provided for choice deactivation');
+      return;
+    }
+    
+    // Broadcast to all participants that a choice has ended
+    this.broadcastToEvent(eventId, {
+      type: 'choice_deactivated',
+      payload: {
+        choiceId,
+        timestamp: Date.now(),
+      },
+      timestamp: Date.now(),
+    });
+    
+    console.log(`Choice ${choiceId} deactivated in event ${eventId}`);
+  }
+
+  // Public methods for Interactive Choice System
+  public broadcastChoiceUpdate(eventId: string, choiceId: string, responseStats: any) {
+    this.broadcastToEvent(eventId, {
+      type: 'choice_response_update',
+      payload: {
+        choiceId,
+        responseStats,
+        timestamp: Date.now(),
+      },
+      timestamp: Date.now(),
+    });
+  }
+
+  public notifyChoiceActivated(eventId: string, choiceId: string, choice: any) {
+    this.broadcastToEvent(eventId, {
+      type: 'choice_activated',
+      payload: {
+        choiceId,
+        choice,
+        timestamp: Date.now(),
+      },
+      timestamp: Date.now(),
+    });
+  }
+
+  public notifyChoiceDeactivated(eventId: string, choiceId: string) {
+    this.broadcastToEvent(eventId, {
+      type: 'choice_deactivated',
+      payload: {
+        choiceId,
+        timestamp: Date.now(),
+      },
+      timestamp: Date.now(),
+    });
   }
 
   // Get connection status

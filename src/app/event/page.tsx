@@ -5,6 +5,7 @@ import PhaseNavigation from "@/components/PhaseNavigation";
 import { useTheme } from '@/contexts/ThemeContext';
 import EventDashboard from '@/components/EventDashboard';
 import EventAudienceInterface from '@/components/EventAudienceInterface';
+import EventInteractiveHub from '@/components/EventInteractiveHub';
 import HelpSystem from '@/components/HelpSystem';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,7 +42,7 @@ export default function EventPage() {
   const [error, setError] = useState<string | null>(null);
   const [events, setEvents] = useState<LiveEvent[]>([]);
   const [session, setSession] = useState<SessionData | null>(null);
-  const [activeView, setActiveView] = useState<'audience' | 'dashboard' | 'loading'>('loading');
+  const [activeView, setActiveView] = useState<'audience' | 'dashboard' | 'interactive' | 'loading'>('loading');
   const [activeEvent, setActiveEvent] = useState<LiveEvent | null>(null);
 
   // Fetch user session data
@@ -292,21 +293,30 @@ export default function EventPage() {
         {/* Comprehensive Help System for Audience */}
         <HelpSystem userRole="audience" />
         
-        {/* Admin access button (hidden, only for authenticated admins) */}
-        {session?.isAuthenticated && session?.isAdmin && (
-          <div className="fixed top-20 right-4 z-50">
+        {/* Navigation buttons */}
+        <div className="fixed top-20 right-4 z-50 space-y-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setActiveView('interactive')}
+            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+          >
+            🎯 Interactive Choices
+          </Button>
+          
+          {session?.isAuthenticated && session?.isAdmin && (
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 fetchEvents().then(() => setActiveView('dashboard'));
               }}
-              className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs"
+              className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
             >
-              Operator Console
+              ⚙️ Operator Console
             </Button>
-          </div>
-        )}
+          )}
+        </div>
         
         {/* Event info indicator */}
         <div className="fixed bottom-20 left-4 z-40">
@@ -336,16 +346,100 @@ export default function EventPage() {
         {/* Comprehensive Help System for Admins */}
         <HelpSystem userRole="admin" />
         
-        {/* Switch to audience view button */}
-        <div className="fixed top-20 right-4 z-50">
+        {/* Navigation buttons */}
+        <div className="fixed top-20 right-4 z-50 space-y-2">
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setActiveView('audience')}
-            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs"
+            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
           >
-            Audience View
+            👥 Audience View
           </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setActiveView('interactive')}
+            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+          >
+            🎯 Interactive Choices
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show Interactive Choice Hub
+  if (activeView === 'interactive') {
+    if (!activeEvent) {
+      return (
+        <div className="w-full min-h-screen bg-black relative overflow-y-auto overflow-x-hidden">
+          <PhaseNavigation currentPhase="event" />
+          
+          <div className="h-full pt-20 flex flex-col items-center justify-center text-center px-8">
+            <div 
+              className="absolute inset-0 opacity-20"
+              style={{
+                background: `radial-gradient(ellipse at center, ${theme.colors.primary}40 0%, transparent 50%)`
+              }}
+            />
+            
+            <div className="relative z-10 max-w-md">
+              <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white/5 flex items-center justify-center">
+                <svg className="w-10 h-10 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold mb-4 text-white">No Active Event</h2>
+              <p className="text-white/60 text-lg mb-8 leading-relaxed">
+                Interactive choices require an active event. Please wait for an event to start.
+              </p>
+              <Button
+                onClick={() => setActiveView('audience')}
+                className="bg-white/10 hover:bg-white/20 text-white border-white/20"
+              >
+                Back to Event Hub
+              </Button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    return (
+      <div className="w-full min-h-screen bg-black relative">
+        <PhaseNavigation currentPhase="event" />
+        
+        <EventInteractiveHub
+          event={activeEvent}
+          session={session!}
+          theme={theme}
+        />
+        
+        {/* Navigation buttons */}
+        <div className="fixed top-20 right-4 z-50 space-y-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setActiveView('audience')}
+            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+          >
+            👥 Audience View
+          </Button>
+          
+          {session?.isAuthenticated && session?.isAdmin && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                fetchEvents().then(() => setActiveView('dashboard'));
+              }}
+              className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+            >
+              ⚙️ Operator Console
+            </Button>
+          )}
         </div>
       </div>
     );

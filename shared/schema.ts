@@ -184,6 +184,93 @@ export const polls = pgTable("polls", {
   expiresAt: timestamp("expires_at"),
 });
 
+// Enhanced Interactive Choice System - extends beyond simple polls
+export const interactiveChoices = pgTable("interactive_choices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  chapterId: varchar("chapter_id"),
+  cardIndex: integer("card_index"),
+  
+  // Core choice configuration
+  title: text("title").notNull(),
+  description: text("description"),
+  choiceType: varchar("choice_type").notNull(), // 'multi_choice', 'ranking', 'preference_scale', 'grouped_choices', 'collaborative_board'
+  
+  // Choice options and configuration
+  choices: jsonb("choices").notNull(), // Array of choice objects with extended properties
+  maxSelections: integer("max_selections"), // For multi-select scenarios
+  minSelections: integer("min_selections").default(1),
+  allowCustomInput: boolean("allow_custom_input").default(false),
+  
+  // Visualization and interaction settings
+  visualizationType: varchar("visualization_type").default('bar_chart'), // 'bar_chart', 'pie_chart', 'word_cloud', 'live_grid'
+  showLiveResults: boolean("show_live_results").default(true),
+  showPercentages: boolean("show_percentages").default(true),
+  animateResults: boolean("animate_results").default(true),
+  
+  // Group decision making features
+  requireConsensus: boolean("require_consensus").default(false),
+  consensusThreshold: integer("consensus_threshold").default(75), // percentage
+  allowDiscussion: boolean("allow_discussion").default(false),
+  discussionTimeLimit: integer("discussion_time_limit"), // seconds
+  
+  // Timing and lifecycle
+  status: varchar("status").default('draft'), // 'draft', 'active', 'paused', 'completed', 'archived'
+  startTime: timestamp("start_time"),
+  endTime: timestamp("end_time"),
+  timeLimit: integer("time_limit"), // seconds for individual responses
+  
+  // Results and feedback
+  showResults: boolean("show_results").default(true),
+  resultsVisibleTo: varchar("results_visible_to").default('all'), // 'all', 'participants', 'admins_only'
+  feedbackMessage: text("feedback_message"),
+  
+  // CMS integration
+  cmsConfig: jsonb("cms_config"), // CMS-specific configuration
+  themeSettings: jsonb("theme_settings"), // Visual theme customization
+  
+  // Metadata
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    eventIdIndex: index("interactive_choices_event_id_idx").on(table.eventId),
+    chapterIdIndex: index("interactive_choices_chapter_id_idx").on(table.chapterId),
+    statusIndex: index("interactive_choices_status_idx").on(table.status),
+    createdAtIndex: index("interactive_choices_created_at_idx").on(table.createdAt),
+  };
+});
+
+// Individual user responses to interactive choices
+export const choiceResponses = pgTable("choice_responses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  choiceId: varchar("choice_id").references(() => interactiveChoices.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  
+  // Response data
+  selectedChoices: jsonb("selected_choices").notNull(), // Array of selected choice IDs/values
+  customInput: text("custom_input"), // For open-ended responses
+  ranking: jsonb("ranking"), // For ranking-type choices
+  
+  // Response metadata
+  responseTime: integer("response_time"), // Time taken to respond in seconds
+  confidence: integer("confidence"), // Self-reported confidence (1-10)
+  isAnonymous: boolean("is_anonymous").default(false),
+  
+  // Timestamps
+  submittedAt: timestamp("submitted_at").defaultNow(),
+  lastModified: timestamp("last_modified").defaultNow(),
+}, (table) => {
+  return {
+    choiceIdIndex: index("choice_responses_choice_id_idx").on(table.choiceId),
+    userIdIndex: index("choice_responses_user_id_idx").on(table.userId),
+    submittedAtIndex: index("choice_responses_submitted_at_idx").on(table.submittedAt),
+    // Unique constraint to prevent duplicate responses
+    uniqueUserChoice: index("choice_responses_user_choice_unique").on(table.choiceId, table.userId),
+  };
+});
+
 export const pollResponses = pgTable("poll_responses", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   pollId: varchar("poll_id").references(() => polls.id).notNull(),
@@ -1047,3 +1134,9 @@ export type CollectibleProgress = typeof collectibleProgress.$inferSelect;
 export type UpsertCollectibleProgress = typeof collectibleProgress.$inferInsert;
 export type CollectibleExport = typeof collectibleExports.$inferSelect;
 export type UpsertCollectibleExport = typeof collectibleExports.$inferInsert;
+
+// Interactive Choice System Types
+export type InteractiveChoice = typeof interactiveChoices.$inferSelect;
+export type UpsertInteractiveChoice = typeof interactiveChoices.$inferInsert;
+export type ChoiceResponse = typeof choiceResponses.$inferSelect;
+export type UpsertChoiceResponse = typeof choiceResponses.$inferInsert;
