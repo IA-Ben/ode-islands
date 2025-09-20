@@ -49,6 +49,7 @@ interface ResponseStats {
 
 interface ChoiceSystemProps {
   choice: InteractiveChoice;
+  eventId?: string;
   userId?: string;
   isAdmin?: boolean;
   onResponseSubmit?: (response: any) => void;
@@ -57,6 +58,7 @@ interface ChoiceSystemProps {
 
 export default function InteractiveChoiceSystem({
   choice,
+  eventId,
   userId,
   isAdmin = false,
   onResponseSubmit,
@@ -73,7 +75,6 @@ export default function InteractiveChoiceSystem({
   const [confidence, setConfidence] = useState(5);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [eventId, setEventId] = useState<string | null>(null);
 
   // WebSocket connection for real-time updates
   const { sendMessage } = useWebSocket(

@@ -228,6 +228,7 @@ export default function EventInteractiveHub({ event, session, theme }: EventInte
                 <InteractiveChoiceSystem
                   key={choice.id}
                   choice={choice}
+                  eventId={event.id}
                   userId={session.userId}
                   isAdmin={session.isAdmin}
                   onResponseSubmit={handleResponseSubmit}

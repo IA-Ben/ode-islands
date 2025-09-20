@@ -222,10 +222,8 @@ class WebSocketManager {
         this.handleUpdateTimecode(ws, message.payload);
         break;
 
-      // Interactive Choice System messages
-      case 'choice_response_submitted':
-        this.handleChoiceResponseSubmitted(ws, message.payload);
-        break;
+      // Interactive Choice System messages (removed insecure choice_response_submitted)
+      // Choice responses are now handled securely through HTTP API endpoint
 
       case 'choice_activated':
         if (!ws.isAuthenticated || !ws.isAdmin) {
@@ -540,27 +538,50 @@ class WebSocketManager {
     this.eventTimecodes[eventId] = timecode;
   }
 
-  // Interactive Choice System WebSocket handlers
-  private handleChoiceResponseSubmitted(ws: AuthenticatedWebSocket, payload: any) {
-    const { choiceId, eventId, responseStats } = payload;
-    
-    if (!eventId) {
-      console.error('No eventId provided for choice response');
-      return;
-    }
-    
-    // Broadcast real-time update to all participants in the event
+  // Interactive Choice System WebSocket handlers  
+  // NOTE: Choice responses are now handled securely through HTTP API
+  // This method provides server-authoritative broadcasts after DB updates
+  
+  public broadcastChoiceUpdate(eventId: string, choiceId: string, responseStats: any, totalResponses: number) {
     this.broadcastToEvent(eventId, {
       type: 'choice_response_update',
       payload: {
         choiceId,
         responseStats,
+        totalResponses,
         timestamp: Date.now(),
       },
       timestamp: Date.now(),
     });
     
-    console.log(`Choice response submitted for choice ${choiceId} in event ${eventId}`);
+    console.log(`Server-authoritative choice update broadcast for choice ${choiceId} in event ${eventId}`);
+  }
+
+  public notifyChoiceActivated(eventId: string, choiceId: string, choice: any) {
+    this.broadcastToEvent(eventId, {
+      type: 'choice_activated',
+      payload: {
+        choiceId,
+        choice,
+        timestamp: Date.now(),
+      },
+      timestamp: Date.now(),
+    });
+    
+    console.log(`Choice ${choiceId} activated in event ${eventId} via HTTP API`);
+  }
+
+  public notifyChoiceDeactivated(eventId: string, choiceId: string) {
+    this.broadcastToEvent(eventId, {
+      type: 'choice_deactivated',
+      payload: {
+        choiceId,
+        timestamp: Date.now(),
+      },
+      timestamp: Date.now(),
+    });
+    
+    console.log(`Choice ${choiceId} deactivated in event ${eventId} via HTTP API`);
   }
 
   private handleChoiceActivated(ws: AuthenticatedWebSocket, payload: any) {

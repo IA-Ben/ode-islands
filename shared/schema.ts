@@ -267,7 +267,7 @@ export const choiceResponses = pgTable("choice_responses", {
     userIdIndex: index("choice_responses_user_id_idx").on(table.userId),
     submittedAtIndex: index("choice_responses_submitted_at_idx").on(table.submittedAt),
     // Unique constraint to prevent duplicate responses
-    uniqueUserChoice: index("choice_responses_user_choice_unique").on(table.choiceId, table.userId),
+    uniqueUserChoice: uniqueIndex("choice_responses_user_choice_unique").on(table.choiceId, table.userId),
   };
 });
 

@@ -184,11 +184,8 @@ export async function POST(
       webSocketManager.broadcastChoiceUpdate(
         choiceData.eventId,
         choiceId,
-        {
-          totalResponses,
-          responseStats,
-          lastUpdated: Date.now()
-        }
+        responseStats,
+        totalResponses
       );
     }
 
