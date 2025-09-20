@@ -295,6 +295,14 @@ export const liveEvents = pgTable("live_events", {
   endTime: timestamp("end_time").notNull(),
   isActive: boolean("is_active").default(false),
   settings: jsonb("settings"), // Event configuration
+  
+  // Venue Information
+  venueName: varchar("venue_name"),
+  venueAddress: text("venue_address"),
+  venueLatitude: decimal("venue_latitude", { precision: 10, scale: 8 }),
+  venueLongitude: decimal("venue_longitude", { precision: 11, scale: 8 }),
+  venueDetails: jsonb("venue_details"), // Additional venue info (section, gate, doors open time, etc.)
+  
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
 });

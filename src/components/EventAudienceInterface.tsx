@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import QRScanner from './QRScanner';
 import HelpButton from './HelpButton';
+import VenueNavigation from './VenueNavigation';
 import { useHelp } from '@/hooks/useHelp';
 import { getCsrfToken, fetchCsrfToken } from '@/lib/csrfUtils';
 
@@ -1198,6 +1199,9 @@ export default function EventAudienceInterface({ eventId, userId, theme }: Event
                 </CardContent>
               </Card>
             )}
+
+            {/* Venue & Navigation Information */}
+            <VenueNavigation eventId={eventId} />
 
             {/* Waiting state */}
             {!currentCue && (
