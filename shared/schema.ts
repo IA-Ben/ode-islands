@@ -44,6 +44,77 @@ export const users = pgTable("users", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Chapters table for Before experience
+export const chapters = pgTable("chapters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title").notNull(),
+  summary: text("summary"),
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  order: integer("order").default(0),
+  hasAR: boolean("has_ar").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    eventIdIndex: index("chapters_event_id_idx").on(table.eventId),
+    orderIndex: index("chapters_order_idx").on(table.order),
+  };
+});
+
+// Sub-chapters table
+export const subChapters = pgTable("sub_chapters", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  chapterId: varchar("chapter_id").references(() => chapters.id).notNull(),
+  title: varchar("title").notNull(),
+  summary: text("summary"),
+  order: integer("order").default(0),
+  unlockConditions: jsonb("unlock_conditions"), // JSON array of conditions
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    chapterIdIndex: index("sub_chapters_chapter_id_idx").on(table.chapterId),
+    orderIndex: index("sub_chapters_order_idx").on(table.order),
+  };
+});
+
+// Story cards table - content blocks for chapters
+export const storyCards = pgTable("story_cards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  chapterId: varchar("chapter_id").references(() => chapters.id).notNull(),
+  order: integer("order").default(0),
+  content: jsonb("content").notNull(), // JSON containing text, images, video references
+  hasAR: boolean("has_ar").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    chapterIdIndex: index("story_cards_chapter_id_idx").on(table.chapterId),
+    orderIndex: index("story_cards_order_idx").on(table.order),
+  };
+});
+
+// Custom buttons table - flexible buttons for various parent types
+export const customButtons = pgTable("custom_buttons", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  parentType: varchar("parent_type").notNull(), // 'story_card', 'sub_chapter', 'chapter'
+  parentId: varchar("parent_id").notNull(), // ID of the parent entity
+  label: varchar("label").notNull(),
+  variant: varchar("variant").default('primary'), // 'primary', 'secondary', 'link', 'ghost'
+  icon: varchar("icon"), // Icon identifier
+  destinationType: varchar("destination_type").notNull(), // 'sub-chapter', 'chapter', 'ar-item', 'event-route', 'wallet', 'presents', 'external-link'
+  destinationId: varchar("destination_id"), // Target ID or URL
+  unlockConditions: jsonb("unlock_conditions"), // JSON array of unlock conditions
+  order: integer("order").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    parentIndex: index("custom_buttons_parent_idx").on(table.parentType, table.parentId),
+    orderIndex: index("custom_buttons_order_idx").on(table.order),
+  };
+});
+
 // CMS-specific tables for content management
 export const contentBackups = pgTable("content_backups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

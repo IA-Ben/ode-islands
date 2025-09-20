@@ -2,11 +2,16 @@ import {
   users,
   mediaAssets,
   contentBackups,
+  chapters,
+  subChapters,
+  storyCards,
+  customButtons,
+  userProgress,
   type User,
   type UpsertUser,
 } from "../shared/schema";
 import { db } from "./db";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, and, desc, asc } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -27,6 +32,39 @@ export interface IStorage {
   createMediaAsset(asset: Omit<typeof mediaAssets.$inferInsert, 'id' | 'createdAt'>): Promise<MediaAsset>;
   getMediaAssets(): Promise<MediaAsset[]>;
   deleteMediaAsset(id: string): Promise<void>;
+  
+  // Chapter operations
+  createChapter(chapter: Omit<typeof chapters.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<Chapter>;
+  getChapters(eventId?: string): Promise<Chapter[]>;
+  getChapter(id: string): Promise<Chapter | undefined>;
+  updateChapter(id: string, updates: Partial<Chapter>): Promise<Chapter>;
+  deleteChapter(id: string): Promise<void>;
+  
+  // Sub-chapter operations
+  createSubChapter(subChapter: Omit<typeof subChapters.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<SubChapter>;
+  getSubChapters(chapterId: string): Promise<SubChapter[]>;
+  getSubChapter(id: string): Promise<SubChapter | undefined>;
+  updateSubChapter(id: string, updates: Partial<SubChapter>): Promise<SubChapter>;
+  deleteSubChapter(id: string): Promise<void>;
+  
+  // Story card operations
+  createStoryCard(card: Omit<typeof storyCards.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<StoryCard>;
+  getStoryCards(chapterId: string): Promise<StoryCard[]>;
+  getStoryCard(id: string): Promise<StoryCard | undefined>;
+  updateStoryCard(id: string, updates: Partial<StoryCard>): Promise<StoryCard>;
+  deleteStoryCard(id: string): Promise<void>;
+  
+  // Custom button operations
+  createCustomButton(button: Omit<typeof customButtons.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<CustomButton>;
+  getCustomButtons(parentType: string, parentId: string): Promise<CustomButton[]>;
+  getCustomButton(id: string): Promise<CustomButton | undefined>;
+  updateCustomButton(id: string, updates: Partial<CustomButton>): Promise<CustomButton>;
+  deleteCustomButton(id: string): Promise<void>;
+  
+  // User progress operations
+  trackProgress(userId: string, chapterId: string, cardIndex: number): Promise<void>;
+  getUserChapterProgress(userId: string, chapterId: string): Promise<UserProgress[]>;
+  getSubChapterProgress(userId: string, subChapterId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -359,10 +397,262 @@ export class DatabaseStorage implements IStorage {
       .delete(mediaAssets)
       .where(eq(mediaAssets.id, id));
   }
+  
+  // Chapter operations
+  async createChapter(chapter: Omit<typeof chapters.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<Chapter> {
+    const [newChapter] = await db
+      .insert(chapters)
+      .values(chapter)
+      .returning();
+    return newChapter;
+  }
+
+  async getChapters(eventId?: string): Promise<Chapter[]> {
+    if (eventId) {
+      return await db
+        .select()
+        .from(chapters)
+        .where(eq(chapters.eventId, eventId))
+        .orderBy(asc(chapters.order));
+    }
+    return await db
+      .select()
+      .from(chapters)
+      .orderBy(asc(chapters.order));
+  }
+
+  async getChapter(id: string): Promise<Chapter | undefined> {
+    const [chapter] = await db
+      .select()
+      .from(chapters)
+      .where(eq(chapters.id, id));
+    return chapter;
+  }
+
+  async updateChapter(id: string, updates: Partial<Chapter>): Promise<Chapter> {
+    const [updated] = await db
+      .update(chapters)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(chapters.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteChapter(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete custom buttons for this chapter
+      await tx.delete(customButtons)
+        .where(and(
+          eq(customButtons.parentType, 'chapter'),
+          eq(customButtons.parentId, id)
+        ));
+      
+      // Delete story cards for this chapter
+      await tx.delete(storyCards)
+        .where(eq(storyCards.chapterId, id));
+      
+      // Delete sub-chapters for this chapter
+      await tx.delete(subChapters)
+        .where(eq(subChapters.chapterId, id));
+      
+      // Delete the chapter itself
+      await tx.delete(chapters)
+        .where(eq(chapters.id, id));
+    });
+  }
+  
+  // Sub-chapter operations
+  async createSubChapter(subChapter: Omit<typeof subChapters.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<SubChapter> {
+    const [newSubChapter] = await db
+      .insert(subChapters)
+      .values(subChapter)
+      .returning();
+    return newSubChapter;
+  }
+
+  async getSubChapters(chapterId: string): Promise<SubChapter[]> {
+    return await db
+      .select()
+      .from(subChapters)
+      .where(eq(subChapters.chapterId, chapterId))
+      .orderBy(asc(subChapters.order));
+  }
+
+  async getSubChapter(id: string): Promise<SubChapter | undefined> {
+    const [subChapter] = await db
+      .select()
+      .from(subChapters)
+      .where(eq(subChapters.id, id));
+    return subChapter;
+  }
+
+  async updateSubChapter(id: string, updates: Partial<SubChapter>): Promise<SubChapter> {
+    const [updated] = await db
+      .update(subChapters)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(subChapters.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteSubChapter(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete custom buttons for this sub-chapter
+      await tx.delete(customButtons)
+        .where(and(
+          eq(customButtons.parentType, 'sub_chapter'),
+          eq(customButtons.parentId, id)
+        ));
+      
+      // Delete the sub-chapter itself
+      await tx.delete(subChapters)
+        .where(eq(subChapters.id, id));
+    });
+  }
+  
+  // Story card operations
+  async createStoryCard(card: Omit<typeof storyCards.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<StoryCard> {
+    const [newCard] = await db
+      .insert(storyCards)
+      .values(card)
+      .returning();
+    return newCard;
+  }
+
+  async getStoryCards(chapterId: string): Promise<StoryCard[]> {
+    return await db
+      .select()
+      .from(storyCards)
+      .where(eq(storyCards.chapterId, chapterId))
+      .orderBy(asc(storyCards.order));
+  }
+
+  async getStoryCard(id: string): Promise<StoryCard | undefined> {
+    const [card] = await db
+      .select()
+      .from(storyCards)
+      .where(eq(storyCards.id, id));
+    return card;
+  }
+
+  async updateStoryCard(id: string, updates: Partial<StoryCard>): Promise<StoryCard> {
+    const [updated] = await db
+      .update(storyCards)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(storyCards.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteStoryCard(id: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      // Delete custom buttons for this story card
+      await tx.delete(customButtons)
+        .where(and(
+          eq(customButtons.parentType, 'story_card'),
+          eq(customButtons.parentId, id)
+        ));
+      
+      // Delete the story card itself
+      await tx.delete(storyCards)
+        .where(eq(storyCards.id, id));
+    });
+  }
+  
+  // Custom button operations
+  async createCustomButton(button: Omit<typeof customButtons.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<CustomButton> {
+    const [newButton] = await db
+      .insert(customButtons)
+      .values(button)
+      .returning();
+    return newButton;
+  }
+
+  async getCustomButtons(parentType: string, parentId: string): Promise<CustomButton[]> {
+    return await db
+      .select()
+      .from(customButtons)
+      .where(and(
+        eq(customButtons.parentType, parentType),
+        eq(customButtons.parentId, parentId)
+      ))
+      .orderBy(asc(customButtons.order));
+  }
+
+  async getCustomButton(id: string): Promise<CustomButton | undefined> {
+    const [button] = await db
+      .select()
+      .from(customButtons)
+      .where(eq(customButtons.id, id));
+    return button;
+  }
+
+  async updateCustomButton(id: string, updates: Partial<CustomButton>): Promise<CustomButton> {
+    const [updated] = await db
+      .update(customButtons)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(customButtons.id, id))
+      .returning();
+    return updated;
+  }
+
+  async deleteCustomButton(id: string): Promise<void> {
+    await db
+      .delete(customButtons)
+      .where(eq(customButtons.id, id));
+  }
+  
+  // User progress operations
+  async trackProgress(userId: string, chapterId: string, cardIndex: number): Promise<void> {
+    await db
+      .insert(userProgress)
+      .values({
+        userId,
+        chapterId,
+        cardIndex,
+        completedAt: new Date(),
+        lastAccessed: new Date(),
+      })
+      .onConflictDoNothing();
+  }
+
+  async getUserChapterProgress(userId: string, chapterId: string): Promise<UserProgress[]> {
+    return await db
+      .select()
+      .from(userProgress)
+      .where(and(
+        eq(userProgress.userId, userId),
+        eq(userProgress.chapterId, chapterId)
+      ))
+      .orderBy(asc(userProgress.cardIndex));
+  }
+
+  async getSubChapterProgress(userId: string, subChapterId: string): Promise<number> {
+    // This would need to be implemented based on your specific progress tracking logic
+    // For now, returning 0 as a placeholder
+    return 0;
+  }
 }
 
 // Type definitions for compatibility
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type ContentBackup = typeof contentBackups.$inferSelect;
+export type Chapter = typeof chapters.$inferSelect;
+export type SubChapter = typeof subChapters.$inferSelect;
+export type StoryCard = typeof storyCards.$inferSelect;
+export type CustomButton = typeof customButtons.$inferSelect;
+export type UserProgress = typeof userProgress.$inferSelect;
 
 export const storage = new DatabaseStorage();
