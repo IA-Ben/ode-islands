@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { storage } from '../../../../server/storage';
+import { withAuth, getSessionFromHeaders } from '../../../../server/auth';
 
 // Helper function to check unlock conditions
 export function checkUnlockConditions(conditions: any, context: any = {}): {
@@ -79,8 +79,8 @@ export async function GET(request: NextRequest) {
     const buttons = await storage.getCustomButtons(parentType, parentId);
     
     // Check unlock conditions for each button
-    const session = await getServerSession();
-    const userId = session?.user?.email || null;
+    const session = await getSessionFromHeaders(request);
+    const userId = session?.userId || null;
     
     const buttonsWithUnlock = buttons.map(button => {
       const unlockStatus = checkUnlockConditions(button.unlockConditions, {
@@ -102,13 +102,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
+    const session = (request as any).session;
     const data = await request.json();
     const button = await storage.createCustomButton({
       parentType: data.parentType,
@@ -128,3 +124,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create custom button' }, { status: 500 });
   }
 }
+
+export const POST = withAuth(handlePOST);

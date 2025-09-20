@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { storage } from '../../../../server/storage';
+import { withAuth } from '../../../../server/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -29,13 +29,9 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-    
+    const session = (request as any).session;
     const data = await request.json();
     const subChapter = await storage.createSubChapter({
       chapterId: data.chapterId,
@@ -51,3 +47,5 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to create sub-chapter' }, { status: 500 });
   }
 }
+
+export const POST = withAuth(handlePOST);
