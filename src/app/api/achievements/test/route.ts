@@ -7,7 +7,7 @@ import { scoringService, type AwardContext } from '../../../../../server/scoring
  * Allows testing various achievement scenarios
  */
 
-async function handlePOST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
     const session = (request as any).session;
 
@@ -21,7 +21,7 @@ async function handlePOST(request: NextRequest) {
     const body = (request as any).parsedBody || await request.json();
     const { testType, testData } = body;
 
-    let results: any = {};
+    let results: Record<string, any> = {};
 
     switch (testType) {
       case 'award_activity':
@@ -137,6 +137,4 @@ async function handlePOST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-export const POST = withAuth(handlePOST);
+});
