@@ -69,7 +69,7 @@ export async function GET(
         endTime: eventData.endTime,
         isActive: eventData.isActive
       }
-    });
+    };
     
     // Generate ETag for caching
     const dataString = JSON.stringify(responseData);
