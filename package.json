@@ -6,6 +6,7 @@
     "dev": "tsx server.js",
     "dev:next": "next dev -H 0.0.0.0",
     "build": "next build",
+    "build:fast": "NEXT_TELEMETRY_DISABLED=1 NODE_ENV=production next build --no-lint",
     "start": "NODE_ENV=production tsx server.js",
     "start:next": "next start",
     "lint": "next lint",
