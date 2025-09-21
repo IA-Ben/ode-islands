@@ -4,7 +4,7 @@ const http = require('http');
 
 const dev = process.env.NODE_ENV !== 'production';
 const hostname = '0.0.0.0';
-const port = process.env.PORT || (dev ? 5000 : 3000);
+const port = process.env.PORT || 5000;
 
 const app = next({ dev, hostname, port });
 const handle = app.getRequestHandler();
