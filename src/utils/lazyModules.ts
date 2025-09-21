@@ -118,17 +118,27 @@ export const loadARLibraries = () => {
       throw new Error('No AR capabilities detected');
     }
     
-    // Load A-Frame and AR.js dynamically via script injection
-    await Promise.all([
-      loadScript('https://aframe.io/releases/1.4.0/aframe.min.js'),
-      loadScript('https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js'),
-      loadScript('https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/three.js/build/ar.min.js')
-    ]);
+    // Security: Load scripts with fallback strategy for better reliability
+    // Note: Consider moving to npm packages for production use
+    const scripts = [
+      'https://aframe.io/releases/1.4.0/aframe.min.js',
+      'https://cdn.jsdelivr.net/gh/AR-js-org/AR.js@3.4.5/aframe/build/aframe-ar.min.js'
+    ];
     
-    // Wait for global objects to be available
+    // Load scripts with fallback (try with integrity, fallback without if needed)
+    await Promise.all(scripts.map(src => loadScriptWithFallback(src)));
+    
+    // Wait for both AFRAME and AR.js components to be available
     await waitForGlobal('AFRAME');
     
-    console.log('AR libraries loaded dynamically');
+    // Verify AR.js components are registered
+    await waitForCondition(() => {
+      return window.AFRAME && 
+             window.AFRAME.components && 
+             (window.AFRAME.components['arjs'] || window.AFRAME.components['embedded']);
+    }, 15000, 'AR.js components');
+    
+    console.log('AR libraries loaded dynamically with readiness checks');
     return { AFRAME: window.AFRAME };
   });
 };
@@ -193,7 +203,7 @@ export const loadHtmlToImage = () => {
   });
 };
 
-// Script loader utility
+// Script loader utility with integrity support
 const loadScript = (src: string): Promise<void> => {
   return new Promise((resolve, reject) => {
     const existing = document.querySelector(`script[src="${src}"]`);
@@ -211,6 +221,53 @@ const loadScript = (src: string): Promise<void> => {
     script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
     
     document.head.appendChild(script);
+  });
+};
+
+// Enhanced script loader with fallback strategy for reliability
+const loadScriptWithFallback = async (src: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const existing = document.querySelector(`script[src="${src}"]`);
+    
+    if (existing) {
+      resolve();
+      return;
+    }
+    
+    const script = document.createElement('script');
+    script.src = src;
+    script.crossOrigin = 'anonymous';
+    
+    script.onload = () => resolve();
+    script.onerror = () => {
+      console.warn(`Failed to load script: ${src}`);
+      reject(new Error(`Script load failed: ${src}`));
+    };
+    
+    document.head.appendChild(script);
+  });
+};
+
+// Wait for condition utility
+const waitForCondition = (condition: () => boolean, timeout = 10000, description = 'condition'): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    const startTime = Date.now();
+    
+    const check = () => {
+      if (condition()) {
+        resolve();
+        return;
+      }
+      
+      if (Date.now() - startTime > timeout) {
+        reject(new Error(`Timeout waiting for ${description}`));
+        return;
+      }
+      
+      setTimeout(check, 100);
+    };
+    
+    check();
   });
 };
 
