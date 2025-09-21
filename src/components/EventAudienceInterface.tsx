@@ -1,14 +1,24 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useSharedWebSocket } from '@/contexts/WebSocketContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import QRScanner from './QRScanner';
 import HelpButton from './HelpButton';
-import VenueNavigation from './VenueNavigation';
 import { useHelp } from '@/hooks/useHelp';
 import { getCsrfToken, fetchCsrfToken } from '@/lib/csrfUtils';
+import dynamic from 'next/dynamic';
+
+// Dynamic imports for heavy modules (loaded only when needed)
+const QRScanner = dynamic(() => import('./QRScanner'), {
+  loading: () => <div className="p-4 text-white/60">Loading QR Scanner...</div>,
+  ssr: false
+});
+
+const VenueNavigation = dynamic(() => import('./VenueNavigation'), {
+  loading: () => <div className="p-4 text-white/60">Loading venue info...</div>,
+  ssr: false
+});
 
 // Types for the Event audience experience
 interface ShowSession {
@@ -90,19 +100,12 @@ export default function EventAudienceInterface({ eventId, userId, theme }: Event
   const interpolationRef = useRef<NodeJS.Timeout | null>(null);
   const heartbeatRequestRef = useRef<NodeJS.Timeout | null>(null);
 
-  // WebSocket connection for real-time sync
-  const wsUrl = typeof window !== 'undefined' 
-    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
-    : null;
+  // Use shared WebSocket connection for better resilience
+  const { connectionStatus, sendMessage, lastMessage } = useSharedWebSocket();
 
-  const { connectionStatus, sendMessage } = useWebSocket(wsUrl, {
-    onMessage: handleWebSocketMessage,
-    reconnectInterval: 3000,
-    maxReconnectAttempts: 10,
-  });
-
-  // WebSocket message handler
-  function handleWebSocketMessage(message: any) {
+  // WebSocket message handler (now triggered by shared context)
+  const handleWebSocketMessage = useCallback((message: any) => {
+    if (!message) return;
     switch (message.type) {
       case 'heartbeat':
         handleHeartbeat(message as HeartbeatMessage);
@@ -122,8 +125,18 @@ export default function EventAudienceInterface({ eventId, userId, theme }: Event
       case 'resume_audience':
         setIsHeadsUpMode(false);
         break;
+      default:
+        console.warn('Unknown message type:', message.type);
+        break;
     }
-  }
+  }, []);
+
+  // Effect to handle shared WebSocket messages
+  useEffect(() => {
+    if (lastMessage) {
+      handleWebSocketMessage(lastMessage);
+    }
+  }, [lastMessage, handleWebSocketMessage]);
 
   // Handle server heartbeat for timecode sync
   const handleHeartbeat = useCallback((message: HeartbeatMessage) => {

@@ -24,10 +24,27 @@ async function handleGET(request: NextRequest) {
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(liveEvents.startTime));
 
-    return NextResponse.json({
+    // Generate ETag based on content for cache invalidation
+    const dataString = JSON.stringify(events);
+    const etag = `"${Buffer.from(dataString).toString('base64').slice(0, 16)}"`;
+    
+    // Check if client has cached version
+    const clientETag = request.headers.get('if-none-match');
+    if (clientETag === etag) {
+      return new NextResponse(null, { status: 304 });
+    }
+
+    const response = NextResponse.json({
       success: true,
       events: events,
     });
+
+    // Add caching headers (private for auth-gated endpoint)
+    response.headers.set('ETag', etag);
+    response.headers.set('Cache-Control', 'private, max-age=30, stale-while-revalidate=300');
+    response.headers.set('Vary', 'Accept-Encoding');
+    
+    return response;
 
   } catch (error) {
     console.error('Events fetch error:', error instanceof Error ? error.message : String(error));

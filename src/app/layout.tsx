@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { MobileProvider } from "@/contexts/MobileContext";
+import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -33,7 +34,9 @@ export default function RootLayout({
       <body className={`${manrope.variable} antialiased`}>
         <ThemeProvider>
           <MobileProvider>
-            {children}
+            <WebSocketProvider>
+              {children}
+            </WebSocketProvider>
           </MobileProvider>
         </ThemeProvider>
       </body>

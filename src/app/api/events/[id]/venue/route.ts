@@ -46,7 +46,7 @@ export async function GET(
     // Check if venue information is available
     const hasVenueInfo = !!(eventData.venueName || eventData.venueAddress);
     
-    return NextResponse.json({
+    const responseData = {
       success: true,
       hasVenueInfo,
       venue: {
@@ -70,6 +70,25 @@ export async function GET(
         isActive: eventData.isActive
       }
     });
+    
+    // Generate ETag for caching
+    const dataString = JSON.stringify(responseData);
+    const etag = `"${Buffer.from(dataString).toString('base64').slice(0, 16)}"`;
+    
+    // Check if client has cached version
+    const clientETag = request.headers.get('if-none-match');
+    if (clientETag === etag) {
+      return new NextResponse(null, { status: 304 });
+    }
+
+    const response = NextResponse.json(responseData);
+
+    // Add caching headers for venue data (longer cache since venue info changes infrequently)
+    response.headers.set('ETag', etag);
+    response.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=1800');
+    response.headers.set('Vary', 'Accept-Encoding');
+    
+    return response;
     
   } catch (error) {
     console.error('Error fetching venue information:', error);

@@ -305,6 +305,16 @@ export const liveEvents = pgTable("live_events", {
   
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    // Performance indexes for common queries
+    isActiveIndex: index("live_events_is_active_idx").on(table.isActive),
+    startTimeIndex: index("live_events_start_time_idx").on(table.startTime),
+    endTimeIndex: index("live_events_end_time_idx").on(table.endTime),
+    timeRangeIndex: index("live_events_time_range_idx").on(table.startTime, table.endTime),
+    activeTimeIndex: index("live_events_active_time_idx").on(table.isActive, table.startTime, table.endTime),
+    createdByIndex: index("live_events_created_by_idx").on(table.createdBy),
+  };
 });
 
 export const qaSessions = pgTable("qa_sessions", {
