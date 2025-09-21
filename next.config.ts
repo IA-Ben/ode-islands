@@ -19,7 +19,8 @@ const nextConfig: NextConfig = {
   },
   trailingSlash: false,
   // Ensure the app binds to 0.0.0.0 for external access in Replit
-  serverExternalPackages: []
+  serverExternalPackages: [],
+  // Removed experimental features that could cause build timeouts
 }
 
 export default nextConfig

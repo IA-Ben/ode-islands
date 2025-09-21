@@ -161,14 +161,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   // Load theme from localStorage on mount
   useEffect(() => {
-    try {
-      const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
-      if (savedTheme) {
-        const parsedTheme = JSON.parse(savedTheme)
-        setTheme({ ...DEFAULT_THEME, ...parsedTheme })
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY)
+        if (savedTheme) {
+          const parsedTheme = JSON.parse(savedTheme)
+          setTheme({ ...DEFAULT_THEME, ...parsedTheme })
+        }
+      } catch (error) {
+        console.warn('Failed to load saved theme:', error)
       }
-    } catch (error) {
-      console.warn('Failed to load saved theme:', error)
     }
   }, [])
 
@@ -178,6 +180,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme])
 
   const applyThemeToCSS = () => {
+    if (typeof document === 'undefined') return;
     const root = document.documentElement
     
     // Apply color variables
@@ -228,10 +231,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(newTheme)
     
     // Save to localStorage
-    try {
-      localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(newTheme))
-    } catch (error) {
-      console.warn('Failed to save theme:', error)
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.setItem(THEME_STORAGE_KEY, JSON.stringify(newTheme))
+      } catch (error) {
+        console.warn('Failed to save theme:', error)
+      }
     }
   }
 
@@ -244,10 +249,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setTheme(newTheme)
     
     // Clear from localStorage
-    try {
-      localStorage.removeItem(THEME_STORAGE_KEY)
-    } catch (error) {
-      console.warn('Failed to clear saved theme:', error)
+    if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+      try {
+        localStorage.removeItem(THEME_STORAGE_KEY)
+      } catch (error) {
+        console.warn('Failed to clear saved theme:', error)
+      }
     }
   }
 

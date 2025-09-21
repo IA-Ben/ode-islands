@@ -35,7 +35,7 @@ export function WebSocketProvider({ children, url = '/ws' }: WebSocketProviderPr
     'connecting' | 'open' | 'closing' | 'closed' | 'error'
   >('closed');
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
-  const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [isOnline, setIsOnline] = useState(true); // Default to true, will be updated in useEffect
 
   // Exponential backoff with jitter
   const getReconnectDelay = useCallback((attempt: number): number => {
@@ -228,6 +228,13 @@ export function WebSocketProvider({ children, url = '/ws' }: WebSocketProviderPr
     reconnectAttempts.current = 0;
     setTimeout(connect, 100);
   }, [connect, disconnect]);
+
+  // Initialize online status on client-side
+  useEffect(() => {
+    if (typeof navigator !== 'undefined') {
+      setIsOnline(navigator.onLine);
+    }
+  }, []);
 
   // Handle online/offline status
   useEffect(() => {
