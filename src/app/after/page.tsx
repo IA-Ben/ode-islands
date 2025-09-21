@@ -10,7 +10,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 const HeroRecapCard = lazy(() => import("@/components/HeroRecapCard"));
 const EventMemoriesGallery = lazy(() => import("@/components/EventMemoriesGallery"));
 const CertificateManager = lazy(() => import("@/components/CertificateManager"));
-const MemoryWallet = lazy(() => import("@/components/MemoryWallet"));
+const MemoryWalletModern = lazy(() => import("@/components/MemoryWalletModern"));
 const CollectionGrid = lazy(() => import("@/components/CollectionGrid"));
 const ScoreProgressPanel = lazy(() => import("@/components/ScoreProgressPanel"));
 const Leaderboard = lazy(() => import("@/components/Leaderboard"));
@@ -263,13 +263,22 @@ export default function AfterPage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
                 <AnimateText active={animateIn} delay={1800}>
-                  Memory Wallet Collectibles
+                  Memory Wallet
                 </AnimateText>
               </h3>
-              <p className="text-white/80 text-lg">Your digital passport with Story Cards, Show Activations, and Chapter Stamps</p>
+              <p className="text-white/80 text-lg mb-6">Your collected memories from The Ode Islands journey</p>
+              <button
+                onClick={() => window.location.href = '/memory-wallet'}
+                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 px-4 py-2 rounded-lg font-medium transition-colors"
+              >
+                View Full Memory Wallet →
+              </button>
             </div>
             <Suspense fallback={<ComponentSkeleton height="500px" />}>
-              <CollectionGrid eventId="default-event" className="w-full" />
+              <MemoryWalletModern 
+                showHeader={false}
+                className="w-full" 
+              />
             </Suspense>
           </div>
         );

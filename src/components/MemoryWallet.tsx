@@ -189,17 +189,59 @@ export default function MemoryWallet({
     );
   }
 
-  if (error) {
+  // Show empty grid with option to retry if there's an error
+  const showEmptyState = error || memories.length === 0;
+
+  if (showEmptyState && !loading) {
     return (
-      <div className={`memory-wallet-error ${className}`}>
+      <div className={`memory-wallet ${className}`}>
+        {showHeader && (
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 
+                className="text-3xl font-bold"
+                style={{ color: theme.colors.secondary }}
+              >
+                Memory Wallet
+              </h2>
+            </div>
+            <div className="text-white/60 mb-6">
+              Collected memories from your journey through cards, chapters, and events
+            </div>
+          </div>
+        )}
+        
         <div className="text-center py-12">
-          <p className="text-red-400 mb-4">{error}</p>
-          <Button 
-            onClick={fetchMemories}
-            className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+          <div className="text-6xl mb-4">📦</div>
+          <h3 className="text-xl font-semibold text-white mb-2">
+            {error ? 'Memory Wallet' : 'No memories yet'}
+          </h3>
+          <p className="text-white/60 mb-6">
+            {error ? 'Start exploring to collect your first memory!' : 'Start exploring to collect your first memory!'}
+          </p>
+          {error ? (
+            <Button 
+              onClick={fetchMemories}
+              className="bg-white/10 hover:bg-white/20 text-white border border-white/20 mr-3"
+            >
+              Try Again
+            </Button>
+          ) : null}
+          <Button
+            onClick={() => window.location.href = '/before'}
+            className="bg-white text-black hover:bg-gray-200"
           >
-            Try Again
+            Start Exploring
           </Button>
+        </div>
+        
+        {/* Show empty grid for visual consistency */}
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 mt-8">
+          {[...Array(15)].map((_, i) => (
+            <div key={i} className="aspect-square bg-white/5 rounded-lg border border-white/10 flex items-center justify-center">
+              <div className="text-white/20 text-2xl">📦</div>
+            </div>
+          ))}
         </div>
       </div>
     );
