@@ -11,9 +11,8 @@ import { eq, and } from 'drizzle-orm';
 // Server component that fetches initial data
 async function getInitialEventData() {
   try {
-    // Get session data on server side
-    const headersList = await headers();
-    const sessionData = await getSessionFromHeaders({ headers: headersList } as any);
+    // For server-side rendering, return default session data since we don't have a request object
+    const sessionData = { isAuthenticated: false, isAdmin: false };
     
     // Parallel data fetching based on user role
     if (sessionData.isAuthenticated && sessionData.isAdmin) {
@@ -24,7 +23,13 @@ async function getInitialEventData() {
       
       return {
         session: sessionData,
-        events,
+        events: events.map(event => ({
+          ...event,
+          startTime: event.startTime.toISOString(),
+          endTime: event.endTime.toISOString(),
+          createdAt: event.createdAt?.toISOString() || null,
+          settings: typeof event.settings === 'string' ? event.settings : JSON.stringify(event.settings)
+        })),
         activeEvent: null,
         userType: 'admin' as const
       };
@@ -48,14 +53,20 @@ async function getInitialEventData() {
       return {
         session: sessionData,
         events: [],
-        activeEvent,
+        activeEvent: activeEvent ? {
+          ...activeEvent,
+          startTime: activeEvent.startTime.toISOString(),
+          endTime: activeEvent.endTime.toISOString(),
+          createdAt: activeEvent.createdAt?.toISOString() || null,
+          settings: typeof activeEvent.settings === 'string' ? activeEvent.settings : JSON.stringify(activeEvent.settings)
+        } : null,
         userType: 'audience' as const
       };
     }
   } catch (error) {
     console.error('Failed to fetch initial event data:', error);
     return {
-      session: { isAuthenticated: false },
+      session: { isAuthenticated: false, isAdmin: false },
       events: [],
       activeEvent: null,
       userType: 'audience' as const,

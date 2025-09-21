@@ -10,12 +10,10 @@ const nextConfig: NextConfig = {
     remotePatterns: [{ protocol: 'https', hostname: config.storage.hostname }]
   },
   typescript: {
-    ignoreBuildErrors: true
+    ignoreBuildErrors: false
   },
   eslint: {
-    // Warning: This allows production builds to successfully complete even if
-    // your project has ESLint errors.
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   trailingSlash: false,
   // Ensure the app binds to 0.0.0.0 for external access in Replit
