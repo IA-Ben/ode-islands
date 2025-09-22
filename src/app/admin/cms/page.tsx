@@ -126,9 +126,17 @@ export default function CMSPage() {
               const userData = await userResponse.json();
               console.log('User data received:', userData);
               
-              // Validate user data structure
-              if (userData && typeof userData === 'object' && userData.id) {
-                setUser(userData);
+              // Validate user data structure - handle unified auth response format
+              if (userData && typeof userData === 'object') {
+                // Check if this is the unified auth response format
+                if (userData.user && userData.user.id) {
+                  setUser(userData.user); // Extract user object from unified response
+                } else if (userData.id) {
+                  setUser(userData); // Direct user object format
+                } else {
+                  console.error('Invalid user data structure:', userData);
+                  setUser(null);
+                }
               } else {
                 console.error('Invalid user data structure:', userData);
                 setUser(null);
