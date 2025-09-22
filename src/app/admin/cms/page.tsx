@@ -540,16 +540,25 @@ export default function CMSPage() {
       headerContent={
         <div className="flex items-center justify-between w-full">
           <div className="flex items-center">
-            <div className="text-white/90 text-lg font-semibold">
+            <div 
+              className="text-lg font-semibold"
+              style={{ color: currentTheme.title }}
+            >
               Content Management System
             </div>
           </div>
 
           <div className="text-center flex-1">
-            <div className="text-white/90 text-base font-semibold">
+            <div 
+              className="text-base font-semibold"
+              style={{ color: currentTheme.title }}
+            >
               {getPhaseTitle(selectedPhase)}
             </div>
-            <div className="text-white/60 text-sm">
+            <div 
+              className="text-sm"
+              style={{ color: currentTheme.subtitle }}
+            >
               {new Date().toLocaleDateString('en-US', { 
                 weekday: 'long', 
                 month: 'short', 
@@ -560,10 +569,16 @@ export default function CMSPage() {
 
           <div className="flex items-center space-x-3">
             <div className="text-right mr-4">
-              <div className="text-sm text-white/80 font-medium">
+              <div 
+                className="text-sm font-medium"
+                style={{ color: currentTheme.subtitle }}
+              >
                 {user.firstName} {user.lastName}
               </div>
-              <div className="text-xs text-white/60">
+              <div 
+                className="text-xs"
+                style={{ color: currentTheme.description }}
+              >
                 {user.email}
               </div>
             </div>
