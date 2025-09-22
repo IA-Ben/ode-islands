@@ -42,30 +42,30 @@ export default function CMSPage() {
   const [csrfToken, setCsrfToken] = useState<string>('');
   const [animateIn, setAnimateIn] = useState(false);
   
-  // Professional Lumus-inspired themes for different CMS phases
+  // Professional Memory Wallet-inspired themes for different CMS phases
   const tabThemes: Record<string, TabTheme> = {
     before: {
-      background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+      background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
       overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
       title: '#ffffff',
-      subtitle: '#e2e8f0',
-      description: '#cbd5e0',
+      subtitle: '#e879a5', // Memory Wallet primary pink
+      description: '#f0f8ee', // Memory Wallet light sage
       shadow: true
     },
     event: {
-      background: 'linear-gradient(135deg, #7c2d12 0%, #9a3412 100%)',
+      background: 'linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%)',
       overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
       title: '#ffffff',
-      subtitle: '#fef7f0',
-      description: '#fed7aa',
+      subtitle: '#e879a5', // Memory Wallet primary pink
+      description: '#f0f8ee', // Memory Wallet light sage
       shadow: true
     },
     after: {
-      background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
+      background: 'linear-gradient(135deg, #047857 0%, #10b981 100%)', // Memory Wallet green
       overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
       title: '#ffffff',
-      subtitle: '#ecfdf5',
-      description: '#d1fae5',
+      subtitle: '#e879a5', // Memory Wallet primary pink
+      description: '#f0f8ee', // Memory Wallet light sage
       shadow: true
     }
   };
