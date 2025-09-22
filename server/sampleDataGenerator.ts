@@ -63,7 +63,8 @@ export async function generateSampleEventData(adminUserId: string): Promise<Samp
   };
 
   // Use a database transaction for data consistency
-  return await db.transaction(async (tx) => {
+  try {
+    return await db.transaction(async (tx) => {
     // 1. Create a comprehensive live event with sample marker
     const eventData = {
       title: "The Ode Islands: Immersive Journey",
@@ -73,8 +74,8 @@ export async function generateSampleEventData(adminUserId: string): Promise<Samp
       isActive: true,
       venueName: "Digital Experience Theater",
       venueAddress: "Interactive Virtual Space, Cloud District",
-      venueLatitude: 40.7128,
-      venueLongitude: -74.0060,
+      venueLatitude: "40.7128",
+      venueLongitude: "-74.0060",
       venueDetails: {
         capacity: 500,
         doorsOpen: "18:00",
@@ -550,10 +551,9 @@ export async function generateSampleEventData(adminUserId: string): Promise<Samp
                          summary.chatMessages + summary.memories + summary.collectibles + 
                          summary.interactiveChoices + summary.community + summary.merchandise;
 
-    console.log('Sample data generation completed successfully:', summary);
-    return summary;
-  }); // End transaction
-
+      console.log('Sample data generation completed successfully:', summary);
+      return summary;
+    }); // End transaction
   } catch (error) {
     console.error('Error generating sample data:', error);
     throw new Error(`Failed to generate sample data: ${error instanceof Error ? error.message : 'Unknown error'}`);
