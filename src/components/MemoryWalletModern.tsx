@@ -107,21 +107,43 @@ export default function MemoryWalletModern({
       <div className={`memory-wallet-modern ${className}`}>
         {showHeader && (
           <div className="mb-6">
-            <div className="h-8 bg-gray-800 rounded w-48 mb-4 animate-pulse"></div>
-            <div className="h-4 bg-gray-800 rounded w-64 mb-6 animate-pulse"></div>
+            <div 
+              className="h-8 rounded w-48 mb-4 animate-pulse"
+              style={{ backgroundColor: theme.colors.backgroundDark }}
+            ></div>
+            <div 
+              className="h-4 rounded w-64 mb-6 animate-pulse"
+              style={{ backgroundColor: theme.colors.backgroundDark }}
+            ></div>
           </div>
         )}
         
         {/* Progress Skeleton */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6">
-          <div className="h-4 bg-gray-700 rounded w-32 mb-2 animate-pulse"></div>
-          <div className="h-2 bg-gray-700 rounded-full animate-pulse"></div>
+        <div 
+          className="border rounded-lg p-4 mb-6"
+          style={{ 
+            backgroundColor: theme.colors.surface,
+            borderColor: theme.colors.backgroundDark 
+          }}
+        >
+          <div 
+            className="h-4 rounded w-32 mb-2 animate-pulse"
+            style={{ backgroundColor: theme.colors.backgroundDark }}
+          ></div>
+          <div 
+            className="h-2 rounded-full animate-pulse"
+            style={{ backgroundColor: theme.colors.backgroundDark }}
+          ></div>
         </div>
 
         {/* Grid Skeleton */}
         <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {[...Array(18)].map((_, i) => (
-            <div key={i} className="aspect-square bg-gray-800 rounded-lg animate-pulse"></div>
+            <div 
+              key={i} 
+              className="aspect-square rounded-lg animate-pulse"
+              style={{ backgroundColor: theme.colors.backgroundDark }}
+            ></div>
           ))}
         </div>
       </div>
@@ -132,10 +154,15 @@ export default function MemoryWalletModern({
     return (
       <div className={`memory-wallet-modern ${className}`}>
         <div className="text-center py-12">
-          <p className="text-red-400 mb-4">{error}</p>
+          <p className="mb-4" style={{ color: theme.colors.error }}>{error}</p>
           <Button 
             onClick={fetchWalletData}
-            className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+            style={{
+              backgroundColor: theme.colors.surface + '20',
+              color: theme.colors.textPrimary,
+              borderColor: theme.colors.backgroundDark
+            }}
+            className="border hover:opacity-80"
           >
             Try Again
           </Button>
@@ -149,11 +176,25 @@ export default function MemoryWalletModern({
       <div className={`memory-wallet-modern ${className}`}>
         <div className="text-center py-12">
           <div className="text-6xl mb-4">📦</div>
-          <h3 className="text-xl font-semibold text-white mb-2">No memories yet</h3>
-          <p className="text-white/60 mb-6">Start exploring to collect your first memory!</p>
+          <h3 
+            className="text-xl font-semibold mb-2"
+            style={{ color: theme.colors.textPrimary }}
+          >
+            No memories yet
+          </h3>
+          <p 
+            className="mb-6"
+            style={{ color: theme.colors.textSecondary }}
+          >
+            Start exploring to collect your first memory!
+          </p>
           <Button
             onClick={() => router.push('/before')}
-            className="bg-white text-black hover:bg-gray-200"
+            style={{
+              backgroundColor: theme.colors.primary,
+              color: theme.colors.textInverse
+            }}
+            className="hover:opacity-90"
           >
             Start Exploring
           </Button>
@@ -166,8 +207,15 @@ export default function MemoryWalletModern({
     <div className={`memory-wallet-modern ${className}`}>
       {showHeader && (
         <div className="mb-6">
-          <h2 className="text-3xl font-bold text-white mb-2">Memory Wallet</h2>
-          <p className="text-white/60">Your collection from The Ode Islands journey</p>
+          <h2 
+            className="text-3xl font-bold mb-2"
+            style={{ color: theme.colors.textPrimary }}
+          >
+            Memory Wallet
+          </h2>
+          <p style={{ color: theme.colors.textSecondary }}>
+            Your collection from The Ode Islands journey
+          </p>
         </div>
       )}
 
@@ -220,9 +268,22 @@ export default function MemoryWalletModern({
             placeholder="Search memories..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full px-4 py-2 pl-10 bg-gray-900 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-green-500"
+            className="w-full px-4 py-2 pl-10 rounded-lg border focus:outline-none"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.backgroundDark,
+              color: theme.colors.textPrimary
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.secondary}
+            onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.backgroundDark}
           />
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg 
+            className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+            style={{ color: theme.colors.textMuted }}
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
         </div>
@@ -232,7 +293,14 @@ export default function MemoryWalletModern({
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
-            className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-green-500"
+            className="px-3 py-1 border rounded-lg text-sm focus:outline-none"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.backgroundDark,
+              color: theme.colors.textPrimary
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.secondary}
+            onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.backgroundDark}
           >
             <option value="all">All Types</option>
             <option value="stamp">Stamps</option>
@@ -244,7 +312,14 @@ export default function MemoryWalletModern({
           <select
             value={filterRarity}
             onChange={(e) => setFilterRarity(e.target.value)}
-            className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-green-500"
+            className="px-3 py-1 border rounded-lg text-sm focus:outline-none"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.backgroundDark,
+              color: theme.colors.textPrimary
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.secondary}
+            onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.backgroundDark}
           >
             <option value="all">All Rarities</option>
             <option value="common">Common</option>
@@ -255,7 +330,14 @@ export default function MemoryWalletModern({
           <select
             value={filterOwned}
             onChange={(e) => setFilterOwned(e.target.value)}
-            className="px-3 py-1 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-green-500"
+            className="px-3 py-1 border rounded-lg text-sm focus:outline-none"
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderColor: theme.colors.backgroundDark,
+              color: theme.colors.textPrimary
+            }}
+            onFocus={(e) => e.currentTarget.style.borderColor = theme.colors.secondary}
+            onBlur={(e) => e.currentTarget.style.borderColor = theme.colors.backgroundDark}
           >
             <option value="all">All Items</option>
             <option value="owned">Owned</option>

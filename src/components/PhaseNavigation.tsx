@@ -71,9 +71,9 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
 
   return (
     <div 
-      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-emerald-200/20"
+      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b"
       style={{ 
-        backgroundColor: '#000000',
+        backgroundColor: theme.colors.surface,
         borderColor: `${theme.colors.secondary}40` 
       }}>
       <div className="container mx-auto px-4">
@@ -86,13 +86,9 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                 <div key={phase.id} className="flex items-center">
                   <button
                     onClick={() => handlePhaseChange(phase.id)}
-                    className={`relative px-6 py-3 text-lg font-medium transition-all duration-300 ${
-                      currentPhase === phase.id
-                        ? 'text-white scale-105'
-                        : 'text-white/60 hover:text-white/90 hover:scale-102'
-                    } ${isMobile ? 'px-3 py-2 text-base' : ''}`}
+                    className={`relative px-6 py-3 text-lg font-medium transition-all duration-300 scale-105 hover:scale-102 ${isMobile ? 'px-3 py-2 text-base' : ''}`}
                     style={{
-                      color: currentPhase === phase.id ? theme.colors.primary : undefined
+                      color: currentPhase === phase.id ? theme.colors.primary : theme.colors.textSecondary
                     }}
                   >
                     {phase.label}
@@ -107,7 +103,13 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                     
                     {/* Subtle description on hover - hide on mobile when collapsed */}
                     {!(isMobile && navigationCollapsed) && (
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1 bg-black/80 text-xs text-white/80 rounded opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none">
+                      <div 
+                        className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1 text-xs rounded opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none"
+                        style={{
+                          backgroundColor: `${theme.colors.surface}F0`,
+                          color: theme.colors.textSecondary
+                        }}
+                      >
                         {phase.description}
                       </div>
                     )}
@@ -115,7 +117,10 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                   
                   {/* Separator */}
                   {index < phases.length - 1 && (
-                    <div className="mx-4 h-6 w-px bg-white/20" />
+                    <div 
+                      className="mx-4 h-6 w-px" 
+                      style={{ backgroundColor: `${theme.colors.textMuted}40` }}
+                    />
                   )}
                 </div>
               ))}
@@ -124,7 +129,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
             {/* Mobile current phase indicator - show when collapsed */}
             {isMobile && navigationCollapsed && (
               <div className="flex items-center">
-                <span className="text-white/90 font-medium" style={{ color: theme.colors.primary }}>
+                <span className="font-medium" style={{ color: theme.colors.primary }}>
                   {phases.find(p => p.id === currentPhase)?.label}
                 </span>
               </div>
@@ -140,7 +145,17 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                       {/* Progress Button */}
                       <button
                         onClick={handleProgressClick}
-                        className="flex items-center gap-2 px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-all duration-200"
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200"
+                        style={{
+                          backgroundColor: theme.colors.primary,
+                          color: theme.colors.textInverse
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.opacity = '0.9'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.opacity = '1'
+                        }}
                       >
                         <ScoreBadge 
                           compact={true}
@@ -155,7 +170,20 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                       {isAdmin && (
                         <button
                           onClick={() => router.push('/admin/cms')}
-                          className="flex items-center space-x-2 bg-amber-500/20 hover:bg-amber-500/30 backdrop-blur-sm border border-amber-500/30 hover:border-amber-500/50 text-amber-200 hover:text-amber-100 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                          className="flex items-center space-x-2 backdrop-blur-sm border px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                          style={{
+                            backgroundColor: `${theme.colors.accent}30`,
+                            borderColor: `${theme.colors.accent}50`,
+                            color: theme.colors.textInverse
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.backgroundColor = `${theme.colors.accent}40`
+                            e.currentTarget.style.borderColor = `${theme.colors.accent}70`
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.backgroundColor = `${theme.colors.accent}30`
+                            e.currentTarget.style.borderColor = `${theme.colors.accent}50`
+                          }}
                           title="Admin CMS Access"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -169,16 +197,33 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                       {/* User Profile & Logout */}
                       <div className="flex items-center space-x-2">
                         <div className="hidden md:block text-right">
-                          <div className="text-xs text-white/80 font-medium">
+                          <div 
+                            className="text-xs font-medium"
+                            style={{ color: theme.colors.textPrimary }}
+                          >
                             {user?.firstName} {user?.lastName}
                           </div>
-                          <div className="text-xs text-white/60">
+                          <div 
+                            className="text-xs"
+                            style={{ color: theme.colors.textSecondary }}
+                          >
                             {isAdmin ? 'Administrator' : 'Explorer'}
                           </div>
                         </div>
                         <button
                           onClick={() => window.location.href = '/api/logout'}
-                          className="flex items-center space-x-2 bg-white/10 hover:bg-white/20 backdrop-blur-sm border border-white/20 hover:border-white/30 text-white/80 hover:text-white px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                          className="flex items-center space-x-2 backdrop-blur-sm border px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                          style={{
+                            backgroundColor: theme.colors.backgroundDark,
+                            borderColor: theme.colors.textMuted,
+                            color: theme.colors.textPrimary
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.opacity = '0.8'
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.opacity = '1'
+                          }}
                           title="Sign Out"
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -192,7 +237,18 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                     // Show Login button when not authenticated
                     <button
                       onClick={() => window.location.href = '/api/login'}
-                      className="flex items-center space-x-2 bg-blue-500/20 hover:bg-blue-500/30 backdrop-blur-sm border border-blue-500/30 hover:border-blue-500/50 text-blue-200 hover:text-blue-100 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                      className="flex items-center space-x-2 backdrop-blur-sm border px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
+                      style={{
+                        backgroundColor: theme.colors.primary,
+                        borderColor: theme.colors.primary,
+                        color: theme.colors.textInverse
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.opacity = '0.9'
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.opacity = '1'
+                      }}
                       title="Sign In"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,7 +264,18 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
               {isAuthenticated && (
                 <button
                   onClick={() => router.push('/memory-wallet')}
-                  className="p-2 text-white/80 hover:text-white transition-colors hover:bg-white/10 rounded-lg"
+                  className="p-2 transition-colors rounded-lg"
+                  style={{ 
+                    color: `${theme.colors.textInverse}D0`
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.color = theme.colors.textInverse
+                    e.currentTarget.style.backgroundColor = `${theme.colors.surface}20`
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.color = `${theme.colors.textInverse}D0`
+                    e.currentTarget.style.backgroundColor = 'transparent'
+                  }}
                   aria-label="Memory Wallet"
                   title="Memory Wallet"
                 >
