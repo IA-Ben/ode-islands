@@ -216,12 +216,12 @@ export const ImmersivePageLayout: React.FC<ImmersivePageLayoutProps> = ({
 
       {/* Main Content */}
       <div
-        className={`relative flex flex-col px-6 text-center pb-16 sm:pb-0 z-10 ${
-          centerContent ? 'items-center' : 'items-start justify-start pt-20'
+        className={`relative flex flex-col px-6 text-center pb-16 sm:pb-0 z-10 pt-20 ${
+          centerContent ? 'items-center justify-center' : 'items-start justify-start'
         }`}
         style={{ 
           mixBlendMode: theme?.mix as React.CSSProperties['mixBlendMode'] || undefined,
-          minHeight: centerContent && showHeader ? 'calc(100dvh - 6rem)' : centerContent ? '100dvh' : 'auto',
+          minHeight: centerContent ? 'calc(100dvh - 5rem)' : 'auto',
           justifyContent: centerContent ? 'center' : 'flex-start',
           marginTop: centerContent && showHeader ? '6rem' : '0'
         }}
