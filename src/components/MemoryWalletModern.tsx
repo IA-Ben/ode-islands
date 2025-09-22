@@ -158,7 +158,7 @@ export default function MemoryWalletModern({
           <Button 
             onClick={fetchWalletData}
             style={{
-              backgroundColor: theme.colors.surface + '20',
+              backgroundColor: theme.colors.backgroundLight,
               color: theme.colors.textPrimary,
               borderColor: theme.colors.backgroundDark
             }}
@@ -224,7 +224,7 @@ export default function MemoryWalletModern({
         className="rounded-lg p-4 mb-6 border"
         style={{ 
           backgroundColor: theme.colors.surface,
-          borderColor: theme.colors.secondary + '40'
+          borderColor: theme.colors.secondary
         }}>
         <div className="flex items-center justify-between mb-2">
           <span 

@@ -74,7 +74,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
       className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b"
       style={{ 
         backgroundColor: theme.colors.surface,
-        borderColor: `${theme.colors.secondary}40` 
+        borderColor: theme.colors.secondary 
       }}>
       <div className="container mx-auto px-4">
         <nav className="py-4">
@@ -106,7 +106,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                       <div 
                         className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 px-3 py-1 text-xs rounded opacity-0 hover:opacity-100 transition-opacity duration-200 whitespace-nowrap pointer-events-none"
                         style={{
-                          backgroundColor: `${theme.colors.surface}F0`,
+                          backgroundColor: theme.colors.surface,
                           color: theme.colors.textSecondary
                         }}
                       >
@@ -119,7 +119,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                   {index < phases.length - 1 && (
                     <div 
                       className="mx-4 h-6 w-px" 
-                      style={{ backgroundColor: `${theme.colors.textMuted}40` }}
+                      style={{ backgroundColor: theme.colors.textMuted }}
                     />
                   )}
                 </div>
@@ -147,7 +147,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                         onClick={handleProgressClick}
                         className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-200"
                         style={{
-                          backgroundColor: theme.colors.primary,
+                          backgroundColor: '#b8318a', // Darker pink for better contrast
                           color: theme.colors.textInverse
                         }}
                         onMouseEnter={(e) => {
@@ -172,17 +172,15 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                           onClick={() => router.push('/admin/cms')}
                           className="flex items-center space-x-2 backdrop-blur-sm border px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                           style={{
-                            backgroundColor: `${theme.colors.accent}30`,
-                            borderColor: `${theme.colors.accent}50`,
+                            backgroundColor: '#0d9668', // Darker green for better contrast 
+                            borderColor: '#0d9668',
                             color: theme.colors.textInverse
                           }}
                           onMouseEnter={(e) => {
-                            e.currentTarget.style.backgroundColor = `${theme.colors.accent}40`
-                            e.currentTarget.style.borderColor = `${theme.colors.accent}70`
+                            e.currentTarget.style.opacity = '0.9'
                           }}
                           onMouseLeave={(e) => {
-                            e.currentTarget.style.backgroundColor = `${theme.colors.accent}30`
-                            e.currentTarget.style.borderColor = `${theme.colors.accent}50`
+                            e.currentTarget.style.opacity = '1'
                           }}
                           title="Admin CMS Access"
                         >
@@ -266,14 +264,14 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                   onClick={() => router.push('/memory-wallet')}
                   className="p-2 transition-colors rounded-lg"
                   style={{ 
-                    color: `${theme.colors.textInverse}D0`
+                    color: theme.colors.textSecondary
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.color = theme.colors.textInverse
-                    e.currentTarget.style.backgroundColor = `${theme.colors.surface}20`
+                    e.currentTarget.style.backgroundColor = theme.colors.backgroundLight
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.color = `${theme.colors.textInverse}D0`
+                    e.currentTarget.style.color = theme.colors.textSecondary
                     e.currentTarget.style.backgroundColor = 'transparent'
                   }}
                   aria-label="Memory Wallet"
