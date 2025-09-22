@@ -16,43 +16,43 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 const DEFAULT_THEME: AppTheme = {
   colors: {
-    // Primary brand colors
-    primary: '#ffffff',
-    primaryLight: '#f8f9fa',
-    primaryDark: '#e9ecef',
+    // Primary brand colors - Memory Wallet magenta/pink
+    primary: '#e879a5',
+    primaryLight: '#f3a1c0',
+    primaryDark: '#d65a8a',
     
-    // Secondary colors
-    secondary: '#6c757d',
-    secondaryLight: '#adb5bd',
-    secondaryDark: '#495057',
+    // Secondary colors - sage green accents
+    secondary: '#4ade80',
+    secondaryLight: '#86efac',
+    secondaryDark: '#22c55e',
     
-    // Background colors
-    background: '#000000',
-    backgroundLight: '#212529',
-    backgroundDark: '#0a0a0a',
-    surface: '#1a1a1a',
+    // Background colors - mint/sage green theme
+    background: '#f0f8ee',
+    backgroundLight: '#f7fcf5',
+    backgroundDark: '#e8f5e4',
+    surface: '#ffffff',
     
     // Text colors
-    textPrimary: '#ffffff',
-    textSecondary: '#e9ecef',
-    textMuted: '#adb5bd',
-    textInverse: '#000000',
+    textPrimary: '#1f2937',
+    textSecondary: '#374151',
+    textMuted: '#6b7280',
+    textInverse: '#ffffff',
     
-    // Accent colors
-    accent: '#007bff',
-    accentLight: '#66b3ff',
-    accentDark: '#0056b3',
+    // Accent colors - bright green from progress bar
+    accent: '#10b981',
+    accentLight: '#34d399',
+    accentDark: '#059669',
     
     // Status colors
-    success: '#28a745',
-    warning: '#ffc107',
-    error: '#dc3545',
-    info: '#17a2b8',
+    success: '#10b981',
+    warning: '#f59e0b',
+    error: '#ef4444',
+    info: '#3b82f6',
     
-    // Saved colors palette (user customizable)
+    // Saved colors palette (user customizable) - Memory Wallet inspired
     savedColors: [
-      '#ffffff', '#000000', '#ff0000', '#00ff00', '#0000ff',
-      '#ffff00', '#ff00ff', '#00ffff', '#ffa500', '#800080'
+      '#e879a5', '#4ade80', '#10b981', '#f0f8ee', '#000000',
+      '#ffffff', '#f3a1c0', '#86efac', '#d65a8a', '#22c55e'
     ]
   },
   
