@@ -19,7 +19,9 @@ export function useAuth() {
         const response = await fetch('/api/auth/user');
         if (response.ok) {
           const userData = await response.json();
-          setUser(userData);
+          // Handle both formats: direct user object or wrapped response
+          const actualUser = userData.user || userData;
+          setUser(actualUser);
         } else {
           setUser(null);
         }
