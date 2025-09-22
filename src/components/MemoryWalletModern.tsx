@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import { useTheme } from '@/contexts/ThemeContext';
 import { getWallet, getRarityColor, getTypeIcon } from '@/lib/walletCms';
 import type { WalletResponse, MemorySummary } from '@/types/memory';
 
@@ -23,6 +24,7 @@ export default function MemoryWalletModern({
   filterByChapter
 }: MemoryWalletModernProps) {
   const router = useRouter();
+  const { theme } = useTheme();
   const [walletData, setWalletData] = useState<WalletResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -170,24 +172,41 @@ export default function MemoryWalletModern({
       )}
 
       {/* Progress Indicator */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-lg p-4 mb-6">
+      <div 
+        className="rounded-lg p-4 mb-6 border"
+        style={{ 
+          backgroundColor: theme.colors.surface,
+          borderColor: theme.colors.secondary + '40'
+        }}>
         <div className="flex items-center justify-between mb-2">
-          <span className="text-white font-semibold">
+          <span 
+            className="font-semibold"
+            style={{ color: theme.colors.textPrimary }}
+          >
             {walletData.unlockedCount} of {walletData.totalSlots} collected
           </span>
-          <span className="text-green-500 font-bold">
+          <span 
+            className="font-bold"
+            style={{ color: theme.colors.secondary }}
+          >
             {walletData.progress.percentage}%
           </span>
         </div>
-        <div className="h-3 bg-gray-700 rounded-full overflow-hidden">
+        <div 
+          className="h-3 rounded-full overflow-hidden"
+          style={{ backgroundColor: theme.colors.backgroundDark }}
+        >
           <div 
-            className="h-full bg-gradient-to-r from-green-500 to-green-400 rounded-full transition-all duration-500"
-            style={{ width: `${walletData.progress.percentage}%` }}
+            className="h-full rounded-full transition-all duration-500"
+            style={{ 
+              width: `${walletData.progress.percentage}%`,
+              backgroundColor: theme.colors.secondary
+            }}
           />
         </div>
         {walletData.progress.level && (
-          <div className="mt-2 text-sm text-white/60">
-            Level: <span className="text-white capitalize">{walletData.progress.level}</span>
+          <div className="mt-2 text-sm" style={{ color: theme.colors.textSecondary }}>
+            Level: <span style={{ color: theme.colors.textPrimary }} className="capitalize">{walletData.progress.level}</span>
           </div>
         )}
       </div>

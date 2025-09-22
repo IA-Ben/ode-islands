@@ -70,7 +70,12 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
 
 
   return (
-    <div className="fixed top-0 left-0 right-0 z-50 bg-black/90 backdrop-blur-sm border-b border-white/10">
+    <div 
+      className="fixed top-0 left-0 right-0 z-50 backdrop-blur-sm border-b border-emerald-200/20"
+      style={{ 
+        backgroundColor: '#000000',
+        borderColor: `${theme.colors.secondary}40` 
+      }}>
       <div className="container mx-auto px-4">
         <nav className="py-4">
           {/* Top row with essential controls */}
