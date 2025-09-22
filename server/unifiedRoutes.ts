@@ -599,6 +599,81 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Sample Data Management - Admin only
+  app.post("/api/admin/sample-data/generate", isAdminWithCSRF, async (req: any, res) => {
+    try {
+      const userId = req.user!.claims.sub;
+      
+      // Import sample data generation function
+      const { generateSampleEventData } = await import('./sampleDataGenerator');
+      
+      // Generate comprehensive sample data
+      const result = await generateSampleEventData(userId);
+      
+      res.json({
+        success: true,
+        message: "Sample event data generated successfully",
+        summary: result
+      });
+    } catch (error) {
+      console.error("Error generating sample data:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to generate sample data",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  app.post("/api/admin/sample-data/remove", isAdminWithCSRF, async (req: any, res) => {
+    try {
+      // Import sample data removal function
+      const { removeSampleEventData } = await import('./sampleDataGenerator');
+      
+      // Remove all sample data
+      const result = await removeSampleEventData();
+      
+      res.json({
+        success: true,
+        message: "Sample event data removed successfully",
+        summary: result
+      });
+    } catch (error) {
+      console.error("Error removing sample data:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to remove sample data",
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
+  // Sample Data Status - Admin only
+  app.get("/api/admin/sample-data/status", isAdminWithCSRF, async (req: any, res) => {
+    try {
+      // Check if sample data exists
+      const existingSampleEvents = await db
+        .select()
+        .from(liveEvents)
+        .where(eq(liveEvents.title, "The Ode Islands: Immersive Journey"));
+
+      const sampleDataExists = existingSampleEvents.length > 0;
+      
+      res.json({
+        success: true,
+        sampleDataExists,
+        eventCount: existingSampleEvents.length
+      });
+    } catch (error) {
+      console.error("Error checking sample data status:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Failed to check sample data status",
+        sampleDataExists: false
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

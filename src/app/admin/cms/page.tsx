@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageLayout';
 import AnimateText from '@/components/AnimateText';
+import SampleDataControl from '@/components/SampleDataControl';
 import type { CardData } from '@/@typings';
 
 type ChapterData = {
@@ -685,6 +686,33 @@ export default function CMSPage() {
               </CardContent>
             </Card>
           </Link>
+        </div>
+
+        {/* Sample Data Section */}
+        <div 
+          className="mb-8"
+          style={{
+            opacity: 0,
+            animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
+          }}
+        >
+          <Card className="bg-gradient-to-br from-amber-500/20 to-yellow-500/20 backdrop-blur-md border-white/20">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center space-x-3">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <span>Sample Event Data Generator</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white/80 mb-6">
+                Populate the app with comprehensive sample data showcasing all features across the three phases. 
+                This includes live events, polls, Q&A sessions, memory collections, collectibles, and community features.
+              </p>
+              <SampleDataControl csrfToken={csrfToken} />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Before Phase Content */}
