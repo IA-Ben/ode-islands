@@ -49,7 +49,6 @@ app.prepare().then(async () => {
 
   // Apply rate limiting to all auth endpoints (covers both Express and Next.js auth routes)
   server.use('/api/auth/', authLimiter);
-  server.use('/api/dev-login', authLimiter);
 
   // Body parsing middleware - Express handles unified auth/admin routes, Next.js handles the rest
   server.use((req, res, next) => {
@@ -60,7 +59,6 @@ app.prepare().then(async () => {
     // - /api/cms/* (content management)
     // - /api/content/* (content availability)
     // - /api/scheduler/* (content scheduling)
-    // - /api/dev-login (development only)
     
     const expressApiPaths = [
       '/api/auth/',
@@ -68,8 +66,7 @@ app.prepare().then(async () => {
       '/api/cms/',
       '/api/content/',
       '/api/scheduler/',
-      '/api/csrf-token',
-      '/api/dev-login'
+      '/api/csrf-token'
     ];
     
     const isExpressRoute = expressApiPaths.some(path => 
@@ -96,8 +93,7 @@ app.prepare().then(async () => {
       '/api/cms/',
       '/api/content/',
       '/api/scheduler/',
-      '/api/csrf-token',
-      '/api/dev-login'
+      '/api/csrf-token'
     ];
     
     const isExpressRoute = expressApiPaths.some(path => 
@@ -113,55 +109,18 @@ app.prepare().then(async () => {
     }
   });
 
-  // Setup session middleware required for simple authentication
-  const session = require('express-session');
-  const connectPg = require('connect-pg-simple');
-
-  // Enforce required SESSION_SECRET
-  const SESSION_SECRET = process.env.SESSION_SECRET;
-  if (!SESSION_SECRET) {
+  // Session management is handled by unified Replit Auth system in unifiedRoutes
+  
+  // Enforce required environment variables for production security
+  if (!process.env.SESSION_SECRET) {
     console.error('FATAL: SESSION_SECRET environment variable is required');
     process.exit(1);
   }
-
-  // Enforce DATABASE_URL in production environment
+  
   if (!dev && !process.env.DATABASE_URL) {
     console.error('FATAL: DATABASE_URL environment variable is required in production');
     process.exit(1);
   }
-
-  // Setup session middleware with fallback store
-  let sessionStore;
-  if (process.env.DATABASE_URL) {
-    // Use PostgreSQL store if DATABASE_URL is available
-    const pgStore = connectPg(session);
-    sessionStore = new pgStore({
-      conString: process.env.DATABASE_URL,
-      createTableIfMissing: true,
-      ttl: 7 * 24 * 60 * 60, // 1 week in seconds
-      tableName: "sessions",
-    });
-    console.log('Using PostgreSQL session store');
-  } else {
-    // Fallback to memory store (note: sessions won't persist across restarts)
-    console.log('Using memory session store (sessions won\'t persist across restarts)');
-    sessionStore = new session.MemoryStore();
-  }
-
-  server.use(session({
-    secret: SESSION_SECRET,
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      secure: 'auto', // Automatically set secure based on connection type
-      httpOnly: true,
-      sameSite: 'lax', // CSRF protection
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
-    },
-  }));
-
-  // Simple auth has been removed - using unified Replit OAuth system instead
 
   // Import and setup unified authentication routes
   const { registerUnifiedRoutes, isAuthenticated, isAdmin } = await import('./server/unifiedRoutes.ts');

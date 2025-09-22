@@ -3,13 +3,11 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+// Redirect all legacy logout requests to proper OAuth endpoint
 export async function POST(request: NextRequest) {
-  return NextResponse.json(
-    { 
-      error: 'This authentication endpoint has been deprecated for security reasons.',
-      message: 'Please use the unified OAuth logout system.',
-      redirectTo: '/api/logout'
-    },
-    { status: 410 } // 410 Gone - Permanently removed
-  );
+  return NextResponse.redirect(new URL('/api/logout', request.url));
+}
+
+export async function GET(request: NextRequest) {
+  return NextResponse.redirect(new URL('/api/logout', request.url));
 }

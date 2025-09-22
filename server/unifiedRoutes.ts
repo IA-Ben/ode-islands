@@ -98,54 +98,7 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     res.json({ success: true, csrfToken });
   });
 
-  // Development authentication bypass - ONLY in development
-  if (process.env.NODE_ENV !== 'production') {
-    app.get('/api/dev-login', (req: any, res) => {
-      // Create a mock user session for development
-      const mockUser = {
-        claims: {
-          sub: 'dev-user-123',
-          email: 'dev@theodeislands.com',
-          first_name: 'Dev',
-          last_name: 'User',
-          profile_image_url: null,
-          iat: Math.floor(Date.now() / 1000),
-          exp: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60), // 1 week
-        },
-        access_token: 'dev-access-token',
-        refresh_token: 'dev-refresh-token',
-        expires_at: Math.floor(Date.now() / 1000) + (7 * 24 * 60 * 60),
-      };
-      
-      // Set up the session
-      req.login(mockUser, async (err: any) => {
-        if (err) {
-          console.error('Dev login error:', err);
-          return res.status(500).json({ error: 'Failed to create dev session' });
-        }
-        
-        try {
-          // Ensure user exists in database
-          await storage.upsertUser({
-            id: 'dev-user-123',
-            email: 'dev@theodeislands.com',
-            firstName: 'Dev',
-            lastName: 'User',
-            profileImageUrl: null,
-            isAdmin: true, // Make dev user an admin
-          });
-          
-          console.log('✅ Development user authenticated successfully');
-          res.redirect('/');
-        } catch (dbError) {
-          console.error('Database error during dev login:', dbError);
-          res.status(500).json({ error: 'Failed to create dev user' });
-        }
-      });
-    });
-    
-    console.log('🔧 Development authentication bypass enabled at /api/dev-login');
-  }
+  // Production-only authentication - no development bypasses
 
   // Auth status endpoint for checking authentication state
   app.get('/api/auth/status', (req: any, res) => {
@@ -161,8 +114,12 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     try {
       // Check if user is authenticated
       if (!req.isAuthenticated || !req.isAuthenticated()) {
-        // Return expected format when not authenticated
-        return res.json({ isAuthenticated: false });
+        // Return standardized format when not authenticated
+        return res.json({ 
+          isAuthenticated: false,
+          user: null,
+          isAdmin: false
+        });
       }
       
       const userId = req.user!.claims.sub;
@@ -223,7 +180,7 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
           };
         }
         
-        // Return authenticated response with expected format
+        // Return standardized authenticated response
         return res.json({
           isAuthenticated: true,
           user: {
@@ -231,8 +188,10 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
             email: newUser.email || '',
             firstName: newUser.firstName || '',
             lastName: newUser.lastName || '',
-            isAdmin: newUser.isAdmin || false
+            isAdmin: newUser.isAdmin || false,
+            profileImageUrl: newUser.profileImageUrl || null
           },
+          isAdmin: newUser.isAdmin || false,
           fanScore: fanScoreData
         });
       }
@@ -280,7 +239,7 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
         };
       }
       
-      // Return authenticated response with expected format
+      // Return standardized authenticated response
       res.json({
         isAuthenticated: true,
         user: {
@@ -288,8 +247,10 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
           email: user.email || '',
           firstName: user.firstName || '',
           lastName: user.lastName || '',
-          isAdmin: user.isAdmin || false
+          isAdmin: user.isAdmin || false,
+          profileImageUrl: user.profileImageUrl || null
         },
+        isAdmin: user.isAdmin || false,
         fanScore: fanScoreData
       });
     } catch (error) {

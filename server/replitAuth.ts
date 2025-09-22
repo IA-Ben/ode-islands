@@ -25,14 +25,9 @@ declare global {
   }
 }
 
-// Allow bypass in development if REPLIT_DOMAINS not provided
+// Enforce required environment variables for production security
 if (!process.env.REPLIT_DOMAINS) {
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error("Environment variable REPLIT_DOMAINS not provided");
-  } else {
-    console.warn('⚠️  REPLIT_DOMAINS not provided - using development bypass');
-    process.env.REPLIT_DOMAINS = 'localhost,127.0.0.1';
-  }
+  throw new Error("Environment variable REPLIT_DOMAINS is required for authentication");
 }
 
 const getOidcConfig = memoize(
@@ -145,7 +140,12 @@ export async function setupAuth(app: Express) {
   passport.serializeUser((user: Express.User, cb: (err: any, id?: any) => void) => cb(null, user));
   passport.deserializeUser((user: Express.User, cb: (err: any, user?: any) => void) => cb(null, user));
 
-  app.get("/api/login", (req, res, next) => {
+  app.get("/api/login", (req: any, res, next) => {
+    // Save returnTo URL if provided
+    if (req.query.returnTo) {
+      req.session.returnTo = req.query.returnTo as string;
+    }
+    
     passport.authenticate(`replitauth:${req.hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
