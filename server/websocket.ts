@@ -1,6 +1,6 @@
 import { Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
-import jwt from 'jsonwebtoken';
+import * as signature from 'cookie-signature';
 import { parse } from 'url';
 import { db } from './db';
 import { users, sessions, liveEvents } from '../shared/schema';
@@ -99,56 +99,93 @@ class WebSocketManager {
     try {
       // Get cookies from the request
       const cookies = this.parseCookies(request.headers.cookie || '');
-      const sessionCookie = cookies['auth-session'];
+      const sessionCookie = cookies['connect.sid']; // Use Express session cookie, not JWT
 
       if (!sessionCookie) {
         console.log('No session cookie found');
         return false;
       }
 
-      // Use the same JWT secret function from auth module - MUST be set in production
-      const JWT_SECRET = process.env.JWT_SECRET;
+      // Parse and verify the Express session cookie signature
+      let sessionId = sessionCookie;
       
-      if (!JWT_SECRET) {
-        console.error('JWT_SECRET environment variable is required');
+      // Properly unsign the cookie using SESSION_SECRET
+      if (sessionId.startsWith('s:')) {
+        sessionId = sessionId.substring(2); // Remove 's:' prefix
+        const unsigned = signature.unsign(sessionId, process.env.SESSION_SECRET!);
+        
+        if (unsigned === false) {
+          console.log('Invalid session cookie signature');
+          return false;
+        }
+        
+        sessionId = unsigned;
+      }
+
+      // Verify server-side session exists in Express session store
+      const serverSession = await db
+        .select()
+        .from(sessions)
+        .where(eq(sessions.sid, sessionId))
+        .limit(1);
+
+      if (serverSession.length === 0) {
+        console.log('Express session not found in database');
         return false;
       }
 
-      // Verify JWT token
-      const decoded = jwt.verify(sessionCookie, JWT_SECRET) as any;
-      
-      if (!decoded.userId || !decoded.sessionId) {
-        console.log('Invalid token payload');
+      // Check if session has expired
+      if (serverSession[0].expire < new Date()) {
+        console.log('Express session has expired');
+        // Clean up expired session
+        await db.delete(sessions).where(eq(sessions.sid, sessionId));
         return false;
       }
 
-      // Verify server-side session exists (defense in depth)
-      const isServerSessionValid = await verifyServerSession(decoded.sessionId);
-      if (!isServerSessionValid) {
-        console.log('Server session invalid or expired');
+      // Get user info from session data
+      const sessionData = serverSession[0].sess as any;
+      let userId = null;
+
+      // Extract user ID from session (could be in different formats depending on Passport setup)
+      if (sessionData.passport && sessionData.passport.user) {
+        // If user info is stored in passport.user
+        const passportUser = sessionData.passport.user;
+        if (typeof passportUser === 'string') {
+          userId = passportUser;
+        } else if (passportUser.claims && passportUser.claims.sub) {
+          userId = passportUser.claims.sub;
+        } else if (passportUser.id) {
+          userId = passportUser.id;
+        }
+      } else if (sessionData.userId) {
+        // Direct userId in session
+        userId = sessionData.userId;
+      }
+
+      if (!userId) {
+        console.log('No user ID found in session data');
         return false;
       }
 
-      // Verify user exists in database and is still active
+      // Verify user exists in database and get current info
       const user = await db
         .select()
         .from(users)
-        .where(eq(users.id, decoded.userId))
+        .where(eq(users.id, userId))
         .limit(1);
 
       if (user.length === 0) {
         console.log('User not found in database');
-        // Clean up orphaned session
-        await db.delete(sessions).where(eq(sessions.sid, decoded.sessionId));
         return false;
       }
 
       // Set authentication info on WebSocket
-      ws.userId = decoded.userId;
-      ws.sessionId = decoded.sessionId;
+      ws.userId = userId;
+      ws.sessionId = sessionId;
       ws.isAuthenticated = true;
       ws.isAdmin = user[0].isAdmin ?? false; // Capture admin status
 
+      console.log(`WebSocket authenticated successfully`);
       return true;
 
     } catch (error) {
@@ -541,48 +578,6 @@ class WebSocketManager {
   // Interactive Choice System WebSocket handlers  
   // NOTE: Choice responses are now handled securely through HTTP API
   // This method provides server-authoritative broadcasts after DB updates
-  
-  public broadcastChoiceUpdate(eventId: string, choiceId: string, responseStats: any, totalResponses: number) {
-    this.broadcastToEvent(eventId, {
-      type: 'choice_response_update',
-      payload: {
-        choiceId,
-        responseStats,
-        totalResponses,
-        timestamp: Date.now(),
-      },
-      timestamp: Date.now(),
-    });
-    
-    console.log(`Server-authoritative choice update broadcast for choice ${choiceId} in event ${eventId}`);
-  }
-
-  public notifyChoiceActivated(eventId: string, choiceId: string, choice: any) {
-    this.broadcastToEvent(eventId, {
-      type: 'choice_activated',
-      payload: {
-        choiceId,
-        choice,
-        timestamp: Date.now(),
-      },
-      timestamp: Date.now(),
-    });
-    
-    console.log(`Choice ${choiceId} activated in event ${eventId} via HTTP API`);
-  }
-
-  public notifyChoiceDeactivated(eventId: string, choiceId: string) {
-    this.broadcastToEvent(eventId, {
-      type: 'choice_deactivated',
-      payload: {
-        choiceId,
-        timestamp: Date.now(),
-      },
-      timestamp: Date.now(),
-    });
-    
-    console.log(`Choice ${choiceId} deactivated in event ${eventId} via HTTP API`);
-  }
 
   private handleChoiceActivated(ws: AuthenticatedWebSocket, payload: any) {
     const { choiceId, eventId, choice } = payload;

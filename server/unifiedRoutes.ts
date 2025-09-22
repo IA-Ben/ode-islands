@@ -651,6 +651,10 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   // Sample Data Status - Admin only
   app.get("/api/admin/sample-data/status", isAdminWithCSRF, async (req: any, res) => {
     try {
+      // Import schema here to fix compilation error
+      const { liveEvents } = await import('../shared/schema');
+      const { eq } = await import('drizzle-orm');
+      
       // Check if sample data exists
       const existingSampleEvents = await db
         .select()

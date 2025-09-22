@@ -8,7 +8,7 @@ import {
   userAchievements 
 } from '../../../../shared/schema';
 import { eq, desc, and, count, sum, sql } from 'drizzle-orm';
-import { withAuth } from '../../../../server/auth';
+import { withSessionAuth } from '../../../../server/sessionAuth';
 import { ScoringService } from '../../../../server/scoringService';
 
 async function handleGET(request: NextRequest) {
@@ -167,4 +167,4 @@ async function handleGET(request: NextRequest) {
   }
 }
 
-export const GET = withAuth(handleGET);
+export const GET = withSessionAuth(handleGET);

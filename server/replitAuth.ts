@@ -146,14 +146,32 @@ export async function setupAuth(app: Express) {
       req.session.returnTo = req.query.returnTo as string;
     }
     
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    // Map localhost to the actual Replit domain for authentication strategy
+    let hostname = req.hostname;
+    if (hostname === '127.0.0.1' || hostname === 'localhost') {
+      // Use the first domain from REPLIT_DOMAINS as the default
+      hostname = process.env.REPLIT_DOMAINS!.split(",")[0];
+    }
+    
+    console.log(`Authentication attempt for hostname: ${hostname}`);
+    
+    passport.authenticate(`replitauth:${hostname}`, {
       prompt: "login consent",
       scope: ["openid", "email", "profile", "offline_access"],
     })(req, res, next);
   });
 
   app.get("/api/callback", (req, res, next) => {
-    passport.authenticate(`replitauth:${req.hostname}`, {
+    // Map localhost to the actual Replit domain for authentication strategy
+    let hostname = req.hostname;
+    if (hostname === '127.0.0.1' || hostname === 'localhost') {
+      // Use the first domain from REPLIT_DOMAINS as the default
+      hostname = process.env.REPLIT_DOMAINS!.split(",")[0];
+    }
+    
+    console.log(`Authentication callback for hostname: ${hostname}`);
+    
+    passport.authenticate(`replitauth:${hostname}`, {
       successReturnToOrRedirect: "/",
       failureRedirect: "/api/login",
     })(req, res, next);
