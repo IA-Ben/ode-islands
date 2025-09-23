@@ -99,24 +99,7 @@ export const CardButton: React.FC<CardButtonProps> = ({
   const { shouldUseUnifiedButtons, recordPerformance, recordError } = useButtonFeatureFlags(userCohort);
   const { recordInteraction, recordValidation, startTiming } = useButtonMonitoring();
 
-  // If feature flags indicate we should use legacy, render legacy component
-  if (!shouldUseUnifiedButtons) {
-    return <ButtonFallback 
-      button={button} 
-      active={active} 
-      cardTheme={cardTheme} 
-      className={className} 
-      onClick={onClick} 
-    />;
-  }
-
-  // Get display text (prioritize label over text for enhanced compatibility)
-  const displayText = button.label || button.text || 'Button';
-  
-  // Check if button is locked
-  const isLocked = button.unlockConditions && !button.isUnlocked;
-
-  // Timer-based visibility logic (from CustomButton)
+  // Timer-based visibility logic (from CustomButton) - MUST be called before any conditional returns
   useEffect(() => {
     if (active && startTime === null && button.timing) {
       setStartTime(Date.now());
@@ -139,6 +122,23 @@ export const CardButton: React.FC<CardButtonProps> = ({
     const interval = setInterval(checkVisibility, 100);
     return () => clearInterval(interval);
   }, [active, startTime, button.timing?.visibleFrom, isVisible]);
+
+  // If feature flags indicate we should use legacy, render legacy component
+  if (!shouldUseUnifiedButtons) {
+    return <ButtonFallback 
+      button={button} 
+      active={active} 
+      cardTheme={cardTheme} 
+      className={className} 
+      onClick={onClick} 
+    />;
+  }
+
+  // Get display text (prioritize label over text for enhanced compatibility)
+  const displayText = button.label || button.text || 'Button';
+  
+  // Check if button is locked
+  const isLocked = button.unlockConditions && !button.isUnlocked;
 
   // Handle button click with monitoring
   const handleClick = () => {
