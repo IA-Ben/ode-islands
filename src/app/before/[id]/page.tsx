@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import ClientCard from "@/components/ClientCard";
+import { LazyClientCardWrapper } from '@/components/LazyComponentWrapper';
 import Footer from "@/components/Footer";
 import PhaseNavigation from "@/components/PhaseNavigation";
 import type { CardData } from '@/@typings';
@@ -133,7 +133,9 @@ export default function BeforeChapterPage() {
       >
         {cards.map((card, cardIndex) => (
           <div key={cardIndex} className="snap-start w-full">
-            <ClientCard data={card} active={cardIndex === index} />
+            <LazyClientCardWrapper 
+              componentProps={{ data: card, active: cardIndex === index }}
+            />
           </div>
         ))}
       </div>

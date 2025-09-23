@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ColorPicker } from '@/components/ui/ColorPicker';
-import ClientCard from '@/components/ClientCard';
+import { LazyClientCardWrapper } from '@/components/LazyComponentWrapper';
 import { ObjectUploader } from '@/components/ObjectUploader';
 import type { CardData } from '@/@typings';
 
@@ -44,7 +44,7 @@ export default function CardEditorPage() {
 
   useEffect(() => {
     checkAuth();
-  }, [checkAuth]);
+  }, []);
 
   useEffect(() => {
     if (user?.isAdmin) {
@@ -385,7 +385,9 @@ export default function CardEditorPage() {
             </div>
             <div className="relative" style={{ height: '600px' }}>
               <div className="absolute inset-0 scale-50 origin-top-left" style={{ width: '200%', height: '200%' }}>
-                <ClientCard data={cardData} active={true} />
+                <LazyClientCardWrapper 
+                  componentProps={{ data: cardData, active: true }}
+                />
               </div>
             </div>
           </div>
