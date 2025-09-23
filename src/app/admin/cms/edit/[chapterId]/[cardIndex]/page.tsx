@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { LazyClientCardWrapper } from '@/components/LazyComponentWrapper';
 import { ObjectUploader } from '@/components/ObjectUploader';
+import { CardEditorButtons } from '@/components/CardEditorButtons';
 import type { CardData } from '@/@typings';
 
 type ChapterData = {
@@ -1563,31 +1564,27 @@ export default function CardEditorPage() {
                 </CardContent>
               </Card>
 
-              {/* Custom Buttons Configuration Section */}
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader>
-                  <CardTitle className="text-white text-base">🔘 Custom Buttons Configuration</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <p className="text-sm text-gray-400">Add interactive buttons with custom positioning, animations, and timing</p>
-                  
-                  {/* Existing Custom Buttons */}
-                  {cardData.customButtons?.map((button, index) => (
-                    <div key={button.id} className="space-y-4 border border-gray-600 rounded p-4">
-                      <div className="flex justify-between items-center">
-                        <h4 className="text-sm font-semibold text-blue-400">Button {index + 1}</h4>
-                        <Button
-                          onClick={() => setCardData(prev => ({
-                            ...prev,
-                            customButtons: prev.customButtons?.filter((_, i) => i !== index)
-                          }))}
-                          className="bg-red-600 hover:bg-red-700 text-xs px-2 py-1"
-                        >
-                          Remove
-                        </Button>
-                      </div>
-                      
-                      {/* Basic Settings */}
+              {/* Enhanced Custom Buttons Configuration */}
+              <CardEditorButtons
+                cardData={cardData}
+                onCardDataChange={setCardData}
+              />
+
+              {/* Save Button at Bottom */}
+              <Button 
+                onClick={saveCard}
+                disabled={saving}
+                className="w-full bg-green-600 hover:bg-green-700 h-12"
+              >
+                {saving ? 'Saving...' : '💾 Save Card'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
                       <div className="grid grid-cols-2 gap-4">
                         <div>
                           <label className="block text-sm font-medium mb-2">Button Text</label>

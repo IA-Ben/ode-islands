@@ -270,14 +270,18 @@ export type CardData = {
     enableOcclusion?: boolean
   }
   customButtons?: Array<{
+    // Core Identity
     id: string                    // Unique identifier
-    text: string                  // Button text
-    position: {
+    text?: string                 // Button text (backward compatibility)
+    label?: string                // Enhanced alternative to text
+    
+    // Positioning & Timing
+    position?: {
       x: number                   // X position (percentage or pixels)
       y: number                   // Y position (percentage or pixels)
       unit: 'percent' | 'px'      // Position unit
     }
-    timing: {
+    timing?: {
       visibleFrom: number         // Show after X seconds
       animationDelay?: number     // Optional animation delay after visible
     }
@@ -286,7 +290,39 @@ export type CardData = {
       duration?: number           // Animation duration in seconds
       easing?: string             // CSS easing function
     }
-    link: {
+    
+    // Enhanced Features
+    variant?: 'primary' | 'secondary' | 'link' | 'ghost'
+    icon?: string                 // Icon identifier
+    order?: number                // Display order (for sorting)
+    
+    // Unlock Conditions
+    unlockConditions?: Array<{
+      type: 'stamp-required' | 'task-required' | 'time-window' | 'geofence' | 'sign-in'
+      stampId?: string
+      stampName?: string
+      taskId?: string
+      taskName?: string
+      startTime?: string
+      endTime?: string
+      location?: { lat: number; lng: number; radius: number }
+    }>
+    isUnlocked?: boolean
+    unlockHint?: string
+    
+    // Unified Action Router (backward compatible with legacy link.type)
+    action?: {
+      type: 'sub-chapter' | 'chapter' | 'card' | 'external-url' | 'ar-item' | 'wallet' | 'iframe'
+      target?: string             // Target ID or URL
+      iframeConfig?: {            // For iframe type
+        width?: number
+        height?: number
+        allowFullscreen?: boolean
+      }
+    }
+    
+    // Legacy support (deprecated but maintained for backward compatibility)
+    link?: {
       type: 'iframe' | 'external' | 'chapter' | 'subchapter'
       url?: string                // For iframe/external
       target?: string             // For chapter/subchapter (e.g., "chapter-1", "chapter-2-sub-1")
@@ -296,6 +332,8 @@ export type CardData = {
         allowFullscreen?: boolean
       }
     }
+    
+    // Styling
     styling?: {
       backgroundColor?: string
       textColor?: string

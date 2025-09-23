@@ -9,7 +9,7 @@ import AnimateText from "./AnimateText";
 import Player from "./Player";
 import PlayCanvasViewer from "./PlayCanvasViewer";
 import ARViewer from "./ARViewer";
-import CustomButton from "./CustomButton";
+import { CardButton } from "./CardButton";
 import PollCard from "./PollCard";
 import QuizCard from "./QuizCard";
 import MemoryCollectionButton from "./MemoryCollectionButton";
@@ -319,7 +319,7 @@ export const Card: React.FC<CardProps> = ({ data, active, cardId, chapterId }) =
 
       {/* Custom Buttons */}
       {data.customButtons?.map((button) => (
-        <CustomButton
+        <CardButton
           key={button.id}
           button={button}
           active={active}

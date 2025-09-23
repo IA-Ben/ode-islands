@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import EnhancedCustomButton from '@/components/EnhancedCustomButton';
+import { CardButton } from '@/components/CardButton';
 
 interface StoryCard {
   id: string;
@@ -193,7 +193,7 @@ export default function ChapterDetailPage() {
                   {currentCard.customButtons && currentCard.customButtons.length > 0 && (
                     <div className="mt-6 flex flex-wrap gap-3">
                       {currentCard.customButtons.map((button) => (
-                        <EnhancedCustomButton key={button.id} button={button} />
+                        <CardButton key={button.id} button={button} active={true} />
                       ))}
                     </div>
                   )}

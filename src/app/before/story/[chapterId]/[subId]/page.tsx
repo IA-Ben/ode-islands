@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import EnhancedCustomButton from '@/components/EnhancedCustomButton';
+import { CardButton } from '@/components/CardButton';
 
 interface SubChapterData {
   id: string;
@@ -196,7 +196,7 @@ export default function SubChapterDetailPage() {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">Actions</h2>
               <div className="flex flex-wrap gap-3">
                 {subChapter.customButtons.map((button) => (
-                  <EnhancedCustomButton key={button.id} button={button} />
+                  <CardButton key={button.id} button={button} active={true} />
                 ))}
               </div>
             </div>

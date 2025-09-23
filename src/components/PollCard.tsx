@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import AnimateText from './AnimateText';
-import CustomButton from './CustomButton';
+import { CardButton } from './CardButton';
 import MemoryCollectionButton from './MemoryCollectionButton';
 import type { CardData } from '@/@typings';
 
