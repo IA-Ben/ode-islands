@@ -8,7 +8,7 @@ import { useTheme } from '@/components/theme/ThemeProvider';
 import { getReadableFgFromHSL, checkContrast, generateAccessibleTheme } from '@/lib/theme/contrast';
 
 // HSL Theme Token interface matching our new system
-interface ThemeTokens {
+interface ThemeTokens extends Record<string, string> {
   '--bg': string;
   '--fg': string;
   '--surface': string;
@@ -134,7 +134,7 @@ export default function AdminThemePage() {
       const response = await fetch('/api/theme');
       if (response.ok) {
         const data = await response.json();
-        setTokens(data.theme);
+        setTokens(data.theme as ThemeTokens);
       }
     } catch (error) {
       console.error('Failed to load theme:', error);
@@ -161,7 +161,7 @@ export default function AdminThemePage() {
 
       if (response.ok) {
         setSaveStatus('saved');
-        setTokens(accessibleTokens);
+        setTokens(accessibleTokens as ThemeTokens);
         // Apply to the current page immediately
         applyTheme(accessibleTokens);
         setTimeout(() => setSaveStatus('idle'), 3000);

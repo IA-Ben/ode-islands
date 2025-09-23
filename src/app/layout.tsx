@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
-import { ThemeProvider } from "@/contexts/ThemeContext";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MobileProvider } from "@/contexts/MobileContext";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import { NotificationProvider } from "@/contexts/NotificationProvider";
