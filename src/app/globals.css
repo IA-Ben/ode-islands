@@ -1,8 +1,21 @@
 @import "tailwindcss";
 
 :root {
+  /* Legacy variables for backwards compatibility */
   --background: #f0f8ee;
   --foreground: #1f2937;
+  
+  /* Theme tokens - HSL values (H S% L%) */
+  --bg: 95 40% 96%;           /* Light neutral background */
+  --fg: 222 84% 5%;           /* Dark text */
+  --surface: 0 0% 100%;       /* Card/panel backgrounds */
+  --muted: 210 40% 94%;       /* Muted backgrounds */
+  --border: 214 32% 91%;      /* Border colors */
+  --accent: 330 75% 68%;      /* Primary accent (pink from your screenshots) */
+  --accent-foreground: 0 0% 100%; /* Text on accent backgrounds */
+  --success: 142 76% 36%;     /* Success states */
+  --warn: 38 92% 50%;         /* Warning states */
+  --error: 0 84% 60%;         /* Error states */
 }
 
 @theme inline {
@@ -17,8 +30,21 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
+    /* Legacy variables for backwards compatibility */
     --background: #000000;
     --foreground: #ffffff;
+    
+    /* Dark theme tokens - HSL values */
+    --bg: 222 84% 5%;           /* Dark background */
+    --fg: 210 40% 98%;          /* Light text */
+    --surface: 222 47% 11%;     /* Dark card/panel backgrounds */
+    --muted: 217 33% 17%;       /* Muted dark backgrounds */
+    --border: 217 27% 20%;      /* Dark border colors */
+    --accent: 330 75% 68%;      /* Same accent color */
+    --accent-foreground: 0 0% 100%; /* White text on accent */
+    --success: 142 76% 36%;     /* Success states */
+    --warn: 38 92% 50%;         /* Warning states */
+    --error: 0 84% 60%;         /* Error states */
   }
 }
 

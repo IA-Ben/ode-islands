@@ -1,0 +1,120 @@
+Prompt: Make Theme Editor the Source of Truth (CMS + App)
+
+Goal
+The Theme Editor must control colours for both the CMS and the front-end app. Replace hard-coded colours with tokenised CSS variables mapped through Tailwind. Enforce readable contrast (no light text on light backgrounds).
+
+Constraints
+
+Do not break existing layouts or routing.
+
+Backwards compatible: legacy pages render if no theme is set.
+
+Keep accessibility in mind (WCAG AA contrast where possible).
+
+Deliverables
+
+CSS token layer (single source of truth)
+
+Add tokens to globals.css under :root as HSL triples:
+--bg, --fg, --surface, --muted, --border, --accent, --accent-foreground, --success, --warn, --error.
+
+Tailwind mapping
+
+In tailwind.config.ts, map colours to hsl(var(--token) / <alpha-value>) for utilities:
+bg, fg, surface, muted, border, accent, accentFg, success, warn, error.
+
+ThemeProvider (shared)
+
+Create components/theme/ThemeProvider.tsx with:
+
+applyTheme(vars: Record<string,string>) that sets CSS variables on document.documentElement.
+
+SSR style injection to avoid FOUC.
+
+Export <ThemeProvider initial={vars}> and mount it at the root of both the CMS and the app (e.g., app/layout.tsx or _app.tsx).
+
+Theme API
+
+Add /api/theme:
+
+GET → returns saved theme JSON.
+
+PUT (admin only) → validates tokens and persists (file or DB).
+
+On save, also compute --accent-foreground via a contrast helper (see below).
+
+Theme Editor wiring
+
+Update the existing editor to:
+
+Edit the tokens above (H, S, L inputs or colour pickers).
+
+Live-preview by calling applyTheme(vars) locally while editing.
+
+Save via PUT /api/theme and re-hydrate globally.
+
+Refactor colour usage
+
+Replace hard-coded colour classes and inline styles with token utilities:
+
+bg-surface text-fg border-border
+
+Accents: bg-accent text-accentFg
+
+Muted surfaces: bg-muted
+
+Remove duplicate/legacy colour helpers.
+
+Search & replace patterns to fix: text-(white|gray-\d+), bg-(white|gray-\d+), inline style={{ color:'#...' }}.
+
+Contrast helper
+
+Add getReadableFg(bgH, bgS, bgL) returning either dark (222 47% 11%) or white (0 0% 100%) based on luminance so buttons/labels never end up light-on-light. Prefer ≥ 4.5:1 if implementing full WCAG calculation.
+
+Acceptance tests (manual + automated)
+
+Changing any token in Theme Editor immediately updates:
+
+CMS chapter grid cards (titles, badges, borders).
+
+Front-end nav, headings, buttons on Before / Event / After pages.
+
+Legacy pages with no theme.json still render (fallback to defaults).
+
+Spot-check contrast: headings, buttons, and body text are readable on all surfaces in light theme.
+
+No component uses raw hex or gray-* utilities after refactor.
+
+Implementation details
+
+Default tokens in globals.css: sensible light theme values to avoid blank screens.
+
+Persistence: if no DB, store to data/theme.json (or similar).
+
+Security: protect PUT /api/theme by existing admin check.
+
+Feature flag: optional NEXT_PUBLIC_ENABLE_THEMING to toggle quickly.
+
+Files (suggested):
+
+styles/globals.css
+
+tailwind.config.ts
+
+components/theme/ThemeProvider.tsx
+
+lib/theme/contrast.ts
+
+app/api/theme/route.ts (Next.js app router) or pages/api/theme.ts
+
+Mount <ThemeProvider> in app/layout.tsx for both CMS and app shells.
+
+Definition of Done
+
+Theme Editor changes propagate instantly to both CMS and front-end.
+
+No light-on-light text remains on the Chapter CMS grid, the “After” page header/cards, and primary buttons.
+
+Grep for gray-/white/inline hex returns no usages in UI components (except icons/shadows where appropriate).
+
+Build passes; visual smoke tests at 16:9 and 9:16 aspect ratios look consistent.
