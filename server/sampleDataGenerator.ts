@@ -556,7 +556,7 @@ export async function generateSampleEventData(adminUserId: string): Promise<Samp
     }); // End transaction
   } catch (error) {
     console.error('Error generating sample data:', error);
-    throw new Error(`Failed to generate sample data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error('Failed to generate sample data: ' + (error instanceof Error ? error.message : 'Unknown error'));
   }
 }
 
