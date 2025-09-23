@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { apiPost } from '@/lib/csrfUtils';
+import { logger, getUserFriendlyError, isRequired, isValidEmail, isValidPassword } from '@/lib/utils';
 
 interface UserRegistrationData {
   firstName: string;
@@ -35,26 +37,27 @@ export default function UserRegistrationForm() {
   const validateForm = (): boolean => {
     const newErrors: Partial<UserRegistrationData & { submit: string }> = {};
 
-    // Required field validation
-    if (!formData.firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!formData.lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!formData.email.trim()) newErrors.email = 'Email is required';
-    if (!formData.password) newErrors.password = 'Password is required';
-    if (!formData.confirmPassword) newErrors.confirmPassword = 'Please confirm your password';
+    // Use consolidated validation utilities
+    const firstNameCheck = isRequired(formData.firstName, 'First name');
+    if (!firstNameCheck.valid) newErrors.firstName = firstNameCheck.message;
 
-    // Email validation
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (formData.email && !emailRegex.test(formData.email)) {
+    const lastNameCheck = isRequired(formData.lastName, 'Last name');
+    if (!lastNameCheck.valid) newErrors.lastName = lastNameCheck.message;
+
+    const emailRequiredCheck = isRequired(formData.email, 'Email');
+    if (!emailRequiredCheck.valid) {
+      newErrors.email = emailRequiredCheck.message;
+    } else if (!isValidEmail(formData.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    // Password validation
-    if (formData.password && formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters long';
-    }
+    const passwordCheck = isValidPassword(formData.password);
+    if (!passwordCheck.valid) newErrors.password = passwordCheck.message;
 
-    // Password confirmation
-    if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
+    const confirmPasswordCheck = isRequired(formData.confirmPassword, 'Password confirmation');
+    if (!confirmPasswordCheck.valid) {
+      newErrors.confirmPassword = confirmPasswordCheck.message;
+    } else if (formData.password && formData.confirmPassword && formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
@@ -71,31 +74,23 @@ export default function UserRegistrationForm() {
     setErrors({});
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: formData.firstName.trim(),
-          lastName: formData.lastName.trim(),
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password,
-        }),
+      const result = await apiPost('/api/auth/register', {
+        firstName: formData.firstName.trim(),
+        lastName: formData.lastName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success) {
+      if (result) {
         // Registration successful
         alert('Registration successful! You can now log in.');
         router.push('/auth/login');
       } else {
-        setErrors({ submit: data.message || 'Registration failed. Please try again.' });
+        setErrors({ submit: 'Registration failed. Please try again.' });
       }
     } catch (error) {
-      console.error('Registration error:', error);
-      setErrors({ submit: 'Network error. Please check your connection and try again.' });
+      logger.error('Registration error', error, 'UserRegistrationForm');
+      setErrors({ submit: getUserFriendlyError(error) });
     } finally {
       setIsLoading(false);
     }

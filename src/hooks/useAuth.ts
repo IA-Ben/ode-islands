@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { apiGet } from '@/lib/csrfUtils';
+import { logger } from '@/lib/utils';
 
 interface User {
   id: string;
@@ -16,17 +18,16 @@ export function useAuth() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const response = await fetch('/api/auth/user');
-        if (response.ok) {
-          const userData = await response.json();
+        const response = await apiGet<User | { user: User }>('/api/auth/user');
+        if (response) {
           // Handle both formats: direct user object or wrapped response
-          const actualUser = userData.user || userData;
+          const actualUser = 'user' in response ? response.user : response;
           setUser(actualUser);
         } else {
           setUser(null);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        logger.error('Auth check failed', error, 'useAuth');
         setUser(null);
       } finally {
         setIsLoading(false);
