@@ -1,8 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { db } from '../../../../server/db';
 import { certificates, users } from '../../../../shared/schema';
 import { eq, and } from 'drizzle-orm';
 import { withAuth, withUserAuth, withAuthAndCSRF } from '../../../../server/auth';
+import { respondOk, respondError, respondUnauthorized, respondBadRequest, respondCreated, respondConflict, respondOkCompat } from '../../../lib/apiHelpers';
 import crypto from 'crypto';
 
 async function handleGET(request: NextRequest) {
@@ -16,10 +17,7 @@ async function handleGET(request: NextRequest) {
     const userId = session.userId;
 
     if (!userId) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
+      return respondUnauthorized('User session not found');
     }
 
     // Build query conditions
@@ -34,17 +32,13 @@ async function handleGET(request: NextRequest) {
       .where(and(...conditions))
       .orderBy(certificates.issuedAt);
 
-    return NextResponse.json({
-      success: true,
-      certificates: userCertificates,
+    return respondOkCompat(userCertificates, {
+      legacyKey: 'certificates',
+      message: `Retrieved ${userCertificates.length} certificate${userCertificates.length !== 1 ? 's' : ''}`
     });
 
   } catch (error) {
-    console.error('Certificates fetch error:', error instanceof Error ? error.message : String(error));
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch certificates' },
-      { status: 500 }
-    );
+    return respondError(error instanceof Error ? error : 'Failed to fetch certificates');
   }
 }
 
@@ -55,10 +49,9 @@ async function handlePOST(request: NextRequest) {
 
     // Validate required fields
     if (!userId || !certificateType || !title) {
-      return NextResponse.json(
-        { success: false, message: 'User ID, certificate type, and title are required' },
-        { status: 400 }
-      );
+      return respondBadRequest('Missing required fields', {
+        message: 'User ID, certificate type, and title are required'
+      });
     }
 
     // Check if certificate already exists for this combination
@@ -76,9 +69,9 @@ and(
       .limit(1);
 
     if (existingCertificate.length > 0) {
-      return NextResponse.json(
-        { success: false, message: 'Certificate already exists for this user and type' },
-        { status: 400 }
+      return respondConflict(
+        'Duplicate certificate',
+        'Certificate already exists for this user and type'
       );
     }
 
@@ -114,18 +107,15 @@ and(
       // Continue even if notification fails
     }
 
-    return NextResponse.json({
-      success: true,
+    // Use helper for consistent response format with backward compatibility
+    return respondOkCompat(newCertificate[0], {
+      legacyKey: 'certificate',
       message: 'Certificate issued successfully',
-      certificate: newCertificate[0],
+      status: 201
     });
 
   } catch (error) {
-    console.error('Certificate creation error:', error instanceof Error ? error.message : String(error));
-    return NextResponse.json(
-      { success: false, message: 'Failed to issue certificate' },
-      { status: 500 }
-    );
+    return respondError(error instanceof Error ? error : 'Failed to issue certificate');
   }
 }
 

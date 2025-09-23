@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { db } from '../../../../server/db';
 import { userProgress, users } from '../../../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
 import { withUserSessionAuth } from '../../../../server/sessionAuth';
 import { ScoringService } from '../../../../server/scoringService';
+import { respondOk, respondError, respondUnauthorized, respondBadRequest, respondOkCompat } from '../../../lib/apiHelpers';
 
 async function handleGET(request: NextRequest) {
   try {
@@ -15,10 +16,7 @@ async function handleGET(request: NextRequest) {
     const userId = session.userId;
 
     if (!userId) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required' },
-        { status: 401 }
-      );
+      return respondUnauthorized('User session not found');
     }
 
     // Build query conditions
@@ -34,17 +32,13 @@ async function handleGET(request: NextRequest) {
       .where(and(...conditions))
       .orderBy(desc(userProgress.lastAccessed));
 
-    return NextResponse.json({
-      success: true,
-      progress: progress,
+    return respondOkCompat(progress, {
+      legacyKey: 'progress',
+      message: `Retrieved ${progress.length} progress record${progress.length !== 1 ? 's' : ''}`
     });
 
   } catch (error) {
-    console.error('Progress fetch error:', error instanceof Error ? error.message : String(error));
-    return NextResponse.json(
-      { success: false, message: 'Failed to fetch progress' },
-      { status: 500 }
-    );
+    return respondError(error instanceof Error ? error : 'Failed to fetch progress');
   }
 }
 
@@ -59,10 +53,9 @@ async function handlePOST(request: NextRequest) {
 
     // Validate required fields
     if (!chapterId || cardIndex === undefined) {
-      return NextResponse.json(
-        { success: false, message: 'Chapter ID and card index are required' },
-        { status: 400 }
-      );
+      return respondBadRequest('Missing required fields', {
+        message: 'Chapter ID and card index are required'
+      });
     }
 
     // Check if progress record already exists
@@ -89,10 +82,9 @@ async function handlePOST(request: NextRequest) {
         .where(eq(userProgress.id, existingProgress[0].id))
         .returning();
 
-      return NextResponse.json({
-        success: true,
-        message: 'Progress updated',
-        progress: updatedProgress[0],
+      return respondOkCompat(updatedProgress[0], {
+        legacyKey: 'progress',
+        message: 'Progress updated successfully'
       });
     } else {
       // Create new progress record
@@ -162,19 +154,14 @@ async function handlePOST(request: NextRequest) {
         // Don't fail the main operation due to scoring errors
       }
 
-      return NextResponse.json({
-        success: true,
-        message: 'Progress recorded',
-        progress: newProgress[0],
+      return respondOkCompat(newProgress[0], {
+        legacyKey: 'progress', 
+        message: 'Progress recorded successfully'
       });
     }
 
   } catch (error) {
-    console.error('Progress save error:', error instanceof Error ? error.message : String(error));
-    return NextResponse.json(
-      { success: false, message: 'Failed to save progress' },
-      { status: 500 }
-    );
+    return respondError(error instanceof Error ? error : 'Failed to save progress');
   }
 }
 
