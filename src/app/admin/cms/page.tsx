@@ -45,27 +45,27 @@ export default function CMSPage() {
   // Professional Memory Wallet-inspired themes for different CMS phases
   const tabThemes: Record<string, TabTheme> = {
     before: {
-      background: 'linear-gradient(135deg, #1f2937 0%, #374151 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
-      title: '#ffffff',
-      subtitle: '#e879a5', // Memory Wallet primary pink
-      description: '#f0f8ee', // Memory Wallet light sage
+      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      overlay: 'linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
+      title: '#111827',
+      subtitle: '#374151',
+      description: '#6b7280',
       shadow: true
     },
     event: {
-      background: 'linear-gradient(135deg, #4c1d95 0%, #7c3aed 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
-      title: '#ffffff',
-      subtitle: '#e879a5', // Memory Wallet primary pink
-      description: '#f0f8ee', // Memory Wallet light sage
+      background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+      overlay: 'linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
+      title: '#111827',
+      subtitle: '#374151',
+      description: '#6b7280',
       shadow: true
     },
     after: {
-      background: 'linear-gradient(135deg, #047857 0%, #10b981 100%)', // Memory Wallet green
-      overlay: 'linear-gradient(rgba(0,0,0,0.3), rgba(0,0,0,0.1))',
-      title: '#ffffff',
-      subtitle: '#e879a5', // Memory Wallet primary pink
-      description: '#f0f8ee', // Memory Wallet light sage
+      background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+      overlay: 'linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
+      title: '#111827',
+      subtitle: '#374151',
+      description: '#6b7280',
       shadow: true
     }
   };
@@ -289,26 +289,26 @@ export default function CMSPage() {
         subtitle="CMS Access Control"
         description="Verifying admin credentials and preparing the content management interface..."
         theme={{
-          background: 'linear-gradient(135deg, #374151 0%, #1f2937 100%)',
-          overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
-          title: '#ffffff',
-          subtitle: '#e5e7eb',
-          description: '#d1d5db',
+          background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
+          overlay: 'linear-gradient(rgba(255,255,255,0.4), rgba(255,255,255,0.2))',
+          title: '#111827',
+          subtitle: '#374151',
+          description: '#6b7280',
           shadow: true
         }}
         animateIn={true}
       >
         <div className="flex flex-col items-center justify-center space-y-8">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-white/60 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            <div className="w-16 h-16 border-4 border-gray-300 border-t-gray-800 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-gray-600 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
           </div>
           <div className="text-center">
-            <div className="text-white/80 text-lg font-medium mb-2">Authenticating...</div>
-            <div className="flex items-center justify-center space-x-2 text-white/60 text-sm">
-              <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            <div className="text-gray-800 text-lg font-medium mb-2">Authenticating...</div>
+            <div className="flex items-center justify-center space-x-2 text-gray-600 text-sm">
+              <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
             </div>
           </div>
         </div>
@@ -324,11 +324,11 @@ export default function CMSPage() {
         subtitle="Admin Access Portal"
         description="Enter your admin credentials to access the comprehensive content management system"
         theme={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
-          overlay: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.3))',
-          title: '#ffffff',
-          subtitle: '#e2e8f0',
-          description: '#cbd5e0',
+          background: 'linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%)',
+          overlay: 'linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.3))',
+          title: '#111827',
+          subtitle: '#374151',
+          description: '#6b7280',
           shadow: true
         }}
         animateIn={animateIn}
@@ -336,24 +336,24 @@ export default function CMSPage() {
       >
         <div className="max-w-md mx-auto">
           <div 
-            className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8"
+            className="bg-gray-100 backdrop-blur-lg rounded-2xl border border-gray-300 p-8"
             style={{
               opacity: 0,
               animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
             }}
           >
             <div className="text-center mb-8">
-              <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-20 h-20 bg-gray-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-gray-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-4">
+              <h3 className="text-3xl font-bold text-gray-900 mb-4">
                 <AnimateText active={animateIn} delay={1800}>
                   Admin Portal
                 </AnimateText>
               </h3>
-              <p className="text-white/80 mb-8 leading-relaxed">
+              <p className="text-gray-700 mb-8 leading-relaxed">
                 <AnimateText active={animateIn} delay={2100}>
                   Secure access to content management, analytics, and administrative controls
                 </AnimateText>
@@ -362,9 +362,9 @@ export default function CMSPage() {
             
             <div className="space-y-6">
               <div>
-                <div className="text-center text-white/80 mb-6">
+                <div className="text-center text-gray-700 mb-6">
                   <p className="text-lg">Sign in with your Replit account to access the CMS</p>
-                  <p className="text-sm text-white/60 mt-2">Admin permissions required</p>
+                  <p className="text-sm text-gray-600 mt-2">Admin permissions required</p>
                 </div>
               </div>
               
@@ -413,11 +413,11 @@ export default function CMSPage() {
         subtitle="Administrator Privileges Required"
         description="This content management system requires admin-level access permissions to continue"
         theme={{
-          background: 'linear-gradient(135deg, #7c2d12 0%, #991b1b 100%)',
-          overlay: 'linear-gradient(rgba(0,0,0,0.5), rgba(0,0,0,0.3))',
-          title: '#ffffff',
-          subtitle: '#fef2f2',
-          description: '#fecaca',
+          background: 'linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%)',
+          overlay: 'linear-gradient(rgba(255,255,255,0.5), rgba(255,255,255,0.3))',
+          title: '#111827',
+          subtitle: '#991b1b',
+          description: '#dc2626',
           shadow: true
         }}
         animateIn={animateIn}
@@ -425,38 +425,38 @@ export default function CMSPage() {
       >
         <div className="max-w-md mx-auto">
           <div 
-            className="bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 text-center"
+            className="bg-red-50 backdrop-blur-lg rounded-2xl border border-red-300 p-8 text-center"
             style={{
               opacity: 0,
               animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
             }}
           >
             <div className="mb-8">
-              <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-20 h-20 bg-red-200 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-red-800" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16c-.77.833.192 2.5 1.732 2.5z" />
                 </svg>
               </div>
-              <h3 className="text-3xl font-bold text-white mb-4">
+              <h3 className="text-3xl font-bold text-red-900 mb-4">
                 <AnimateText active={animateIn} delay={1800}>
                   Insufficient Permissions
                 </AnimateText>
               </h3>
-              <p className="text-white/80 mb-6 leading-relaxed">
+              <p className="text-red-800 mb-6 leading-relaxed">
                 <AnimateText active={animateIn} delay={2100}>
                   Content management access is restricted to administrators only
                 </AnimateText>
               </p>
-              <div className="text-white/60 text-sm mb-8 bg-white/10 rounded-lg p-3 backdrop-blur-sm">
-                Logged in as: <span className="font-mono text-white/80">{user.email}</span>
+              <div className="text-red-700 text-sm mb-8 bg-red-100 rounded-lg p-3 backdrop-blur-sm">
+                Logged in as: <span className="font-mono text-red-800">{user.email}</span>
               </div>
             </div>
             
             <button
               onClick={handleLogout}
-              className="group relative overflow-hidden w-full bg-white/20 hover:bg-white/30 text-white font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl backdrop-blur-sm border border-white/30 hover:border-white/50"
+              className="group relative overflow-hidden w-full bg-red-200 hover:bg-red-300 text-red-900 font-bold py-4 px-8 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl backdrop-blur-sm border border-red-300 hover:border-red-400"
             >
-              <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="absolute inset-0 bg-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
               <div className="relative flex items-center justify-center space-x-3">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -481,15 +481,15 @@ export default function CMSPage() {
       >
         <div className="flex flex-col items-center justify-center space-y-8">
           <div className="relative">
-            <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-white/60 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+            <div className="w-16 h-16 border-4 border-gray-300 border-t-gray-800 rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-gray-600 rounded-full animate-spin" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
           </div>
           <div className="text-center">
-            <div className="text-white/80 text-lg font-medium mb-2">Initializing workspace...</div>
-            <div className="flex items-center justify-center space-x-2 text-white/60 text-sm">
-              <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse"></div>
-              <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-              <div className="w-2 h-2 bg-white/60 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            <div className="text-gray-800 text-lg font-medium mb-2">Initializing workspace...</div>
+            <div className="flex items-center justify-center space-x-2 text-gray-600 text-sm">
+              <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse"></div>
+              <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+              <div className="w-2 h-2 bg-gray-600 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
             </div>
           </div>
         </div>
@@ -608,7 +608,7 @@ export default function CMSPage() {
 
         {/* Professional Phase Navigation */}
         <div 
-          className="bg-white/8 backdrop-blur-sm rounded-2xl border border-white/20 p-1"
+          className="bg-gray-100 backdrop-blur-sm rounded-2xl border border-gray-300 p-1"
           style={{
             opacity: 0,
             animation: animateIn ? 'animButtonIn 0.8s 1.2s ease forwards' : 'none'
@@ -619,8 +619,8 @@ export default function CMSPage() {
               onClick={() => setSelectedPhase('before')}
               className={`group flex-1 px-6 py-4 text-sm font-semibold rounded-xl transition-all duration-200 ${
                 selectedPhase === 'before'
-                  ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/30'
-                  : 'text-white/70 hover:text-white/90 hover:bg-white/10'
+                  ? 'bg-gray-200 text-gray-900 shadow-sm backdrop-blur-sm border border-gray-400'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <div className="flex items-center justify-center space-x-3">
@@ -637,8 +637,8 @@ export default function CMSPage() {
               onClick={() => setSelectedPhase('event')}
               className={`group flex-1 px-6 py-4 text-sm font-semibold rounded-xl transition-all duration-200 ${
                 selectedPhase === 'event'
-                  ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/30'
-                  : 'text-white/70 hover:text-white/90 hover:bg-white/10'
+                  ? 'bg-gray-200 text-gray-900 shadow-sm backdrop-blur-sm border border-gray-400'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <div className="flex items-center justify-center space-x-3">
@@ -655,8 +655,8 @@ export default function CMSPage() {
               onClick={() => setSelectedPhase('after')}
               className={`group flex-1 px-6 py-4 text-sm font-semibold rounded-xl transition-all duration-200 ${
                 selectedPhase === 'after'
-                  ? 'bg-white/20 text-white shadow-sm backdrop-blur-sm border border-white/30'
-                  : 'text-white/70 hover:text-white/90 hover:bg-white/10'
+                  ? 'bg-gray-200 text-gray-900 shadow-sm backdrop-blur-sm border border-gray-400'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-100'
               }`}
             >
               <div className="flex items-center justify-center space-x-3">
@@ -681,31 +681,31 @@ export default function CMSPage() {
           }}
         >
           <Link href="/admin/cms/custom-buttons">
-            <Card className="bg-gradient-to-br from-blue-500/20 to-purple-500/20 backdrop-blur-md border-white/20 hover:from-blue-500/30 hover:to-purple-500/30 transition-all cursor-pointer h-full">
+            <Card className="bg-gradient-to-br from-blue-100 to-purple-100 backdrop-blur-md border-gray-300 hover:from-blue-200 hover:to-purple-200 transition-all cursor-pointer h-full">
               <CardContent className="p-6 text-center">
                 <div className="text-3xl mb-2">🎯</div>
-                <h3 className="text-white text-lg font-semibold mb-2">Custom Buttons Manager</h3>
-                <p className="text-white/70 text-sm">Configure interactive buttons across all content</p>
+                <h3 className="text-gray-900 text-lg font-semibold mb-2">Custom Buttons Manager</h3>
+                <p className="text-gray-700 text-sm">Configure interactive buttons across all content</p>
               </CardContent>
             </Card>
           </Link>
           
           <Link href="/admin/cms/scheduler">
-            <Card className="bg-gradient-to-br from-green-500/20 to-teal-500/20 backdrop-blur-md border-white/20 hover:from-green-500/30 hover:to-teal-500/30 transition-all cursor-pointer h-full">
+            <Card className="bg-gradient-to-br from-green-100 to-teal-100 backdrop-blur-md border-gray-300 hover:from-green-200 hover:to-teal-200 transition-all cursor-pointer h-full">
               <CardContent className="p-6 text-center">
                 <div className="text-3xl mb-2">⏰</div>
-                <h3 className="text-white text-lg font-semibold mb-2">Content Scheduler</h3>
-                <p className="text-white/70 text-sm">Manage time-based content availability</p>
+                <h3 className="text-gray-900 text-lg font-semibold mb-2">Content Scheduler</h3>
+                <p className="text-gray-700 text-sm">Manage time-based content availability</p>
               </CardContent>
             </Card>
           </Link>
           
           <Link href="/admin/cms/after-experience">
-            <Card className="bg-gradient-to-br from-orange-500/20 to-red-500/20 backdrop-blur-md border-white/20 hover:from-orange-500/30 hover:to-red-500/30 transition-all cursor-pointer h-full">
+            <Card className="bg-gradient-to-br from-orange-100 to-red-100 backdrop-blur-md border-gray-300 hover:from-orange-200 hover:to-red-200 transition-all cursor-pointer h-full">
               <CardContent className="p-6 text-center">
                 <div className="text-3xl mb-2">🎭</div>
-                <h3 className="text-white text-lg font-semibold mb-2">After Experience</h3>
-                <p className="text-white/70 text-sm">Configure post-event content and features</p>
+                <h3 className="text-gray-900 text-lg font-semibold mb-2">After Experience</h3>
+                <p className="text-gray-700 text-sm">Configure post-event content and features</p>
               </CardContent>
             </Card>
           </Link>
@@ -719,9 +719,9 @@ export default function CMSPage() {
             animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
           }}
         >
-          <Card className="bg-gradient-to-br from-amber-500/20 to-yellow-500/20 backdrop-blur-md border-white/20">
+          <Card className="bg-gradient-to-br from-amber-100 to-yellow-100 backdrop-blur-md border-gray-300">
             <CardHeader>
-              <CardTitle className="text-white flex items-center space-x-3">
+              <CardTitle className="text-gray-900 flex items-center space-x-3">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
@@ -729,7 +729,7 @@ export default function CMSPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-white/80 mb-6">
+              <p className="text-gray-700 mb-6">
                 Populate the app with comprehensive sample data showcasing all features across the three phases. 
                 This includes live events, polls, Q&A sessions, memory collections, collectibles, and community features.
               </p>
@@ -749,8 +749,8 @@ export default function CMSPage() {
                 animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
               }}
             >
-              <div className="bg-white/8 backdrop-blur-sm rounded-xl border border-white/20 p-6">
-                <h3 className="text-xl font-bold text-white mb-6 flex items-center">
+              <div className="bg-gray-100 backdrop-blur-sm rounded-xl border border-gray-300 p-6">
+                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center">
                   <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
                   </svg>
@@ -765,8 +765,8 @@ export default function CMSPage() {
                       onClick={() => setSelectedChapter(chapterId)}
                       className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 capitalize ${
                         selectedChapter === chapterId
-                          ? 'bg-white/25 text-white shadow-sm backdrop-blur-sm border border-white/40'
-                          : 'bg-white/10 text-white/80 hover:text-white hover:bg-white/20 border border-white/20 hover:border-white/30'
+                          ? 'bg-gray-200 text-gray-900 shadow-sm backdrop-blur-sm border border-gray-400'
+                          : 'bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border border-gray-300 hover:border-gray-400'
                       }`}
                     >
                       {chapterId.replace('-', ' ')}
@@ -787,14 +787,14 @@ export default function CMSPage() {
               animation: animateIn ? 'animButtonIn 0.8s 1.8s ease forwards' : 'none'
             }}
           >
-            <div className="bg-white/8 backdrop-blur-sm rounded-2xl border border-white/20 p-8">
+            <div className="bg-gray-100 backdrop-blur-sm rounded-2xl border border-gray-300 p-8">
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-2xl font-bold text-white flex items-center">
+                <h3 className="text-2xl font-bold text-gray-900 flex items-center">
                   <AnimateText active={animateIn} delay={2100}>
                     {`${selectedChapter.replace('-', ' ').toUpperCase()} Chapter`}
                   </AnimateText>
                 </h3>
-                <div className="text-white/70 text-sm bg-white/10 px-4 py-2 rounded-lg backdrop-blur-sm border border-white/20">
+                <div className="text-gray-700 text-sm bg-gray-200 px-4 py-2 rounded-lg backdrop-blur-sm border border-gray-300">
                   {currentChapterCards.length} Cards Total
                 </div>
               </div>
