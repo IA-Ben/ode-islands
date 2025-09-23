@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
-import { ThemeProvider } from "@/components/theme/ThemeProvider";
+import { ThemeProvider as TokenThemeProvider } from "@/components/theme/ThemeProvider";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import { MobileProvider } from "@/contexts/MobileContext";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import { NotificationProvider } from "@/contexts/NotificationProvider";
@@ -37,15 +38,17 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${manrope.variable} antialiased`}>
-        <ThemeProvider initial={serverTheme}>
-          <MobileProvider>
-            <WebSocketProvider>
-              <NotificationProvider>
-                {children}
-              </NotificationProvider>
-            </WebSocketProvider>
-          </MobileProvider>
-        </ThemeProvider>
+        <TokenThemeProvider initial={serverTheme}>
+          <ThemeProvider>
+            <MobileProvider>
+              <WebSocketProvider>
+                <NotificationProvider>
+                  {children}
+                </NotificationProvider>
+              </WebSocketProvider>
+            </MobileProvider>
+          </ThemeProvider>
+        </TokenThemeProvider>
       </body>
     </html>
   );
