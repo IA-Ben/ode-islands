@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useSharedWebSocket } from '@/contexts/WebSocketContext';
+import { useUnifiedWebSocket } from '@/contexts/UnifiedWebSocketContext';
 
 interface AnalyticsMessage {
   type: 'real_time_metrics' | 'user_activity' | 'content_interaction' | 'system_alert' | 'event_update';
@@ -106,20 +106,37 @@ export function useAnalyticsWebSocket(options: UseAnalyticsWebSocketOptions = {}
     }
   };
 
-  // Use the shared WebSocket connection instead of creating a new one
-  const { connectionStatus, sendMessage, lastMessage } = useSharedWebSocket();
+  // Use the unified WebSocket service with channel subscriptions
+  const { connectionStatus, sendMessage, subscribeToTypes } = useUnifiedWebSocket();
 
-  // Handle messages from the shared WebSocket connection
+  // Subscribe to analytics message types using the unified service
   useEffect(() => {
-    if (lastMessage && enabled) {
-      handleWebSocketMessage(lastMessage);
-    }
-  }, [lastMessage, enabled, handleWebSocketMessage]);
+    if (!enabled) return;
 
-  // Subscribe to analytics updates when connection is established
+    console.log('Analytics WebSocket subscribing to unified service');
+    
+    // Subscribe to analytics-specific message types
+    const unsubscribe = subscribeToTypes(
+      ['real_time_metrics', 'user_activity', 'content_interaction', 'system_alert', 'event_update'],
+      handleWebSocketMessage
+    );
+
+    // Also subscribe to messages with analytics_ prefix
+    const unsubscribeAnalytics = subscribeToTypes(
+      ['analytics_real_time_metrics', 'analytics_user_activity', 'analytics_content_interaction', 'analytics_system_alert', 'analytics_event_update'],
+      handleWebSocketMessage
+    );
+
+    return () => {
+      unsubscribe();
+      unsubscribeAnalytics();
+    };
+  }, [enabled, subscribeToTypes, handleWebSocketMessage]);
+
+  // Send subscription request when connected
   useEffect(() => {
     if (connectionStatus === 'open' && enabled) {
-      console.log('Analytics WebSocket connected via shared connection');
+      console.log('Analytics WebSocket connected via unified service');
       // Subscribe to analytics updates
       sendMessage({
         type: 'subscribe',
@@ -160,9 +177,10 @@ export function useAnalyticsWebSocket(options: UseAnalyticsWebSocketOptions = {}
     setActivityFeed([]);
   }, []);
 
-  // Generate mock real-time data for development
+  // Generate mock real-time data for development (only if enabled via environment)
   useEffect(() => {
-    if (!enabled) return;
+    const mockDataEnabled = process.env.NEXT_PUBLIC_ENABLE_ANALYTICS_MOCKS === 'true';
+    if (!enabled || !mockDataEnabled) return;
 
     const generateMockData = () => {
       // Simulate real-time metrics updates
@@ -223,7 +241,7 @@ export function useAnalyticsWebSocket(options: UseAnalyticsWebSocketOptions = {}
 
     const interval = setInterval(generateMockData, 5000); // Update every 5 seconds
     return () => clearInterval(interval);
-  }, [enabled]);
+  }, [enabled]); // Note: Mock data now requires NEXT_PUBLIC_ENABLE_ANALYTICS_MOCKS=true
 
   return {
     connectionStatus,
