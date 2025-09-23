@@ -19,8 +19,23 @@
 }
 
 @theme inline {
+  /* Legacy color mappings for backwards compatibility */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  
+  /* Theme token color mappings */
+  --color-bg: hsl(var(--bg) / <alpha-value>);
+  --color-fg: hsl(var(--fg) / <alpha-value>);
+  --color-surface: hsl(var(--surface) / <alpha-value>);
+  --color-muted: hsl(var(--muted) / <alpha-value>);
+  --color-border: hsl(var(--border) / <alpha-value>);
+  --color-accent: hsl(var(--accent) / <alpha-value>);
+  --color-accent-foreground: hsl(var(--accent-foreground) / <alpha-value>);
+  --color-success: hsl(var(--success) / <alpha-value>);
+  --color-warn: hsl(var(--warn) / <alpha-value>);
+  --color-error: hsl(var(--error) / <alpha-value>);
+  
+  /* Font configuration */
   --font-sans: var(--font-manrope);
   --font-weight-normal: 500;
   --font-weight-medium: 500;
