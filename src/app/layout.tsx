@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { MobileProvider } from "@/contexts/MobileContext";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
 import { NotificationProvider } from "@/contexts/NotificationProvider";
+import { loadServerTheme, getThemeSSRStyles } from "@/lib/theme/server";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -25,15 +26,18 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Load server-side theme to prevent FOUC and ensure consistency
+  const serverTheme = await loadServerTheme();
+
   return (
     <html lang="en">
       <body className={`${manrope.variable} antialiased`}>
-        <ThemeProvider>
+        <ThemeProvider initial={serverTheme}>
           <MobileProvider>
             <WebSocketProvider>
               <NotificationProvider>

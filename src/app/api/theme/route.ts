@@ -36,6 +36,22 @@ function validateTheme(theme: any): Record<string, string> {
       if (!hslRegex.test(theme[token])) {
         throw new Error(`Invalid HSL format for ${token}: ${theme[token]}`);
       }
+      
+      // Parse and validate ranges
+      const [h, s, l] = theme[token].split(' ').map((val: string, i: number) => {
+        return i === 0 ? parseInt(val) : parseInt(val.replace('%', ''));
+      });
+      
+      if (h < 0 || h > 360) {
+        throw new Error(`Hue out of range (0-360) for ${token}: ${h}`);
+      }
+      if (s < 0 || s > 100) {
+        throw new Error(`Saturation out of range (0-100) for ${token}: ${s}%`);
+      }
+      if (l < 0 || l > 100) {
+        throw new Error(`Lightness out of range (0-100) for ${token}: ${l}%`);
+      }
+      
       validatedTheme[token] = theme[token];
     } else {
       // Use default if not provided
@@ -61,7 +77,7 @@ export async function GET() {
 
     return NextResponse.json({
       theme: themeData,
-      isDefault: !await fs.access(THEME_FILE_PATH).then(() => false).catch(() => true)
+      isDefault: await fs.access(THEME_FILE_PATH).then(() => false).catch(() => true)
     });
   } catch (error) {
     console.error('Error retrieving theme:', error);

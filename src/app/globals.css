@@ -171,8 +171,8 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: hsl(var(--bg));
+  color: hsl(var(--fg));
   font-family: Arial, Helvetica, sans-serif;
   font-weight: 500;
   height: 100%;
@@ -183,8 +183,8 @@ body {
 
 /* Auth pages need proper contrast - override global body color */
 body:has([data-auth-page]) {
-  background: #f9fafb;
-  color: #111827;
+  background: hsl(var(--surface));
+  color: hsl(var(--fg));
 }
 
 [data-auth-page] * {
