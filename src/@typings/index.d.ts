@@ -143,6 +143,8 @@ export interface ColorPickerProps {
   showSavedColors?: boolean
 }
 
+/// <reference types="@testing-library/jest-dom" />
+
 export type CardData = {
   text?: {
     title?: string
