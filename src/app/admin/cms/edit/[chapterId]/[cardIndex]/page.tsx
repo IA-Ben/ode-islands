@@ -1564,7 +1564,80 @@ export default function CardEditorPage() {
                 </CardContent>
               </Card>
 
-              {/* Enhanced Custom Buttons Configuration */}
+              {/* Interactive Button System Configuration */}
+              <Card className="bg-gray-800 border-gray-700">
+                <CardHeader>
+                  <CardTitle className="text-white text-base flex items-center gap-2">
+                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.122 2.122" />
+                    </svg>
+                    Interactive Button System
+                    <span className="ml-auto text-xs bg-blue-600 px-2 py-1 rounded">
+                      Unified Actions v2.0
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-blue-950/50 border border-blue-600/30 rounded-lg p-4">
+                    <h4 className="text-blue-300 font-medium text-sm mb-3 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Button System Guide
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-blue-200">
+                      <div>
+                        <h5 className="font-medium text-blue-300 mb-2">📍 Positioning Best Practices</h5>
+                        <ul className="space-y-1 text-blue-100/80">
+                          <li>• Use percentage positioning (5%-95% safe zone)</li>
+                          <li>• Center buttons at 50% for balanced layout</li>
+                          <li>• Avoid screen edges on mobile devices</li>
+                          <li>• Preview mode shows visual positioning</li>
+                        </ul>
+                      </div>
+                      <div>
+                        <h5 className="font-medium text-blue-300 mb-2">🎬 Action Types Available</h5>
+                        <ul className="space-y-1 text-blue-100/80">
+                          <li>• <span className="text-green-300">Chapter</span>: Navigate to main story</li>
+                          <li>• <span className="text-purple-300">Sub-Chapter</span>: Hidden/bonus content</li>
+                          <li>• <span className="text-orange-300">External URL</span>: Links with security</li>
+                          <li>• <span className="text-cyan-300">Memory Wallet</span>: Collection features</li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-950/50 border border-amber-600/30 rounded-lg p-4">
+                    <h4 className="text-amber-300 font-medium text-sm mb-2 flex items-center gap-2">
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      Quick Tips
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
+                      <div className="bg-amber-900/30 rounded p-2">
+                        <div className="text-amber-200 font-medium">🎯 Targeting</div>
+                        <div className="text-amber-100/80 mt-1">
+                          Use descriptive chapter IDs like "chapter-2" or "chapter-1-bonus"
+                        </div>
+                      </div>
+                      <div className="bg-amber-900/30 rounded p-2">
+                        <div className="text-amber-200 font-medium">🔐 Security</div>
+                        <div className="text-amber-100/80 mt-1">
+                          External URLs must use HTTPS in production
+                        </div>
+                      </div>
+                      <div className="bg-amber-900/30 rounded p-2">
+                        <div className="text-amber-200 font-medium">♿ Accessibility</div>
+                        <div className="text-amber-100/80 mt-1">
+                          Add clear labels and unlock hints for locked content
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
               <CardEditorButtons
                 cardData={cardData}
                 onCardDataChange={setCardData}
