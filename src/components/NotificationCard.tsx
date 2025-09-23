@@ -142,7 +142,7 @@ export const NotificationCard: React.FC<NotificationCardProps> = ({
             {/* Time and Unread Indicator */}
             <div className="flex items-center space-x-3 flex-shrink-0 ml-3">
               <span className="text-xs text-gray-500 font-medium">
-                {formatTime(notification.createdAt)}
+                {notification.createdAt ? formatTime(notification.createdAt) : 'Just now'}
               </span>
               {!notification.isRead && (
                 <div

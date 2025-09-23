@@ -4,9 +4,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import NotificationCard from './NotificationCard';
 import NotificationSettings from './NotificationSettings';
-import { useNotifications } from '@/hooks/useNotifications';
-import { Notification } from '../../shared/schema';
+import { useUnifiedNotifications, useNotificationSettings, type NotificationItem } from '@/hooks/useUnifiedNotifications';
 import { NotificationSoundService } from '@/lib/notificationSounds';
+import { notifications } from '../../shared/schema';
+
+// Legacy notification type for NotificationCard compatibility
+type LegacyNotification = typeof notifications.$inferSelect;
 
 interface NotificationCenterProps {
   className?: string;
@@ -20,7 +23,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
   const [hasNewNotifications, setHasNewNotifications] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Use the WebSocket-enabled notifications hook
+  // Use the unified notifications system
   const {
     notifications,
     unreadCount,
@@ -30,7 +33,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
     fetchNotifications,
     markAsRead,
     markAllAsRead,
-  } = useNotifications();
+  } = useUnifiedNotifications();
+
+  // Use notification settings hook for settings management
+  const { settings, testNotifications } = useNotificationSettings();
 
   // Initialize notification sounds on first interaction
   useEffect(() => {
@@ -58,8 +64,22 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
     };
   }, [isOpen, showSettings]);
 
+  // Convert NotificationItem to legacy format for NotificationCard
+  const toLegacyNotification = (notification: NotificationItem): LegacyNotification => ({
+    id: notification.id,
+    userId: notification.userId,
+    title: notification.title,
+    message: notification.message,
+    type: notification.type,
+    actionUrl: notification.actionUrl || null,
+    metadata: notification.metadata || null,
+    isRead: notification.isRead,
+    readAt: notification.readAt || null,
+    createdAt: notification.createdAt,
+  });
+
   // Handle notification action
-  const handleNotificationAction = (notification: Notification) => {
+  const handleNotificationAction = (notification: LegacyNotification) => {
     if (notification.actionUrl) {
       // Close dropdown first
       setIsOpen(false);
@@ -250,7 +270,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({ classNam
                 {filteredNotifications.map((notification) => (
                   <NotificationCard
                     key={notification.id}
-                    notification={notification}
+                    notification={toLegacyNotification(notification)}
                     onMarkAsRead={markAsRead}
                     onAction={handleNotificationAction}
                   />

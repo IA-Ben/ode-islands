@@ -36,6 +36,11 @@ class WebSocketService {
   private subscriptions = new Map<string, ChannelSubscription>();
   private subscriptionCounter = 0;
   
+  // De-duplication for notification messages
+  private notificationCache = new Set<string>();
+  private cacheCleanupInterval: NodeJS.Timeout | null = null;
+  private lastCacheCleanup = Date.now();
+  
   private config: Required<WebSocketServiceConfig>;
   private connectionStatus: ConnectionStatus = 'closed';
   private statusListeners = new Set<(status: ConnectionStatus) => void>();
@@ -64,6 +69,9 @@ class WebSocketService {
         this.isOnline = false;
       });
     }
+
+    // Start cache cleanup interval (clean every 5 minutes)
+    this.startCacheCleanup();
   }
 
   /**
@@ -196,6 +204,7 @@ class WebSocketService {
    */
   disconnect(): void {
     this.stopHeartbeat();
+    this.stopCacheCleanup();
     
     if (this.reconnectTimeoutId) {
       clearTimeout(this.reconnectTimeoutId);
@@ -246,6 +255,17 @@ class WebSocketService {
   }
 
   private routeMessage(message: WebSocketMessage): void {
+    // De-duplicate notification messages to prevent duplicate processing during reconnections
+    if (message.type === 'notification' && message.payload?.id) {
+      const notificationId = message.payload.id;
+      if (this.notificationCache.has(notificationId)) {
+        // Skip duplicate notification
+        return;
+      }
+      // Add to cache with current timestamp
+      this.notificationCache.add(`${notificationId}-${Date.now()}`);
+    }
+
     this.subscriptions.forEach(({ pattern, handler }) => {
       const matches = typeof pattern === 'string' 
         ? message.type === pattern
@@ -320,6 +340,53 @@ class WebSocketService {
       const message = this.messageQueue.shift();
       this.sendMessage(message);
     }
+  }
+
+  /**
+   * Start cache cleanup interval for notification de-duplication
+   */
+  private startCacheCleanup(): void {
+    this.stopCacheCleanup();
+    
+    // Clean cache every 5 minutes
+    this.cacheCleanupInterval = setInterval(() => {
+      this.cleanupNotificationCache();
+    }, 5 * 60 * 1000);
+  }
+
+  /**
+   * Stop cache cleanup interval
+   */
+  private stopCacheCleanup(): void {
+    if (this.cacheCleanupInterval) {
+      clearInterval(this.cacheCleanupInterval);
+      this.cacheCleanupInterval = null;
+    }
+  }
+
+  /**
+   * Clean up old notification cache entries (older than 10 minutes)
+   */
+  private cleanupNotificationCache(): void {
+    const now = Date.now();
+    const tenMinutesAgo = now - (10 * 60 * 1000);
+    
+    // Convert Set to Array for filtering
+    const cacheEntries = Array.from(this.notificationCache);
+    const validEntries = cacheEntries.filter(entry => {
+      // Extract timestamp from cache key (format: "id-timestamp")
+      const parts = entry.split('-');
+      if (parts.length < 2) return false;
+      
+      const timestamp = parseInt(parts[parts.length - 1], 10);
+      return !isNaN(timestamp) && timestamp > tenMinutesAgo;
+    });
+    
+    // Replace cache with cleaned entries
+    this.notificationCache.clear();
+    validEntries.forEach(entry => this.notificationCache.add(entry));
+    
+    this.lastCacheCleanup = now;
   }
 }
 

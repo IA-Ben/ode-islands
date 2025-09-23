@@ -9,6 +9,9 @@ export class NotificationSoundService {
    */
   static setSoundsEnabled(enabled: boolean): void {
     this.soundsEnabled = enabled;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('ode-notifications-sounds', enabled.toString());
+    }
   }
 
   /**
@@ -16,6 +19,9 @@ export class NotificationSoundService {
    */
   static setVibrationEnabled(enabled: boolean): void {
     this.vibrationEnabled = enabled;
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('ode-notifications-vibration', enabled.toString());
+    }
   }
 
   /**
@@ -140,7 +146,6 @@ export class NotificationSoundService {
         return new Notification(title, {
           icon: '/favicon.ico',
           tag: 'ode-notification',
-          renotify: false,
           ...options,
         });
       } catch (error) {
@@ -253,25 +258,6 @@ export class NotificationSoundService {
     }
   }
 
-  /**
-   * Enable/disable sounds
-   */
-  static setSoundsEnabled(enabled: boolean): void {
-    this.soundsEnabled = enabled;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('ode-notifications-sounds', enabled.toString());
-    }
-  }
-
-  /**
-   * Enable/disable vibration
-   */
-  static setVibrationEnabled(enabled: boolean): void {
-    this.vibrationEnabled = enabled;
-    if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('ode-notifications-vibration', enabled.toString());
-    }
-  }
 
   /**
    * Load settings from localStorage
@@ -291,15 +277,6 @@ export class NotificationSoundService {
     }
   }
 
-  /**
-   * Get current settings
-   */
-  static getSettings() {
-    return {
-      soundsEnabled: this.soundsEnabled,
-      vibrationEnabled: this.vibrationEnabled,
-    };
-  }
 }
 
 // Load settings on initialization

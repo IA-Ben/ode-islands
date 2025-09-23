@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { MobileProvider } from "@/contexts/MobileContext";
 import { WebSocketProvider } from "@/contexts/WebSocketContext";
+import { NotificationProvider } from "@/contexts/NotificationProvider";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -35,7 +36,9 @@ export default function RootLayout({
         <ThemeProvider>
           <MobileProvider>
             <WebSocketProvider>
-              {children}
+              <NotificationProvider>
+                {children}
+              </NotificationProvider>
             </WebSocketProvider>
           </MobileProvider>
         </ThemeProvider>

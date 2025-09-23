@@ -22,7 +22,7 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
     const currentSettings = NotificationSoundService.getSettings();
     setSettings({
       ...currentSettings,
-      browserNotifications: Notification.permission === 'granted',
+      browserNotifications: typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted',
     });
   }, [isOpen]);
 
@@ -37,14 +37,19 @@ export const NotificationSettings: React.FC<NotificationSettingsProps> = ({ isOp
   };
 
   const handleBrowserNotificationToggle = async () => {
-    if (Notification.permission === 'granted') {
-      setSettings(prev => ({ ...prev, browserNotifications: false }));
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        setSettings(prev => ({ ...prev, browserNotifications: false }));
+      } else {
+        const permission = await Notification.requestPermission();
+        setSettings(prev => ({ 
+          ...prev, 
+          browserNotifications: permission === 'granted' 
+        }));
+      }
     } else {
-      const permission = await Notification.requestPermission();
-      setSettings(prev => ({ 
-        ...prev, 
-        browserNotifications: permission === 'granted' 
-      }));
+      // Notification API not available - disable the feature
+      setSettings(prev => ({ ...prev, browserNotifications: false }));
     }
   };
 
