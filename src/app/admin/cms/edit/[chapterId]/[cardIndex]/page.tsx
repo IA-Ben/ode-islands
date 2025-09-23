@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ColorPicker } from '@/components/ui/ColorPicker';
-import { LazyClientCardWrapper } from '@/components/LazyComponentWrapper';
+import { CMSCardPreview } from '@/components/CMSCardPreview';
 import { ObjectUploader } from '@/components/ObjectUploader';
 import { CardEditorButtons } from '@/components/CardEditorButtons';
 import type { CardData } from '@/@typings';
@@ -384,10 +384,11 @@ export default function CardEditorPage() {
               <h2 className="text-lg font-semibold">Live Preview</h2>
               <p className="text-sm text-gray-400">Exactly as it appears in the app</p>
             </div>
-            <div className="relative" style={{ height: '600px' }}>
-              <div className="absolute inset-0 scale-50 origin-top-left" style={{ width: '200%', height: '200%' }}>
-                <LazyClientCardWrapper 
-                  componentProps={{ data: cardData, active: true }}
+            <div className="relative bg-gray-100 rounded-lg" style={{ height: '600px' }}>
+              <div className="absolute inset-4">
+                <CMSCardPreview 
+                  data={cardData}
+                  className="h-full w-full"
                 />
               </div>
             </div>
