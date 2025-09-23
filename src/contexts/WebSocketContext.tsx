@@ -103,21 +103,49 @@ export function WebSocketProvider({ children, url = '/ws' }: WebSocketProviderPr
     try {
       setConnectionStatus('connecting');
       
-      // Construct WebSocket URL
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = url.startsWith('/') 
-        ? `${protocol}//${window.location.host}${url}`
-        : url;
+      // Enhanced WebSocket URL construction with better production support
+      let wsUrl: string;
+      
+      if (url.startsWith('/')) {
+        // For relative URLs, construct the full WebSocket URL
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const host = window.location.host;
+        wsUrl = `${protocol}//${host}${url}`;
+        
+        // Log the constructed URL for debugging
+        console.log('WebSocket connecting to:', wsUrl);
+      } else {
+        // For absolute URLs, use as-is
+        wsUrl = url;
+      }
       
       ws.current = new WebSocket(wsUrl);
 
       ws.current.onopen = () => {
         console.log('WebSocket connected with enhanced resilience');
         setConnectionStatus('open');
-        reconnectAttempts.current = 0;
         lastHeartbeat.current = Date.now();
+        
+        // Send immediate hello message to establish connection
+        try {
+          ws.current?.send(JSON.stringify({
+            type: 'hello',
+            timestamp: Date.now()
+          }));
+        } catch (error) {
+          console.warn('Failed to send hello message:', error);
+        }
+        
         startHeartbeat();
         processMessageQueue(); // Send any queued messages
+        
+        // Only reset reconnect attempts after a stable connection (5 seconds)
+        setTimeout(() => {
+          if (ws.current?.readyState === WebSocket.OPEN) {
+            reconnectAttempts.current = 0;
+            console.log('WebSocket connection stabilized, reset reconnect attempts');
+          }
+        }, 5000);
       };
 
       ws.current.onmessage = (event) => {
@@ -152,28 +180,32 @@ export function WebSocketProvider({ children, url = '/ws' }: WebSocketProviderPr
         }
       };
 
-      ws.current.onclose = () => {
-        console.log('WebSocket disconnected');
+      ws.current.onclose = (event) => {
+        console.log('WebSocket disconnected', { code: event.code, reason: event.reason });
         setConnectionStatus('closed');
         stopHeartbeat();
         
-        // Only attempt to reconnect if we're online and haven't exceeded max attempts
-        if (isOnline && reconnectAttempts.current < 10) { // Increased max attempts
+        // Circuit breaker pattern - only reconnect if we haven't exceeded max attempts
+        if (isOnline && reconnectAttempts.current < 5) { // Reduced max attempts to prevent endless loops
           const delay = getReconnectDelay(reconnectAttempts.current);
           reconnectAttempts.current++;
-          console.log(`Attempting to reconnect (${reconnectAttempts.current}/10) in ${Math.round(delay/1000)}s...`);
+          console.log(`Attempting to reconnect (${reconnectAttempts.current}/5) in ${Math.round(delay/1000)}s...`);
           
           reconnectTimeoutId.current = setTimeout(() => {
             connect();
           }, delay);
         } else {
-          console.log('Max reconnection attempts reached or offline, falling back to HTTP polling');
-          // TODO: Implement HTTP polling fallback
+          console.log('Max reconnection attempts reached or offline. WebSocket will remain disconnected until manual reconnect.');
+          setConnectionStatus('error');
+          // Stop trying to reconnect to prevent infinite loops
         }
       };
 
       ws.current.onerror = (error) => {
         console.error('WebSocket error:', error);
+        console.error('WebSocket URL was:', wsUrl);
+        console.error('Current protocol:', window.location.protocol);
+        console.error('Current host:', window.location.host);
         setConnectionStatus('error');
       };
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useWebSocket } from './useWebSocket';
+import { useSharedWebSocket } from '@/contexts/WebSocketContext';
 import { notifications } from '../../shared/schema';
 
 // Define Notification type based on the schema  
@@ -23,23 +23,22 @@ export const useNotifications = () => {
     error: null,
   });
 
-  // WebSocket connection for real-time notifications
-  const wsUrl = typeof window !== 'undefined' 
-    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
-    : null;
+  // Use shared WebSocket connection for real-time notifications
+  const { connectionStatus, lastMessage, sendMessage } = useSharedWebSocket();
 
-  const { connectionStatus, lastMessage, sendMessage } = useWebSocket(wsUrl, {
-    onMessage: async (message) => {
-      if (message.type === 'notification' && message.payload) {
-        // Add new notification to the list
-        const newNotification = message.payload as Notification;
-        setState(prev => ({
-          ...prev,
-          notifications: [newNotification, ...prev.notifications],
-          unreadCount: prev.unreadCount + 1,
-        }));
+  // Handle notification messages from shared WebSocket
+  useEffect(() => {
+    if (lastMessage && lastMessage.type === 'notification' && lastMessage.payload) {
+      // Add new notification to the list
+      const newNotification = lastMessage.payload as Notification;
+      setState(prev => ({
+        ...prev,
+        notifications: [newNotification, ...prev.notifications],
+        unreadCount: prev.unreadCount + 1,
+      }));
 
-        // Show browser notification and play sounds
+      // Show browser notification and play sounds
+      (async () => {
         try {
           const { NotificationSoundService } = await import('@/lib/notificationSounds');
           
@@ -63,15 +62,24 @@ export const useNotifications = () => {
         } catch (error) {
           console.warn('Failed to play notification feedback:', error);
         }
-      }
-    },
-  });
+      })();
+    }
+  }, [lastMessage]);
 
   // Request notification permission
   const requestNotificationPermission = useCallback(async () => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      const permission = await Notification.requestPermission();
-      return permission === 'granted';
+    if (typeof window === 'undefined' || !('Notification' in window)) {
+      return false;
+    }
+    
+    if (Notification.permission === 'default') {
+      try {
+        const permission = await Notification.requestPermission();
+        return permission === 'granted';
+      } catch (error) {
+        console.warn('Failed to request notification permission:', error);
+        return false;
+      }
     }
     return Notification.permission === 'granted';
   }, []);

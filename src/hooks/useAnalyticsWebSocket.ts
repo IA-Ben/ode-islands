@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useCallback } from 'react';
-import { useWebSocket } from './useWebSocket';
+import { useSharedWebSocket } from '@/contexts/WebSocketContext';
 
 interface AnalyticsMessage {
   type: 'real_time_metrics' | 'user_activity' | 'content_interaction' | 'system_alert' | 'event_update';
@@ -65,7 +65,7 @@ export function useAnalyticsWebSocket(options: UseAnalyticsWebSocketOptions = {}
           const alert = {
             id: `alert-${Date.now()}`,
             type: analyticsMessage.data.alertLevel || 'info',
-            message: analyticsMessage.data.message || 'System alert',
+            message: (analyticsMessage.data as any).message || 'System alert',
             timestamp: analyticsMessage.data.timestamp
           };
           setAlerts(prev => [alert, ...prev.slice(0, 9)]); // Keep last 10 alerts
@@ -98,20 +98,28 @@ export function useAnalyticsWebSocket(options: UseAnalyticsWebSocketOptions = {}
   const getActivityDescription = (message: AnalyticsMessage): string => {
     switch (message.type) {
       case 'user_activity':
-        return `User activity: ${message.data.description || 'New user session'}`;
+        return `User activity: ${(message.data as any).description || 'New user session'}`;
       case 'content_interaction':
-        return `Content interaction: ${message.data.description || 'User engaged with content'}`;
+        return `Content interaction: ${(message.data as any).description || 'User engaged with content'}`;
       default:
         return 'Unknown activity';
     }
   };
 
-  const websocketUrl = enabled ? `ws://${typeof window !== 'undefined' ? window.location.host : 'localhost:5000'}/ws` : null;
+  // Use the shared WebSocket connection instead of creating a new one
+  const { connectionStatus, sendMessage, lastMessage } = useSharedWebSocket();
 
-  const { connectionStatus, sendMessage } = useWebSocket(websocketUrl, {
-    onMessage: handleWebSocketMessage,
-    onOpen: () => {
-      console.log('Analytics WebSocket connected');
+  // Handle messages from the shared WebSocket connection
+  useEffect(() => {
+    if (lastMessage && enabled) {
+      handleWebSocketMessage(lastMessage);
+    }
+  }, [lastMessage, enabled, handleWebSocketMessage]);
+
+  // Subscribe to analytics updates when connection is established
+  useEffect(() => {
+    if (connectionStatus === 'open' && enabled) {
+      console.log('Analytics WebSocket connected via shared connection');
       // Subscribe to analytics updates
       sendMessage({
         type: 'subscribe',
@@ -120,14 +128,8 @@ export function useAnalyticsWebSocket(options: UseAnalyticsWebSocketOptions = {}
           subscriptions: ['real_time_metrics', 'user_activity', 'content_interaction', 'system_alert', 'event_update']
         }
       });
-    },
-    onClose: () => {
-      console.log('Analytics WebSocket disconnected');
-    },
-    onError: (error) => {
-      console.error('Analytics WebSocket error:', error);
     }
-  });
+  }, [connectionStatus, enabled, sendMessage]);
 
   const subscribeToEvent = useCallback((eventId: string) => {
     sendMessage({
