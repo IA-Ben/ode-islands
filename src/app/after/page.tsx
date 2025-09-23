@@ -108,51 +108,51 @@ export default function AfterPage() {
   // Default tab themes - Professional Lumus-inspired palettes
   const getDefaultTabThemes = (): Record<string, TabTheme> => ({
     overview: {
-      background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
-      title: '#ffffff',
-      subtitle: '#e2e8f0',
-      description: '#cbd5e0',
+      background: 'hsl(var(--surface))',
+      overlay: 'hsl(var(--muted) / 0.3)',
+      title: 'hsl(var(--fg))',
+      subtitle: 'hsl(var(--fg) / 0.8)',
+      description: 'hsl(var(--fg) / 0.6)',
       shadow: true
     },
     message: {
-      background: 'linear-gradient(135deg, #581c87 0%, #7c3aed 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
-      title: '#ffffff',
-      subtitle: '#f3e8ff',
-      description: '#ddd6fe',
+      background: 'hsl(var(--accent))',
+      overlay: 'hsl(var(--accent) / 0.3)',
+      title: 'hsl(var(--accent-foreground))',
+      subtitle: 'hsl(var(--accent-foreground) / 0.9)',
+      description: 'hsl(var(--accent-foreground) / 0.8)',
       shadow: true
     },
     wallet: {
-      background: 'linear-gradient(135deg, #065f46 0%, #047857 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
-      title: '#ffffff',
-      subtitle: '#ecfdf5',
-      description: '#d1fae5',
+      background: 'hsl(var(--success))',
+      overlay: 'hsl(var(--success) / 0.3)',
+      title: 'hsl(var(--surface))',
+      subtitle: 'hsl(var(--surface) / 0.9)',
+      description: 'hsl(var(--surface) / 0.8)',
       shadow: true
     },
     gallery: {
-      background: 'linear-gradient(135deg, #374151 0%, #4b5563 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
-      title: '#ffffff',
-      subtitle: '#f3f4f6',
-      description: '#d1d5db',
+      background: 'hsl(var(--muted))',
+      overlay: 'hsl(var(--muted) / 0.3)',
+      title: 'hsl(var(--fg))',
+      subtitle: 'hsl(var(--fg) / 0.8)',
+      description: 'hsl(var(--fg) / 0.6)',
       shadow: true
     },
     merch: {
-      background: 'linear-gradient(135deg, #7c2d12 0%, #9a3412 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
-      title: '#ffffff',
-      subtitle: '#fef7f0',
-      description: '#fed7aa',
+      background: 'hsl(var(--warn))',
+      overlay: 'hsl(var(--warn) / 0.3)',
+      title: 'hsl(var(--surface))',
+      subtitle: 'hsl(var(--surface) / 0.9)',
+      description: 'hsl(var(--surface) / 0.8)',
       shadow: true
     },
     community: {
-      background: 'linear-gradient(135deg, #1e40af 0%, #2563eb 100%)',
-      overlay: 'linear-gradient(rgba(0,0,0,0.4), rgba(0,0,0,0.2))',
-      title: '#ffffff',
-      subtitle: '#dbeafe',
-      description: '#bfdbfe',
+      background: 'hsl(var(--accent))',
+      overlay: 'hsl(var(--accent) / 0.3)',
+      title: 'hsl(var(--accent-foreground))',
+      subtitle: 'hsl(var(--accent-foreground) / 0.9)',
+      description: 'hsl(var(--accent-foreground) / 0.8)',
       shadow: true
     }
   });

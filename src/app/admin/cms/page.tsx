@@ -42,30 +42,30 @@ export default function CMSPage() {
   const [csrfToken, setCsrfToken] = useState<string>('');
   const [animateIn, setAnimateIn] = useState(false);
   
-  // Professional Memory Wallet-inspired themes for different CMS phases
+  // Token-based themes for different CMS phases
   const tabThemes: Record<string, TabTheme> = {
     before: {
-      background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
-      overlay: 'linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
-      title: '#111827',
-      subtitle: '#374151',
-      description: '#6b7280',
+      background: 'hsl(var(--surface))',
+      overlay: 'hsl(var(--muted) / 0.2)',
+      title: 'hsl(var(--fg))',
+      subtitle: 'hsl(var(--fg) / 0.8)',
+      description: 'hsl(var(--fg) / 0.6)',
       shadow: true
     },
     event: {
-      background: 'linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%)',
-      overlay: 'linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
-      title: '#111827',
-      subtitle: '#374151',
-      description: '#6b7280',
+      background: 'hsl(var(--accent) / 0.05)',
+      overlay: 'hsl(var(--accent) / 0.1)',
+      title: 'hsl(var(--fg))',
+      subtitle: 'hsl(var(--fg) / 0.8)',
+      description: 'hsl(var(--fg) / 0.6)',
       shadow: true
     },
     after: {
-      background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
-      overlay: 'linear-gradient(rgba(255,255,255,0.3), rgba(255,255,255,0.1))',
-      title: '#111827',
-      subtitle: '#374151',
-      description: '#6b7280',
+      background: 'hsl(var(--success) / 0.05)',
+      overlay: 'hsl(var(--success) / 0.1)',
+      title: 'hsl(var(--fg))',
+      subtitle: 'hsl(var(--fg) / 0.8)',
+      description: 'hsl(var(--fg) / 0.6)',
       shadow: true
     }
   };
@@ -681,31 +681,31 @@ export default function CMSPage() {
           }}
         >
           <Link href="/admin/cms/custom-buttons">
-            <Card className="bg-gradient-to-br from-blue-100 to-purple-100 backdrop-blur-md border-gray-300 hover:from-blue-200 hover:to-purple-200 transition-all cursor-pointer h-full">
+            <Card className="bg-accent/5 backdrop-blur-md border-border hover:bg-accent/10 transition-all cursor-pointer h-full">
               <CardContent className="p-6 text-center">
                 <div className="text-3xl mb-2">🎯</div>
-                <h3 className="text-gray-900 text-lg font-semibold mb-2">Custom Buttons Manager</h3>
-                <p className="text-gray-700 text-sm">Configure interactive buttons across all content</p>
+                <h3 className="text-foreground text-lg font-semibold mb-2">Custom Buttons Manager</h3>
+                <p className="text-muted-foreground text-sm">Configure interactive buttons across all content</p>
               </CardContent>
             </Card>
           </Link>
           
           <Link href="/admin/cms/scheduler">
-            <Card className="bg-gradient-to-br from-green-100 to-teal-100 backdrop-blur-md border-gray-300 hover:from-green-200 hover:to-teal-200 transition-all cursor-pointer h-full">
+            <Card className="bg-success/5 backdrop-blur-md border-border hover:bg-success/10 transition-all cursor-pointer h-full">
               <CardContent className="p-6 text-center">
                 <div className="text-3xl mb-2">⏰</div>
-                <h3 className="text-gray-900 text-lg font-semibold mb-2">Content Scheduler</h3>
-                <p className="text-gray-700 text-sm">Manage time-based content availability</p>
+                <h3 className="text-foreground text-lg font-semibold mb-2">Content Scheduler</h3>
+                <p className="text-muted-foreground text-sm">Manage time-based content availability</p>
               </CardContent>
             </Card>
           </Link>
           
           <Link href="/admin/cms/after-experience">
-            <Card className="bg-gradient-to-br from-orange-100 to-red-100 backdrop-blur-md border-gray-300 hover:from-orange-200 hover:to-red-200 transition-all cursor-pointer h-full">
+            <Card className="bg-warn/5 backdrop-blur-md border-border hover:bg-warn/10 transition-all cursor-pointer h-full">
               <CardContent className="p-6 text-center">
                 <div className="text-3xl mb-2">🎭</div>
-                <h3 className="text-gray-900 text-lg font-semibold mb-2">After Experience</h3>
-                <p className="text-gray-700 text-sm">Configure post-event content and features</p>
+                <h3 className="text-foreground text-lg font-semibold mb-2">After Experience</h3>
+                <p className="text-muted-foreground text-sm">Configure post-event content and features</p>
               </CardContent>
             </Card>
           </Link>
@@ -719,9 +719,9 @@ export default function CMSPage() {
             animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
           }}
         >
-          <Card className="bg-gradient-to-br from-amber-100 to-yellow-100 backdrop-blur-md border-gray-300">
+          <Card className="bg-warn/5 backdrop-blur-md border-border">
             <CardHeader>
-              <CardTitle className="text-gray-900 flex items-center space-x-3">
+              <CardTitle className="text-foreground flex items-center space-x-3">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                 </svg>
@@ -729,7 +729,7 @@ export default function CMSPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-700 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Populate the app with comprehensive sample data showcasing all features across the three phases. 
                 This includes live events, polls, Q&A sessions, memory collections, collectibles, and community features.
               </p>
