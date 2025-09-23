@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { apiPost } from '@/lib/csrfUtils';
+import { apiPostStrict } from '@/lib/csrfUtils';
 import { logger, getUserFriendlyError, isRequired, isValidEmail, isValidPassword } from '@/lib/utils';
 
 interface UserRegistrationData {
@@ -74,19 +74,20 @@ export default function UserRegistrationForm() {
     setErrors({});
 
     try {
-      const result = await apiPost('/api/auth/register', {
+      const result = await apiPostStrict('/api/auth/register', {
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
       });
 
-      if (result) {
+      if (result.success) {
         // Registration successful
         alert('Registration successful! You can now log in.');
         router.push('/auth/login');
       } else {
-        setErrors({ submit: 'Registration failed. Please try again.' });
+        // Show server-provided error message
+        setErrors({ submit: result.error || 'Registration failed. Please try again.' });
       }
     } catch (error) {
       logger.error('Registration error', error, 'UserRegistrationForm');

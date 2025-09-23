@@ -349,3 +349,35 @@ export async function apiDelete<T>(url: string): Promise<T | null> {
   const response = await httpClient.delete<T>(url);
   return response.success ? response.data || null : null;
 }
+
+// ============================================================================
+// STRICT API FUNCTIONS - Preserve full error details for forms
+// ============================================================================
+
+/**
+ * Strict GET request - Returns full ApiResponse<T> with error details
+ */
+export async function apiGetStrict<T>(url: string, params?: Record<string, string>): Promise<ApiResponse<T>> {
+  return httpClient.get<T>(url, params);
+}
+
+/**
+ * Strict POST request - Returns full ApiResponse<T> with error details
+ */
+export async function apiPostStrict<T>(url: string, body?: any): Promise<ApiResponse<T>> {
+  return httpClient.post<T>(url, body);
+}
+
+/**
+ * Strict PUT request - Returns full ApiResponse<T> with error details
+ */
+export async function apiPutStrict<T>(url: string, body?: any): Promise<ApiResponse<T>> {
+  return httpClient.put<T>(url, body);
+}
+
+/**
+ * Strict DELETE request - Returns full ApiResponse<T> with error details
+ */
+export async function apiDeleteStrict<T>(url: string): Promise<ApiResponse<T>> {
+  return httpClient.delete<T>(url);
+}
