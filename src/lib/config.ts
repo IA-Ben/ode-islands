@@ -54,6 +54,11 @@ export interface AppConfig {
     enableLiveEvents: boolean;
     dataSaverMode: boolean;
     mobileOptimizations: boolean;
+    // Button System Feature Flags
+    enableUnifiedButtons: boolean;
+    enableButtonMonitoring: boolean;
+    buttonSystemRolloutPercentage: number;
+    enableEmergencyButtonDisable: boolean;
   };
   
   // Media Processing
@@ -168,6 +173,11 @@ function loadConfig(): AppConfig {
       enableLiveEvents: process.env.ENABLE_LIVE_EVENTS !== 'false',
       dataSaverMode: process.env.ENABLE_DATA_SAVER === 'true',
       mobileOptimizations: process.env.ENABLE_MOBILE_OPTIMIZATIONS !== 'false',
+      // Button System Feature Flags
+      enableUnifiedButtons: process.env.ENABLE_UNIFIED_BUTTONS !== 'false',
+      enableButtonMonitoring: process.env.ENABLE_BUTTON_MONITORING !== 'false',
+      buttonSystemRolloutPercentage: parseInt(process.env.BUTTON_ROLLOUT_PERCENTAGE || '100', 10),
+      enableEmergencyButtonDisable: process.env.ENABLE_EMERGENCY_BUTTON_DISABLE === 'true',
     },
     
     // Media Processing

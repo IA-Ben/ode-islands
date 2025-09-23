@@ -526,6 +526,427 @@ export const userCollectibles = pgTable("user_collectibles", {
   };
 });
 
+// =============================================================================
+// ENTERPRISE FEATURE FLAG SYSTEM
+// =============================================================================
+
+// Feature flags table - server-side feature flag management
+export const featureFlags = pgTable("feature_flags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Flag identification
+  flagKey: varchar("flag_key").notNull().unique(), // e.g., 'enableUnifiedButtons'
+  flagName: varchar("flag_name").notNull(), // Human-readable name
+  description: text("description"), // What this flag controls
+  category: varchar("category").default('feature'), // 'feature', 'experiment', 'operational', 'killswitch'
+  
+  // Flag status and values
+  isEnabled: boolean("is_enabled").default(false),
+  rolloutPercentage: integer("rollout_percentage").default(0), // 0-100
+  rolloutStrategy: varchar("rollout_strategy").default('percentage'), // 'percentage', 'user-cohort', 'environment'
+  
+  // Conditions and targeting
+  targetConditions: jsonb("target_conditions"), // User cohort conditions, environment rules
+  environmentRestrictions: jsonb("environment_restrictions"), // dev/staging/prod restrictions
+  
+  // Emergency controls
+  isEmergencyDisabled: boolean("is_emergency_disabled").default(false),
+  emergencyDisabledAt: timestamp("emergency_disabled_at"),
+  emergencyDisabledBy: varchar("emergency_disabled_by").references(() => users.id),
+  emergencyReason: text("emergency_reason"),
+  
+  // Lifecycle management
+  status: varchar("status").default('active'), // 'draft', 'active', 'deprecated', 'archived'
+  expiresAt: timestamp("expires_at"), // Auto-disable date
+  
+  // Audit fields
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  lastModifiedBy: varchar("last_modified_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    flagKeyIndex: index("feature_flags_flag_key_idx").on(table.flagKey),
+    categoryIndex: index("feature_flags_category_idx").on(table.category),
+    statusIndex: index("feature_flags_status_idx").on(table.status),
+    rolloutIndex: index("feature_flags_rollout_idx").on(table.isEnabled, table.rolloutPercentage),
+    emergencyIndex: index("feature_flags_emergency_idx").on(table.isEmergencyDisabled),
+  };
+});
+
+// Feature flag audit log - track all changes for compliance
+export const featureFlagAuditLog = pgTable("feature_flag_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  flagId: varchar("flag_id").references(() => featureFlags.id).notNull(),
+  
+  // Change details
+  action: varchar("action").notNull(), // 'created', 'updated', 'enabled', 'disabled', 'emergency_disabled', 'deleted'
+  changedFields: jsonb("changed_fields"), // Which fields were modified
+  oldValues: jsonb("old_values"), // Previous values
+  newValues: jsonb("new_values"), // New values
+  
+  // Context
+  reason: text("reason"), // Why the change was made
+  source: varchar("source").default('admin'), // 'admin', 'api', 'automation', 'emergency'
+  
+  // Actor information
+  userId: varchar("user_id").references(() => users.id),
+  userEmail: varchar("user_email"),
+  userAgent: varchar("user_agent"),
+  ipAddress: varchar("ip_address"),
+  
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => {
+  return {
+    flagIdIndex: index("flag_audit_log_flag_id_idx").on(table.flagId),
+    actionIndex: index("flag_audit_log_action_idx").on(table.action),
+    timestampIndex: index("flag_audit_log_timestamp_idx").on(table.timestamp),
+    userIdIndex: index("flag_audit_log_user_id_idx").on(table.userId),
+  };
+});
+
+// =============================================================================
+// ENTERPRISE MONITORING & METRICS SYSTEM
+// =============================================================================
+
+// Aggregated metrics table - server-side metrics storage
+export const systemMetrics = pgTable("system_metrics", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Metric identification
+  metricName: varchar("metric_name").notNull(), // e.g., 'button.render.time', 'button.action.success_rate'
+  metricType: varchar("metric_type").notNull(), // 'counter', 'gauge', 'histogram', 'timer'
+  category: varchar("category").notNull(), // 'performance', 'error', 'usage', 'business'
+  
+  // Metric values
+  value: decimal("value", { precision: 15, scale: 6 }).notNull(),
+  count: integer("count").default(1), // For aggregated metrics
+  min: decimal("min", { precision: 15, scale: 6 }),
+  max: decimal("max", { precision: 15, scale: 6 }),
+  avg: decimal("avg", { precision: 15, scale: 6 }),
+  percentile_50: decimal("percentile_50", { precision: 15, scale: 6 }),
+  percentile_95: decimal("percentile_95", { precision: 15, scale: 6 }),
+  percentile_99: decimal("percentile_99", { precision: 15, scale: 6 }),
+  
+  // Context and dimensions
+  dimensions: jsonb("dimensions"), // Labels like {feature: 'buttons', browser: 'chrome', version: 'v1.2.3'}
+  environment: varchar("environment").default('production'), // 'development', 'staging', 'production'
+  
+  // Time aggregation
+  aggregationWindow: varchar("aggregation_window").default('1m'), // '1m', '5m', '1h', '1d'
+  windowStart: timestamp("window_start").notNull(),
+  windowEnd: timestamp("window_end").notNull(),
+  
+  // Metadata
+  source: varchar("source").default('client'), // 'client', 'server', 'synthetic'
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    metricNameIndex: index("system_metrics_metric_name_idx").on(table.metricName),
+    categoryIndex: index("system_metrics_category_idx").on(table.category),
+    timeRangeIndex: index("system_metrics_time_range_idx").on(table.windowStart, table.windowEnd),
+    environmentIndex: index("system_metrics_environment_idx").on(table.environment),
+    aggregationIndex: index("system_metrics_aggregation_idx").on(table.metricName, table.aggregationWindow, table.windowStart),
+  };
+});
+
+// Real-time metric events - raw events before aggregation
+export const metricEvents = pgTable("metric_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Event identification
+  metricName: varchar("metric_name").notNull(),
+  metricType: varchar("metric_type").notNull(),
+  value: decimal("value", { precision: 15, scale: 6 }).notNull(),
+  
+  // Context
+  dimensions: jsonb("dimensions"),
+  sessionId: varchar("session_id"),
+  userId: varchar("user_id").references(() => users.id),
+  
+  // Client information
+  userAgent: varchar("user_agent"),
+  clientTimestamp: timestamp("client_timestamp"),
+  serverTimestamp: timestamp("server_timestamp").defaultNow(),
+  
+  // Processing status
+  processed: boolean("processed").default(false),
+  processedAt: timestamp("processed_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    metricNameIndex: index("metric_events_metric_name_idx").on(table.metricName),
+    timestampIndex: index("metric_events_timestamp_idx").on(table.serverTimestamp),
+    processedIndex: index("metric_events_processed_idx").on(table.processed, table.serverTimestamp),
+    sessionIdIndex: index("metric_events_session_id_idx").on(table.sessionId),
+    userIdIndex: index("metric_events_user_id_idx").on(table.userId),
+  };
+});
+
+// System alerts and thresholds
+export const alertRules = pgTable("alert_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Alert identification
+  name: varchar("name").notNull(),
+  description: text("description"),
+  category: varchar("category").default('performance'), // 'performance', 'error', 'availability', 'business'
+  severity: varchar("severity").default('warning'), // 'info', 'warning', 'error', 'critical'
+  
+  // Alert conditions
+  metricName: varchar("metric_name").notNull(),
+  operator: varchar("operator").notNull(), // '>', '<', '>=', '<=', '==', '!='
+  threshold: decimal("threshold", { precision: 15, scale: 6 }).notNull(),
+  evaluationWindow: varchar("evaluation_window").default('5m'), // Time window for evaluation
+  
+  // Alert behavior
+  isEnabled: boolean("is_enabled").default(true),
+  cooldownPeriod: integer("cooldown_period").default(300), // Seconds before re-alerting
+  autoResolve: boolean("auto_resolve").default(true),
+  
+  // Actions
+  notifications: jsonb("notifications"), // Email, slack, webhooks, etc.
+  autoRollback: boolean("auto_rollback").default(false), // Trigger automatic rollback
+  rollbackConditions: jsonb("rollback_conditions"),
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id).notNull(),
+  lastTriggeredAt: timestamp("last_triggered_at"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    metricNameIndex: index("alert_rules_metric_name_idx").on(table.metricName),
+    severityIndex: index("alert_rules_severity_idx").on(table.severity),
+    enabledIndex: index("alert_rules_enabled_idx").on(table.isEnabled),
+  };
+});
+
+// Alert instances - fired alerts
+export const alertInstances = pgTable("alert_instances", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  ruleId: varchar("rule_id").references(() => alertRules.id).notNull(),
+  
+  // Alert state
+  status: varchar("status").default('firing'), // 'firing', 'resolved', 'acknowledged', 'silenced'
+  currentValue: decimal("current_value", { precision: 15, scale: 6 }),
+  
+  // Timeline
+  firedAt: timestamp("fired_at").defaultNow(),
+  resolvedAt: timestamp("resolved_at"),
+  acknowledgedAt: timestamp("acknowledged_at"),
+  acknowledgedBy: varchar("acknowledged_by").references(() => users.id),
+  
+  // Context
+  context: jsonb("context"), // Additional context when alert fired
+  notificationsSent: jsonb("notifications_sent"), // Track which notifications were sent
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    ruleIdIndex: index("alert_instances_rule_id_idx").on(table.ruleId),
+    statusIndex: index("alert_instances_status_idx").on(table.status),
+    firedAtIndex: index("alert_instances_fired_at_idx").on(table.firedAt),
+  };
+});
+
+// =============================================================================
+// GLOBAL ROLLBACK & DEPLOYMENT CONTROL
+// =============================================================================
+
+// Deployment rollback events
+export const rollbackEvents = pgTable("rollback_events", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Rollback identification
+  rollbackType: varchar("rollback_type").notNull(), // 'emergency', 'planned', 'gradual', 'partial'
+  scope: varchar("scope").notNull(), // 'global', 'feature', 'user-cohort', 'environment'
+  targetComponent: varchar("target_component"), // 'buttons', 'entire-system', 'specific-feature'
+  
+  // Rollback details
+  trigger: varchar("trigger").notNull(), // 'manual', 'automated', 'threshold-breach', 'health-check-failure'
+  triggerData: jsonb("trigger_data"), // Details about what caused the rollback
+  
+  // Execution
+  status: varchar("status").default('initiated'), // 'initiated', 'in-progress', 'completed', 'failed', 'cancelled'
+  executionPlan: jsonb("execution_plan"), // Steps to be executed
+  executionProgress: jsonb("execution_progress"), // Current progress and completed steps
+  
+  // Timeline
+  initiatedAt: timestamp("initiated_at").defaultNow(),
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  estimatedDuration: integer("estimated_duration"), // Estimated duration in seconds
+  actualDuration: integer("actual_duration"), // Actual duration in seconds
+  
+  // Results
+  success: boolean("success"),
+  errorMessage: text("error_message"),
+  rollbackSummary: jsonb("rollback_summary"), // What was rolled back
+  affectedUsers: integer("affected_users"), // Number of users affected
+  
+  // Actor information
+  initiatedBy: varchar("initiated_by").references(() => users.id).notNull(),
+  initiatedByEmail: varchar("initiated_by_email"),
+  reason: text("reason").notNull(),
+  
+  // Metadata
+  environment: varchar("environment").default('production'),
+  version: varchar("version"), // Version being rolled back from/to
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    rollbackTypeIndex: index("rollback_events_type_idx").on(table.rollbackType),
+    statusIndex: index("rollback_events_status_idx").on(table.status),
+    initiatedAtIndex: index("rollback_events_initiated_at_idx").on(table.initiatedAt),
+    initiatedByIndex: index("rollback_events_initiated_by_idx").on(table.initiatedBy),
+    scopeIndex: index("rollback_events_scope_idx").on(table.scope),
+  };
+});
+
+// System health status tracking
+export const systemHealth = pgTable("system_health", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Component identification
+  component: varchar("component").notNull(), // 'buttons', 'api', 'database', 'frontend'
+  healthCheckName: varchar("health_check_name").notNull(),
+  
+  // Health status
+  status: varchar("status").notNull(), // 'healthy', 'warning', 'critical', 'unknown'
+  healthScore: decimal("health_score", { precision: 5, scale: 2 }), // 0-100
+  
+  // Check results
+  checkResults: jsonb("check_results"), // Detailed check results
+  responseTime: integer("response_time"), // Health check response time in ms
+  errorMessage: text("error_message"),
+  
+  // Metadata
+  environment: varchar("environment").default('production'),
+  version: varchar("version"),
+  checkInterval: integer("check_interval").default(60), // Seconds between checks
+  
+  // Timestamps
+  checkedAt: timestamp("checked_at").defaultNow(),
+  lastHealthyAt: timestamp("last_healthy_at"),
+  unhealthySince: timestamp("unhealthy_since"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    componentIndex: index("system_health_component_idx").on(table.component),
+    statusIndex: index("system_health_status_idx").on(table.status),
+    checkedAtIndex: index("system_health_checked_at_idx").on(table.checkedAt),
+    healthScoreIndex: index("system_health_score_idx").on(table.healthScore),
+    // Composite index for latest health status per component
+    latestHealthIndex: index("system_health_latest_idx").on(table.component, table.checkedAt),
+  };
+});
+
+// =============================================================================
+// ADMIN SECURITY & RBAC
+// =============================================================================
+
+// Admin roles and permissions
+export const adminRoles = pgTable("admin_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  name: varchar("name").notNull().unique(), // 'super_admin', 'feature_flag_manager', 'metrics_viewer', 'rollback_operator'
+  description: text("description"),
+  level: integer("level").default(1), // 1=lowest, 10=highest permissions
+  
+  // Permission sets
+  permissions: jsonb("permissions").notNull(), // Array of permission strings
+  
+  // Constraints
+  isSystemRole: boolean("is_system_role").default(false), // Cannot be deleted
+  maxUsers: integer("max_users"), // Max users that can have this role
+  
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User role assignments
+export const userRoles = pgTable("user_roles", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  roleId: varchar("role_id").references(() => adminRoles.id).notNull(),
+  
+  // Assignment context
+  assignedBy: varchar("assigned_by").references(() => users.id).notNull(),
+  assignedReason: text("assigned_reason"),
+  
+  // Lifecycle
+  isActive: boolean("is_active").default(true),
+  expiresAt: timestamp("expires_at"), // Optional role expiration
+  
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  revokedAt: timestamp("revoked_at"),
+  revokedBy: varchar("revoked_by").references(() => users.id),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    userIdIndex: index("user_roles_user_id_idx").on(table.userId),
+    roleIdIndex: index("user_roles_role_id_idx").on(table.roleId),
+    isActiveIndex: index("user_roles_is_active_idx").on(table.isActive),
+    // Unique constraint to prevent duplicate active role assignments
+    uniqueUserRole: uniqueIndex("user_roles_unique_active").on(table.userId, table.roleId, table.isActive),
+  };
+});
+
+// Admin action audit log
+export const adminAuditLog = pgTable("admin_audit_log", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Action identification
+  action: varchar("action").notNull(), // 'feature_flag_toggle', 'rollback_initiate', 'user_role_assign', etc.
+  category: varchar("category").notNull(), // 'feature_flags', 'rollbacks', 'user_management', 'system'
+  resource: varchar("resource"), // ID of the affected resource
+  resourceType: varchar("resource_type"), // 'feature_flag', 'rollback_event', 'user', etc.
+  
+  // Action details
+  actionDetails: jsonb("action_details"), // Full details of what was done
+  oldValues: jsonb("old_values"), // Previous state
+  newValues: jsonb("new_values"), // New state
+  
+  // Result
+  success: boolean("success").notNull(),
+  errorMessage: text("error_message"),
+  
+  // Actor information
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  userEmail: varchar("user_email").notNull(),
+  userRoles: jsonb("user_roles"), // Roles at time of action
+  
+  // Context
+  ipAddress: varchar("ip_address"),
+  userAgent: varchar("user_agent"),
+  sessionId: varchar("session_id"),
+  environment: varchar("environment").default('production'),
+  
+  // Impact assessment
+  affectedUsers: integer("affected_users"), // Estimated number of affected users
+  riskLevel: varchar("risk_level"), // 'low', 'medium', 'high', 'critical'
+  
+  timestamp: timestamp("timestamp").defaultNow(),
+}, (table) => {
+  return {
+    actionIndex: index("admin_audit_log_action_idx").on(table.action),
+    categoryIndex: index("admin_audit_log_category_idx").on(table.category),
+    userIdIndex: index("admin_audit_log_user_id_idx").on(table.userId),
+    timestampIndex: index("admin_audit_log_timestamp_idx").on(table.timestamp),
+    resourceIndex: index("admin_audit_log_resource_idx").on(table.resourceType, table.resource),
+    riskLevelIndex: index("admin_audit_log_risk_idx").on(table.riskLevel),
+  };
+});
+
 // Collection Grid progress tracking per event (passport pages)
 export const collectibleProgress = pgTable("collectible_progress", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -1069,16 +1490,7 @@ export const gallerySettings = pgTable("gallery_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
-export const featureFlags = pgTable("feature_flags", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  eventId: varchar("event_id").references(() => liveEvents.id),
-  flagKey: varchar("flag_key").notNull(),
-  isEnabled: boolean("is_enabled").default(false),
-  rolloutPercentage: integer("rollout_percentage").default(100), // 0-100
-  targetAudience: jsonb("target_audience"), // User criteria
-  createdAt: timestamp("created_at").defaultNow(),
-  updatedAt: timestamp("updated_at").defaultNow(),
-});
+// Note: Enterprise featureFlags table is defined earlier in the file with comprehensive functionality
 
 // Export all types
 export type UpsertUser = typeof users.$inferInsert;
@@ -1140,8 +1552,7 @@ export type MerchProduct = typeof merchProducts.$inferSelect;
 export type UpsertMerchProduct = typeof merchProducts.$inferInsert;
 export type GallerySettings = typeof gallerySettings.$inferSelect;
 export type UpsertGallerySettings = typeof gallerySettings.$inferInsert;
-export type FeatureFlag = typeof featureFlags.$inferSelect;
-export type UpsertFeatureFlag = typeof featureFlags.$inferInsert;
+// Note: FeatureFlag types are defined with the enterprise featureFlags table above
 
 // Memory Wallet Collection Grid Types
 export type CollectibleDefinition = typeof collectibleDefinitions.$inferSelect;

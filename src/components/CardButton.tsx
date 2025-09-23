@@ -3,6 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { CardData } from '@/@typings';
 import { useCardActionRouter, ActionConfig, LegacyActionConfig } from './CardActionRouter';
+import { useButtonFeatureFlags, createUserCohort } from '../lib/buttonFeatureFlags';
+import { useButtonMonitoring } from '../lib/buttonMonitoring';
+import { ButtonFallback } from './legacy/LegacyButtonFallback';
 
 // Extract the button type from CardData
 type CustomButtonData = NonNullable<CardData['customButtons']>[0];
@@ -71,7 +74,8 @@ const ButtonIcon: React.FC<{ name: string; className?: string }> = ({ name, clas
 };
 
 /**
- * Unified CardButton component that consolidates CustomButton and EnhancedCustomButton functionality
+ * Unified CardButton component with feature flag integration and monitoring
+ * Automatically falls back to legacy button implementations when feature flags are disabled
  */
 export const CardButton: React.FC<CardButtonProps> = ({ 
   button, 
@@ -83,6 +87,28 @@ export const CardButton: React.FC<CardButtonProps> = ({
   const actionRouter = useCardActionRouter();
   const [isVisible, setIsVisible] = useState(false);
   const [startTime, setStartTime] = useState<number | null>(null);
+
+  // Feature flag and monitoring integration
+  const userCohort = createUserCohort({
+    userId: 'current-user', // In real app, get from auth context
+    sessionId: typeof window !== 'undefined' ? sessionStorage.getItem('sessionId') || 'anonymous' : 'server',
+    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : undefined,
+    isAdmin: false // In real app, get from auth context
+  });
+
+  const { shouldUseUnifiedButtons, recordPerformance, recordError } = useButtonFeatureFlags(userCohort);
+  const { recordInteraction, recordValidation, startTiming } = useButtonMonitoring();
+
+  // If feature flags indicate we should use legacy, render legacy component
+  if (!shouldUseUnifiedButtons) {
+    return <ButtonFallback 
+      button={button} 
+      active={active} 
+      cardTheme={cardTheme} 
+      className={className} 
+      onClick={onClick} 
+    />;
+  }
 
   // Get display text (prioritize label over text for enhanced compatibility)
   const displayText = button.label || button.text || 'Button';
@@ -114,34 +140,80 @@ export const CardButton: React.FC<CardButtonProps> = ({
     return () => clearInterval(interval);
   }, [active, startTime, button.timing?.visibleFrom, isVisible]);
 
-  // Handle button click
+  // Handle button click with monitoring
   const handleClick = () => {
-    // Handle locked buttons
-    if (isLocked) {
-      const hint = button.unlockHint || 'This content is locked. Complete the requirements to unlock.';
-      alert(hint);
-      return;
-    }
+    const endTiming = startTiming('button-click');
+    let success = false;
+    let actionType = 'unknown';
 
-    // Custom onClick handler takes precedence
-    if (onClick) {
-      onClick();
-      return;
-    }
+    try {
+      // Handle locked buttons
+      if (isLocked) {
+        const hint = button.unlockHint || 'This content is locked. Complete the requirements to unlock.';
+        alert(hint);
+        recordInteraction(button.id, 'locked-attempt', false, { hint });
+        return;
+      }
 
-    // Execute action using unified router
-    if (button.action) {
-      actionRouter.executeAction(button.action);
-    } else if (button.link) {
-      // Backward compatibility with legacy link format
-      actionRouter.executeLegacyAction(button.link);
-    } else {
-      console.warn('Button has no action or link configuration:', button);
+      // Custom onClick handler takes precedence
+      if (onClick) {
+        onClick();
+        success = true;
+        actionType = 'custom';
+        recordInteraction(button.id, actionType, success);
+        return;
+      }
+
+      // Execute action using unified router
+      if (button.action) {
+        actionType = button.action.type;
+        actionRouter.executeAction(button.action);
+        success = true;
+      } else if (button.link) {
+        // Backward compatibility with legacy link format
+        actionType = `legacy-${button.link.type}`;
+        actionRouter.executeLegacyAction(button.link);
+        success = true;
+      } else {
+        console.warn('Button has no action or link configuration:', button);
+        recordError('button-configuration', new Error('Button missing action/link configuration'), {
+          buttonId: button.id,
+          hasAction: !!button.action,
+          hasLink: !!button.link
+        });
+        return;
+      }
+
+      recordInteraction(button.id, actionType, success, {
+        action: button.action,
+        link: button.link
+      });
+
+    } catch (error) {
+      success = false;
+      recordError('button-action-execution', error instanceof Error ? error : new Error(String(error)), {
+        buttonId: button.id,
+        actionType,
+        action: button.action,
+        link: button.link
+      });
+      
+      console.error('Button action execution failed:', error);
+    } finally {
+      endTiming();
     }
   };
 
   // Don't render if not visible (timing-based or locked without positioning)
   if (button.timing && !isVisible) return null;
+
+  // Validate button data and record validation metrics
+  React.useEffect(() => {
+    const endValidation = startTiming('button-validation');
+    const validation = validateButtonData(button);
+    recordValidation(button.id, validation, performance.now() - Date.now());
+    endValidation();
+  }, [button, recordValidation, startTiming]);
 
   // Get variant-based styling
   const getVariantStyles = () => {
@@ -239,6 +311,12 @@ export const CardButton: React.FC<CardButtonProps> = ({
     ...getAnimationStyles(),
     opacity: isLocked ? 0.6 : (button.styling?.opacity ?? 1)
   };
+
+  // Monitor render performance
+  React.useEffect(() => {
+    const renderEndTime = performance.now();
+    recordPerformance('button-render', renderEndTime - (window.buttonRenderStart || renderEndTime));
+  }, [recordPerformance]);
 
   return (
     <>
