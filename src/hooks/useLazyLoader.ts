@@ -35,6 +35,8 @@ export interface UseLazyLoaderResult {
   retry: () => void;
   // Function to trigger prefetch manually
   prefetch: () => Promise<void>;
+  // Function to attach prefetch listeners to an element
+  attachPrefetchListeners: (element: HTMLElement) => (() => void) | undefined;
 }
 
 /**
@@ -229,8 +231,8 @@ export const useLazyLoader = (
     return createDynamicComponent();
   }, [shouldLoad, error, createDynamicComponent]);
 
-  // Expose prefetch setup function as a property of the hook result
-  const result: UseLazyLoaderResult & { attachPrefetchListeners: typeof attachPrefetchListeners } = {
+  // Return the hook result with all required properties
+  const result: UseLazyLoaderResult = {
     LazyComponent: component,
     isLoading,
     error,

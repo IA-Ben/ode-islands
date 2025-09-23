@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useEffect } from 'react';
+import type { JSX } from 'react';
 import { useLazyLoader, UseLazyLoaderOptions } from '@/hooks/useLazyLoader';
 import { LazyComponentType, getLazyComponentConfig } from '@/utils/lazyLoadingConfig';
 
@@ -25,7 +26,7 @@ export interface LazyComponentWrapperProps {
   // Wrapper container className
   className?: string;
   // Container element type
-  as?: keyof JSX.IntrinsicElements;
+  as?: React.ElementType;
   // Lazy loader options
   loaderOptions?: UseLazyLoaderOptions;
   // Whether to show default error UI or handle it externally
@@ -302,6 +303,15 @@ export const LazyClientCardWrapper: React.FC<Omit<LazyComponentWrapperProps, 'ty
   />
 );
 
+// Unified MediaPlayer wrapper with optimized loading
+export const LazyMediaPlayerWrapper: React.FC<Omit<LazyComponentWrapperProps, 'type'>> = (props) => (
+  <LazyComponentWrapper 
+    type="media-player" 
+    loaderOptions={{ prefetchStrategy: 'intersection' }}
+    {...props} 
+  />
+);
+
 /**
  * Higher-order component version for class components or advanced use cases
  */
@@ -310,13 +320,13 @@ export const withLazyLoader = <P extends object>(
   type: LazyComponentType,
   options: UseLazyLoaderOptions = {}
 ) => {
-  const WrappedComponent = React.forwardRef<any, P & LazyComponentWrapperProps>((props, ref) => (
+  const WrappedComponent = React.forwardRef<any, P & LazyComponentWrapperProps>(({ type: _, ...restProps }, ref) => (
     <LazyComponentWrapper 
       type={type} 
       loaderOptions={options}
-      {...props}
+      {...restProps}
     >
-      <Component {...props as P} ref={ref} />
+      <Component {...restProps as P} ref={ref} />
     </LazyComponentWrapper>
   ));
   

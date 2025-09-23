@@ -22,7 +22,8 @@ export type LazyComponentType =
   | 'uploader' 
   | 'ar-orchestrator' 
   | 'player'
-  | 'client-card';
+  | 'client-card'
+  | 'media-player';
 
 // Configuration for loading states and animations
 export interface LoadingFallbackConfig {
@@ -280,6 +281,30 @@ export const LAZY_COMPONENT_CONFIGS: Record<LazyComponentType, LazyComponentConf
       showRetry: false,
     },
   },
+
+  'media-player': {
+    loader: () => Promise.resolve({}), // MediaPlayer is already lazy-loaded internally
+    featureType: 'hls', // Default to HLS, but supports all media types
+    fallback: {
+      gradient: 'from-blue-900/20 to-purple-900/20',
+      icon: React.createElement('div', { className: 'text-4xl animate-pulse' }, '🎬'),
+      animation: 'pulse',
+      primaryText: 'Loading media player...',
+      secondaryText: 'Initializing unified media system',
+    },
+    importPath: './MediaPlayer',
+    ssr: false,
+    prefetchOptions: {
+      respectDataSaver: true,
+      connectionThreshold: 'fast',
+      prefetchStrategy: 'intersection',
+    },
+    errorConfig: {
+      title: 'Media Player Unavailable',
+      fallbackMessage: 'Media playback is not supported on this device',
+      showRetry: true,
+    },
+  },
 };
 
 // Helper function to get configuration for a component type
@@ -323,6 +348,7 @@ export const COMPONENT_IMPORTERS: Record<LazyComponentType, () => Promise<any>> 
   'ar-orchestrator': () => import('../components/AROrchestrator'),
   'player': () => import('../components/Player'),
   'client-card': () => import('../components/Card'),
+  'media-player': () => import('../components/MediaPlayer'),
 };
 
 // Type guard for valid component types
