@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // import { SampleDataControl } from '@/components/SampleDataControl';
 import type { CardData } from '@/@typings';
 import odeIslandsData from '../../data/ode-islands.json';
+import AddCardModal from '@/components/cms/AddCardModal';
+import AddChapterModal from '@/components/cms/AddChapterModal';
 
 type ChapterData = {
   [key: string]: CardData[];
@@ -29,6 +31,8 @@ export default function CMSPage() {
   const [csrfToken, setCsrfToken] = useState('');
   const [selectedPhase, setSelectedPhase] = useState('before');
   const [selectedChapter, setSelectedChapter] = useState('chapter-1');
+  const [showAddCardModal, setShowAddCardModal] = useState(false);
+  const [showAddChapterModal, setShowAddChapterModal] = useState(false);
 
   console.log('CMS Page component loaded - debugging active');
 
@@ -100,6 +104,16 @@ export default function CMSPage() {
     } catch (error) {
       console.error('Failed to fetch chapters:', error);
     }
+  };
+
+  const handleCardAdded = () => {
+    // Refresh chapters to update card counts
+    fetchChapters();
+  };
+
+  const handleChapterAdded = () => {
+    // Refresh chapters and get updated list
+    fetchChapters();
   };
 
   const handleLogout = async () => {
@@ -395,12 +409,20 @@ export default function CMSPage() {
             {/* Chapter Navigation */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                  </svg>
-                  Storytelling Chapters
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center">
+                    <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.832 18.477 19.246 18 17.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    Storytelling Chapters
+                  </CardTitle>
+                  <Button 
+                    onClick={() => setShowAddChapterModal(true)}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    + Add Chapter
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-3">
@@ -428,8 +450,16 @@ export default function CMSPage() {
                   <CardTitle className="text-2xl font-bold">
                     {`${selectedChapter.replace('-', ' ').toUpperCase()} Chapter`}
                   </CardTitle>
-                  <div className="text-gray-700 text-sm bg-gray-100 px-4 py-2 rounded-lg">
-                    {currentApiChapter?.cardCount || currentChapterCards.length} Cards Total
+                  <div className="flex items-center space-x-4">
+                    <div className="text-gray-700 text-sm bg-gray-100 px-4 py-2 rounded-lg">
+                      {currentApiChapter?.cardCount || currentChapterCards.length} Cards Total
+                    </div>
+                    <Button 
+                      onClick={() => setShowAddCardModal(true)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      + Add Card
+                    </Button>
                   </div>
                 </div>
               </CardHeader>
@@ -520,6 +550,20 @@ export default function CMSPage() {
           </Card>
         )}
       </div>
+
+      {/* Modals */}
+      <AddCardModal
+        isOpen={showAddCardModal}
+        onClose={() => setShowAddCardModal(false)}
+        chapterKey={selectedChapter}
+        onCardAdded={handleCardAdded}
+      />
+      
+      <AddChapterModal
+        isOpen={showAddChapterModal}
+        onClose={() => setShowAddChapterModal(false)}
+        onChapterAdded={handleChapterAdded}
+      />
     </div>
   );
 }
