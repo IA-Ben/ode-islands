@@ -3,7 +3,7 @@
     {
       "text": {
         "title": "THE ODE ISLANDS",
-        "subtitle": "A Mixed Reality Voyage To Find Freedom"
+        "subtitle": "'A Mixed Reality Voyage To Find Freedom'"
       },
       "ctaStart": "Begin Journey",
       "video": {
@@ -372,7 +372,10 @@
         "autoPlay": true,
         "messaging": {
           "enableApi": true,
-          "exposedMethods": ["rotateObject", "changeColor"],
+          "exposedMethods": [
+            "rotateObject",
+            "changeColor"
+          ],
           "eventHandlers": [
             {
               "event": "objectClicked",
@@ -404,15 +407,35 @@
         "transparency": false,
         "sceneConfig": {
           "camera": {
-            "position": [0, 2, 5],
-            "target": [0, 0, 0],
+            "position": [
+              0,
+              2,
+              5
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
             "fov": 45
           },
           "lighting": {
-            "ambientColor": [0.2, 0.2, 0.3],
+            "ambientColor": [
+              0.2,
+              0.2,
+              0.3
+            ],
             "directionalLight": {
-              "color": [1, 1, 0.9],
-              "direction": [-0.5, -1, -0.5]
+              "color": [
+                1,
+                1,
+                0.9
+              ],
+              "direction": [
+                -0.5,
+                -1,
+                -0.5
+              ]
             }
           },
           "assets": [
@@ -433,13 +456,18 @@
             "trigger": "timer",
             "target": "ornModel",
             "action": "startAnimation",
-            "params": { "delay": 2000, "animation": "wave" }
+            "params": {
+              "delay": 2000,
+              "animation": "wave"
+            }
           },
           {
             "trigger": "click",
             "target": "ornModel",
             "action": "changeColor",
-            "params": { "color": "#37ffce" }
+            "params": {
+              "color": "#37ffce"
+            }
           }
         ]
       },
@@ -465,7 +493,11 @@
         "transparency": true,
         "messaging": {
           "enableApi": true,
-          "exposedMethods": ["enterVillage", "collectOrn", "transformNor"],
+          "exposedMethods": [
+            "enterVillage",
+            "collectOrn",
+            "transformNor"
+          ],
           "eventHandlers": [
             {
               "event": "villageEntered",
@@ -504,18 +536,27 @@
             "trigger": "message",
             "target": "storyController",
             "action": "startChapter",
-            "params": { "chapter": "transformation" }
+            "params": {
+              "chapter": "transformation"
+            }
           },
           {
             "trigger": "timer",
             "target": "norCharacter",
             "action": "beginTransformation",
-            "params": { "delay": 5000, "duration": 3000 }
+            "params": {
+              "delay": 5000,
+              "duration": 3000
+            }
           }
         ],
         "messaging": {
           "enableApi": true,
-          "exposedMethods": ["pauseStory", "resumeStory", "skipToEnd"],
+          "exposedMethods": [
+            "pauseStory",
+            "resumeStory",
+            "skipToEnd"
+          ],
           "eventHandlers": [
             {
               "event": "transformationComplete",
