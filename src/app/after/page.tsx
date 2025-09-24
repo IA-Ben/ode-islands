@@ -105,54 +105,54 @@ export default function AfterPage() {
     return getDefaultTabThemes();
   };
   
-  // Default tab themes - Professional Lumus-inspired palettes
+  // Default tab themes - Professional readable colors with proper contrast
   const getDefaultTabThemes = (): Record<string, TabTheme> => ({
     overview: {
-      background: 'hsl(var(--surface))',
-      overlay: 'hsl(var(--muted) / 0.3)',
-      title: 'hsl(var(--fg))',
-      subtitle: 'hsl(var(--fg) / 0.8)',
-      description: 'hsl(var(--fg) / 0.6)',
+      background: 'linear-gradient(135deg, #1e293b 0%, #334155 100%)',
+      overlay: 'rgba(0, 0, 0, 0.3)',
+      title: '#ffffff',
+      subtitle: '#e2e8f0',
+      description: '#cbd5e1',
       shadow: true
     },
     message: {
-      background: 'hsl(var(--accent))',
-      overlay: 'hsl(var(--accent) / 0.3)',
-      title: 'hsl(var(--accent-foreground))',
-      subtitle: 'hsl(var(--accent-foreground) / 0.9)',
-      description: 'hsl(var(--accent-foreground) / 0.8)',
+      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+      overlay: 'rgba(0, 0, 0, 0.2)',
+      title: '#ffffff',
+      subtitle: '#dbeafe',
+      description: '#bfdbfe',
       shadow: true
     },
     wallet: {
-      background: 'hsl(var(--success))',
-      overlay: 'hsl(var(--success) / 0.3)',
-      title: 'hsl(var(--surface))',
-      subtitle: 'hsl(var(--surface) / 0.9)',
-      description: 'hsl(var(--surface) / 0.8)',
+      background: 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+      overlay: 'rgba(0, 0, 0, 0.2)',
+      title: '#ffffff',
+      subtitle: '#d1fae5',
+      description: '#a7f3d0',
       shadow: true
     },
     gallery: {
-      background: 'hsl(var(--muted))',
-      overlay: 'hsl(var(--muted) / 0.3)',
-      title: 'hsl(var(--fg))',
-      subtitle: 'hsl(var(--fg) / 0.8)',
-      description: 'hsl(var(--fg) / 0.6)',
+      background: 'linear-gradient(135deg, #6b7280 0%, #4b5563 100%)',
+      overlay: 'rgba(0, 0, 0, 0.3)',
+      title: '#ffffff',
+      subtitle: '#f3f4f6',
+      description: '#d1d5db',
       shadow: true
     },
     merch: {
-      background: 'hsl(var(--warn))',
-      overlay: 'hsl(var(--warn) / 0.3)',
-      title: 'hsl(var(--surface))',
-      subtitle: 'hsl(var(--surface) / 0.9)',
-      description: 'hsl(var(--surface) / 0.8)',
+      background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+      overlay: 'rgba(0, 0, 0, 0.2)',
+      title: '#ffffff',
+      subtitle: '#fef3c7',
+      description: '#fde68a',
       shadow: true
     },
     community: {
-      background: 'hsl(var(--accent))',
-      overlay: 'hsl(var(--accent) / 0.3)',
-      title: 'hsl(var(--accent-foreground))',
-      subtitle: 'hsl(var(--accent-foreground) / 0.9)',
-      description: 'hsl(var(--accent-foreground) / 0.8)',
+      background: 'linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%)',
+      overlay: 'rgba(0, 0, 0, 0.2)',
+      title: '#ffffff',
+      subtitle: '#ede9fe',
+      description: '#ddd6fe',
       shadow: true
     }
   });
