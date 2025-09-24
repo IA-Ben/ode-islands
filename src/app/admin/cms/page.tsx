@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CardData } from '@/@typings';
 import odeIslandsData from '../../data/ode-islands.json';
 import AddChapterModal from '@/components/cms/AddChapterModal';
+import { ChapterReorderList } from '@/components/cms/ChapterReorderList';
 
 type ChapterData = {
   [key: string]: CardData[];
@@ -31,6 +32,7 @@ export default function CMSPage() {
   const [selectedPhase, setSelectedPhase] = useState('before');
   const [selectedChapter, setSelectedChapter] = useState('chapter-1');
   const [showAddChapterModal, setShowAddChapterModal] = useState(false);
+  const [showChapterReorder, setShowChapterReorder] = useState(false);
 
   console.log('CMS Page component loaded - debugging active');
 
@@ -108,6 +110,32 @@ export default function CMSPage() {
   const handleChapterAdded = () => {
     // Refresh chapters and get updated list
     fetchChapters();
+  };
+
+  const handleChapterReorder = async (newOrder: Array<{ id: string; order: number }>) => {
+    try {
+      const response = await fetch('/api/chapters/reorder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ chapterOrders: newOrder }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to reorder chapters');
+      }
+
+      const data = await response.json();
+      console.log('Chapters reordered successfully:', data);
+      
+      // Refresh chapters to get updated order
+      await fetchChapters();
+    } catch (error) {
+      console.error('Error reordering chapters:', error);
+      throw error; // Re-throw to let the component handle the error
+    }
   };
 
   const handleLogout = async () => {
@@ -410,30 +438,48 @@ export default function CMSPage() {
                     </svg>
                     Storytelling Chapters
                   </CardTitle>
-                  <Button 
-                    onClick={() => setShowAddChapterModal(true)}
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                  >
-                    + Add Chapter
-                  </Button>
+                  <div className="flex items-center space-x-2">
+                    <Button 
+                      onClick={() => setShowChapterReorder(!showChapterReorder)}
+                      variant="secondary"
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-700"
+                    >
+                      {showChapterReorder ? 'Hide Reorder' : 'Reorder Chapters'}
+                    </Button>
+                    <Button 
+                      onClick={() => setShowAddChapterModal(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      + Add Chapter
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="flex flex-wrap gap-3">
-                  {chapterKeys.map((chapterId) => (
-                    <button
-                      key={chapterId}
-                      onClick={() => setSelectedChapter(chapterId)}
-                      className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 capitalize ${
-                        selectedChapter === chapterId
-                          ? 'bg-blue-100 text-blue-900 border border-blue-300'
-                          : 'bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border border-gray-300 hover:border-gray-400'
-                      }`}
-                    >
-                      {chapterId.replace('-', ' ')}
-                    </button>
-                  ))}
-                </div>
+                {showChapterReorder ? (
+                  <ChapterReorderList 
+                    chapters={chapters}
+                    onReorderComplete={handleChapterReorder}
+                    onReorderStart={() => console.log('Started reordering chapters')}
+                    className="mb-6"
+                  />
+                ) : (
+                  <div className="flex flex-wrap gap-3">
+                    {chapterKeys.map((chapterId) => (
+                      <button
+                        key={chapterId}
+                        onClick={() => setSelectedChapter(chapterId)}
+                        className={`px-4 py-2 text-sm font-semibold rounded-lg transition-all duration-200 capitalize ${
+                          selectedChapter === chapterId
+                            ? 'bg-blue-100 text-blue-900 border border-blue-300'
+                            : 'bg-gray-100 text-gray-700 hover:text-gray-900 hover:bg-gray-200 border border-gray-300 hover:border-gray-400'
+                        }`}
+                      >
+                        {chapterId.replace('-', ' ')}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
