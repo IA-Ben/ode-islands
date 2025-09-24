@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // import { SampleDataControl } from '@/components/SampleDataControl';
 import type { CardData } from '@/@typings';
+import odeIslandsData from '../../data/ode-islands.json';
 
 type ChapterData = {
   [key: string]: CardData[];
@@ -24,7 +25,7 @@ export default function CMSPage() {
   const [loading, setLoading] = useState(true);
   const [loginError, setLoginError] = useState<string>('');
   const [animateIn, setAnimateIn] = useState(false);
-  const [chapters, setChapters] = useState<ChapterData>({});
+  const [chapters, setChapters] = useState<any[]>([]);
   const [csrfToken, setCsrfToken] = useState('');
   const [selectedPhase, setSelectedPhase] = useState('before');
   const [selectedChapter, setSelectedChapter] = useState('chapter-1');
@@ -94,7 +95,7 @@ export default function CMSPage() {
       if (response.ok) {
         const data = await response.json();
         setChapters(data);
-        console.log('Chapters loaded successfully:', Object.keys(data).length, 'chapters');
+        console.log('Chapters loaded successfully:', data.length, 'chapters');
       }
     } catch (error) {
       console.error('Failed to fetch chapters:', error);
@@ -176,9 +177,20 @@ export default function CMSPage() {
     );
   }
 
+  // Import JSON data for card content
+  const jsonChapters = odeIslandsData as Record<string, any>;
+  
   // Filter chapters for navigation
-  const chapterKeys = Object.keys(chapters).filter(id => /^chapter-\d+$/.test(id)).sort();
-  const currentChapterCards = chapters[selectedChapter] || [];
+  const chapterKeys = Object.keys(jsonChapters).filter(id => /^chapter-\d+$/.test(id)).sort();
+  const currentChapterCards = jsonChapters[selectedChapter] || [];
+  
+  // Get API chapter data for metadata (including cardCount)
+  const getApiChapterData = (chapterKey: string) => {
+    const chapterOrder = parseInt(chapterKey.replace('chapter-', ''));
+    return chapters.find((ch: any) => ch.order === chapterOrder);
+  };
+  
+  const currentApiChapter = getApiChapterData(selectedChapter);
 
   const getPhaseTitle = (phase: string) => {
     switch (phase) {
@@ -417,7 +429,7 @@ export default function CMSPage() {
                     {`${selectedChapter.replace('-', ' ').toUpperCase()} Chapter`}
                   </CardTitle>
                   <div className="text-gray-700 text-sm bg-gray-100 px-4 py-2 rounded-lg">
-                    {currentChapterCards.length} Cards Total
+                    {currentApiChapter?.cardCount || currentChapterCards.length} Cards Total
                   </div>
                 </div>
               </CardHeader>
