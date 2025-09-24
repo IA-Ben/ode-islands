@@ -135,7 +135,7 @@ export default function CMSPage() {
             </div>
           )}
           <a
-            href="/api/auth/login"
+            href="/api/login"
             className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
           >
             Sign in with Replit
