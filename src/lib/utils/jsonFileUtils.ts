@@ -2,8 +2,13 @@ import fs from 'fs';
 import path from 'path';
 import type { CardData } from '@/@typings';
 
+// Use the existing CardData structure, optionally with ID
+export interface CardDataWithOptionalId extends CardData {
+  id?: string;
+}
+
 export interface ChapterData {
-  [key: string]: CardData[];
+  [key: string]: CardDataWithOptionalId[];
 }
 
 const JSON_FILE_PATH = path.join(process.cwd(), 'src/app/data/ode-islands.json');
@@ -46,11 +51,15 @@ export async function writeOdeIslandsData(data: ChapterData): Promise<void> {
 }
 
 /**
- * Validate card data structure
+ * Validate card data structure - cards need at least some content
  */
-export function validateCardData(card: Partial<CardData>): card is CardData {
-  const required = ['id', 'type', 'content'];
-  return required.every(field => card.hasOwnProperty(field) && card[field as keyof CardData] !== undefined);
+export function validateCardData(card: Partial<CardDataWithOptionalId>): card is CardDataWithOptionalId {
+  // Check if card has at least one content field (text, video, image, etc.)
+  const hasContent = !!(
+    card.text || card.video || card.image || card.playcanvas || 
+    card.ar || card.poll || card.quiz || card.cta
+  );
+  return hasContent && typeof card === 'object';
 }
 
 /**
@@ -78,7 +87,7 @@ export function generateCardId(chapterKey: string): string {
 /**
  * Add a new card to a chapter
  */
-export async function addCardToChapter(chapterKey: string, newCard: CardData): Promise<void> {
+export async function addCardToChapter(chapterKey: string, newCard: CardDataWithOptionalId): Promise<void> {
   if (!validateCardData(newCard)) {
     throw new Error('Invalid card data provided');
   }
@@ -89,17 +98,20 @@ export async function addCardToChapter(chapterKey: string, newCard: CardData): P
     throw new Error(`Chapter ${chapterKey} does not exist`);
   }
 
-  // Ensure unique ID
-  newCard.id = generateCardId(chapterKey);
+  // Add optional ID for tracking
+  const cardWithId = {
+    ...newCard,
+    id: newCard.id || generateCardId(chapterKey)
+  };
   
-  data[chapterKey].push(newCard);
+  data[chapterKey].push(cardWithId);
   await writeOdeIslandsData(data);
 }
 
 /**
  * Add a new chapter
  */
-export async function addNewChapter(chapterTitle: string, initialCards: CardData[] = []): Promise<string> {
+export async function addNewChapter(chapterTitle: string, initialCards: CardDataWithOptionalId[] = []): Promise<string> {
   const data = await readOdeIslandsData();
   const chapterKey = getNextChapterKey(data);
   
@@ -110,7 +122,7 @@ export async function addNewChapter(chapterTitle: string, initialCards: CardData
     }
     return {
       ...card,
-      id: generateCardId(chapterKey)
+      id: card.id || generateCardId(chapterKey)
     };
   });
   
