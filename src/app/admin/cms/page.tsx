@@ -7,7 +7,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 // import { SampleDataControl } from '@/components/SampleDataControl';
 import type { CardData } from '@/@typings';
 import odeIslandsData from '../../data/ode-islands.json';
-import AddCardModal from '@/components/cms/AddCardModal';
 import AddChapterModal from '@/components/cms/AddChapterModal';
 
 type ChapterData = {
@@ -31,7 +30,6 @@ export default function CMSPage() {
   const [csrfToken, setCsrfToken] = useState('');
   const [selectedPhase, setSelectedPhase] = useState('before');
   const [selectedChapter, setSelectedChapter] = useState('chapter-1');
-  const [showAddCardModal, setShowAddCardModal] = useState(false);
   const [showAddChapterModal, setShowAddChapterModal] = useState(false);
 
   console.log('CMS Page component loaded - debugging active');
@@ -106,10 +104,6 @@ export default function CMSPage() {
     }
   };
 
-  const handleCardAdded = () => {
-    // Refresh chapters to update card counts
-    fetchChapters();
-  };
 
   const handleChapterAdded = () => {
     // Refresh chapters and get updated list
@@ -455,7 +449,7 @@ export default function CMSPage() {
                       {currentApiChapter?.cardCount || currentChapterCards.length} Cards Total
                     </div>
                     <Button 
-                      onClick={() => setShowAddCardModal(true)}
+                      onClick={() => window.location.href = `/admin/cms/edit/${selectedChapter}/new`}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       + Add Card
@@ -465,7 +459,7 @@ export default function CMSPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {currentChapterCards.map((card, index) => (
+                  {currentChapterCards.map((card: any, index: number) => (
                     <div 
                       key={index} 
                       className="group bg-white border border-gray-200 rounded-lg p-6 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-300"
@@ -552,13 +546,6 @@ export default function CMSPage() {
       </div>
 
       {/* Modals */}
-      <AddCardModal
-        isOpen={showAddCardModal}
-        onClose={() => setShowAddCardModal(false)}
-        chapterKey={selectedChapter}
-        onCardAdded={handleCardAdded}
-      />
-      
       <AddChapterModal
         isOpen={showAddChapterModal}
         onClose={() => setShowAddChapterModal(false)}
