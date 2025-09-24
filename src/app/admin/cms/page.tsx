@@ -54,10 +54,17 @@ export default function CMSPage() {
       console.log('Auth status response:', response.status, response.statusText);
       
       if (response.ok) {
-        const data = await response.json();
-        console.log('User data received:', data);
-        if (data.isAuthenticated && data.user) {
-          setUser(data.user);
+        const statusData = await response.json();
+        console.log('Auth status received:', statusData);
+        
+        if (statusData.authenticated) {
+          // User is authenticated, now get their user data
+          const userResponse = await fetch('/api/auth/user');
+          if (userResponse.ok) {
+            const userData = await userResponse.json();
+            console.log('User data received:', userData);
+            setUser(userData);
+          }
         }
       }
     } catch (error) {
