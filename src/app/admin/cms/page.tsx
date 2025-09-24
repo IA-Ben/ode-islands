@@ -33,6 +33,8 @@ export default function CMSPage() {
   const [selectedChapter, setSelectedChapter] = useState('chapter-1');
   const [showAddChapterModal, setShowAddChapterModal] = useState(false);
   const [showChapterReorder, setShowChapterReorder] = useState(false);
+  const [chapterSubChapters, setChapterSubChapters] = useState<Record<string, any[]>>({});
+  const [loadingSubChapters, setLoadingSubChapters] = useState(false);
 
   console.log('CMS Page component loaded - debugging active');
 
@@ -135,6 +137,38 @@ export default function CMSPage() {
     } catch (error) {
       console.error('Error reordering chapters:', error);
       throw error; // Re-throw to let the component handle the error
+    }
+  };
+
+  const fetchSubChapters = async (chapterId: string) => {
+    try {
+      setLoadingSubChapters(true);
+      const response = await fetch(`/api/sub-chapters?chapterId=${chapterId}`);
+      if (response.ok) {
+        const subChapters = await response.json();
+        setChapterSubChapters(prev => ({
+          ...prev,
+          [chapterId]: subChapters
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching sub-chapters:', error);
+    } finally {
+      setLoadingSubChapters(false);
+    }
+  };
+
+  const toggleSubChapters = async (chapterId: string) => {
+    if (chapterSubChapters[chapterId]) {
+      // Hide sub-chapters
+      setChapterSubChapters(prev => {
+        const updated = { ...prev };
+        delete updated[chapterId];
+        return updated;
+      });
+    } else {
+      // Fetch and show sub-chapters
+      await fetchSubChapters(chapterId);
     }
   };
 
@@ -492,8 +526,22 @@ export default function CMSPage() {
                   </CardTitle>
                   <div className="flex items-center space-x-4">
                     <div className="text-gray-700 text-sm bg-gray-100 px-4 py-2 rounded-lg">
-                      {currentApiChapter?.cardCount || currentChapterCards.length} Cards Total
+                      {currentApiChapter?.cardCount || currentChapterCards.length} Cards
                     </div>
+                    {currentApiChapter?.subChapterCount !== undefined && (
+                      <div className="text-gray-700 text-sm bg-purple-100 px-4 py-2 rounded-lg">
+                        {currentApiChapter.subChapterCount} Sub-Chapters
+                      </div>
+                    )}
+                    <Button 
+                      onClick={() => currentApiChapter && toggleSubChapters(currentApiChapter.id)}
+                      variant="secondary"
+                      className="bg-purple-100 hover:bg-purple-200 text-purple-700"
+                      disabled={loadingSubChapters}
+                    >
+                      {loadingSubChapters ? 'Loading...' : 
+                        (chapterSubChapters[currentApiChapter?.id || ''] ? 'Hide Sub-Chapters' : 'Show Sub-Chapters')}
+                    </Button>
                     <Button 
                       onClick={() => window.location.href = `/admin/cms/edit/${selectedChapter}/new`}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
@@ -561,6 +609,67 @@ export default function CMSPage() {
                     </div>
                   ))}
                 </div>
+                
+                {/* Sub-Chapters Section */}
+                {currentApiChapter && chapterSubChapters[currentApiChapter.id] && (
+                  <div className="mt-8 pt-6 border-t border-gray-200">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Sub-Chapters ({chapterSubChapters[currentApiChapter.id].length})
+                      </h3>
+                      <Button 
+                        size="sm"
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                      >
+                        + Add Sub-Chapter
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {chapterSubChapters[currentApiChapter.id].map((subChapter: any, index: number) => (
+                        <div 
+                          key={subChapter.id} 
+                          className="group bg-purple-50 border border-purple-200 rounded-lg p-4 cursor-pointer hover:border-purple-300 hover:shadow-md transition-all duration-300"
+                          onClick={() => window.location.href = `/before/story/${currentApiChapter.id}/${subChapter.id}`}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <div className="text-xs text-purple-600 font-medium uppercase tracking-wide">
+                              Sub-Chapter {subChapter.order || index + 1}
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {subChapter.customButtons && subChapter.customButtons.length > 0 && (
+                                <div className="text-xs text-purple-500 bg-purple-100 px-2 py-1 rounded">
+                                  {subChapter.customButtons.length} buttons
+                                </div>
+                              )}
+                              <svg className="w-4 h-4 text-purple-400 group-hover:text-purple-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-2M7 7l10 10M17 7l-10 10" />
+                              </svg>
+                            </div>
+                          </div>
+                          
+                          <div className="font-bold text-base mb-2 text-purple-900 group-hover:text-purple-700 transition-colors">
+                            {subChapter.title}
+                          </div>
+                          
+                          {subChapter.summary && (
+                            <div className="text-sm text-purple-700 mb-3 line-clamp-2">
+                              {subChapter.summary}
+                            </div>
+                          )}
+                          
+                          <div className="flex items-center justify-between text-xs text-purple-600">
+                            <span>
+                              Created: {new Date(subChapter.createdAt).toLocaleDateString()}
+                            </span>
+                            <span className="font-medium">
+                              View Details →
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </>
