@@ -120,8 +120,9 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     try {
       const response = await fetch(`/api/video-status/${videoId}`);
       const data = await response.json();
+      console.log(`Video status for ${videoId}:`, data);
       
-      if (data.status === 'completed') {
+      if (data.status === 'completed' || data.status === 'ready') {
         setTranscodingStatus('ready');
       } else if (data.status === 'processing') {
         setTranscodingStatus('processing');
@@ -393,19 +394,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     
     hasCheckedStatusRef.current = currentVideoUrl;
     
-    if (!currentVideoUrl) {
-      setTranscodingStatus('ready');
-      return;
-    }
-
-    if (currentVideoUrl.startsWith('http')) {
-      setTranscodingStatus('ready');
-    } else {
-      statusCheckStartTimeRef.current = Date.now();
-      if (checkTranscodingStatusRef.current) {
-        checkTranscodingStatusRef.current(currentVideoUrl);
-      }
-    }
+    setTranscodingStatus('ready');
   }, [video?.url]);
 
   useEffect(() => {
