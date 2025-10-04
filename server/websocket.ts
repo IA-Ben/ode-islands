@@ -31,28 +31,50 @@ interface EventClients {
   [eventId: string]: Set<AuthenticatedWebSocket>;
 }
 
+interface ConnectionAttempt {
+  timestamp: number;
+  count: number;
+}
+
 class WebSocketManager {
   private wss: WebSocketServer | null = null;
   private notificationClients: NotificationClients = {};
   private eventClients: EventClients = {};
   private eventTimecodes: { [eventId: string]: number } = {};
   private heartbeatIntervals: { [eventId: string]: NodeJS.Timeout } = {};
+  private connectionAttempts: Map<string, ConnectionAttempt> = new Map();
+  private readonly MAX_CONNECTIONS_PER_USER = 5;
+  private readonly RATE_LIMIT_WINDOW = 60000;
+  private readonly MAX_ATTEMPTS_PER_WINDOW = 20;
 
   initialize(server: Server) {
     this.wss = new WebSocketServer({ server, path: '/ws' });
 
     this.wss.on('connection', async (ws: AuthenticatedWebSocket, request) => {
-      console.log('New WebSocket connection attempt');
+      const clientIp = request.socket.remoteAddress || 'unknown';
+      console.log(`New WebSocket connection attempt from ${clientIp}`);
       
       try {
-        // Try authentication first
+        const rateLimitKey = clientIp;
+        
+        if (!this.checkRateLimit(rateLimitKey)) {
+          console.warn(`⚠️ Rate limit exceeded for ${clientIp}`);
+          ws.close(1008, 'Rate limit exceeded. Too many connection attempts.');
+          return;
+        }
+
         const authenticated = await this.authenticateConnection(ws, request);
         
         if (authenticated) {
-          console.log(`WebSocket authenticated for user: ${ws.userId}`);
+          if (!this.checkConnectionLimit(ws.userId!)) {
+            console.warn(`⚠️ Connection limit exceeded for user ${ws.userId}`);
+            ws.close(1008, `Connection limit exceeded. Maximum ${this.MAX_CONNECTIONS_PER_USER} connections per user.`);
+            return;
+          }
+          
+          console.log(`✅ WebSocket authenticated for user: ${ws.userId}`);
           ws.connectionType = 'authenticated';
         } else {
-          // Allow anonymous connections for event participation
           console.log('Anonymous WebSocket connection allowed for events');
           ws.isAnonymous = true;
           ws.connectionType = 'anonymous_event';
@@ -93,6 +115,10 @@ class WebSocketManager {
     });
 
     console.log('WebSocket server initialized');
+
+    setInterval(() => {
+      this.cleanupStaleConnections();
+    }, 30000);
   }
 
   private async authenticateConnection(ws: AuthenticatedWebSocket, request: any): Promise<boolean> {
@@ -205,6 +231,87 @@ class WebSocketManager {
     });
 
     return cookies;
+  }
+
+  private checkRateLimit(key: string): boolean {
+    const now = Date.now();
+    const attempt = this.connectionAttempts.get(key);
+
+    if (!attempt) {
+      this.connectionAttempts.set(key, { timestamp: now, count: 1 });
+      return true;
+    }
+
+    const timeSinceFirstAttempt = now - attempt.timestamp;
+
+    if (timeSinceFirstAttempt > this.RATE_LIMIT_WINDOW) {
+      this.connectionAttempts.set(key, { timestamp: now, count: 1 });
+      return true;
+    }
+
+    if (attempt.count >= this.MAX_ATTEMPTS_PER_WINDOW) {
+      return false;
+    }
+
+    attempt.count++;
+    return true;
+  }
+
+  private checkConnectionLimit(userId: string): boolean {
+    const userConnections = this.notificationClients[userId];
+    if (!userConnections) return true;
+
+    const activeConnections = Array.from(userConnections).filter(
+      ws => ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING
+    );
+
+    if (activeConnections.length >= this.MAX_CONNECTIONS_PER_USER) {
+      console.warn(`User ${userId} has ${activeConnections.length} active connections (max: ${this.MAX_CONNECTIONS_PER_USER})`);
+      return false;
+    }
+
+    return true;
+  }
+
+  private cleanupStaleConnections() {
+    for (const [userId, clients] of Object.entries(this.notificationClients)) {
+      const staleClients = Array.from(clients).filter(
+        ws => ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING
+      );
+
+      staleClients.forEach(client => {
+        clients.delete(client);
+      });
+
+      if (clients.size === 0) {
+        delete this.notificationClients[userId];
+      }
+    }
+
+    for (const [eventId, clients] of Object.entries(this.eventClients)) {
+      const staleClients = Array.from(clients).filter(
+        ws => ws.readyState === WebSocket.CLOSED || ws.readyState === WebSocket.CLOSING
+      );
+
+      staleClients.forEach(client => {
+        clients.delete(client);
+      });
+
+      if (clients.size === 0) {
+        delete this.eventClients[eventId];
+        if (this.heartbeatIntervals[eventId]) {
+          clearInterval(this.heartbeatIntervals[eventId]);
+          delete this.heartbeatIntervals[eventId];
+        }
+      }
+    }
+
+    const now = Date.now();
+    for (const [key, attempt] of this.connectionAttempts.entries()) {
+      if (now - attempt.timestamp > this.RATE_LIMIT_WINDOW) {
+        this.connectionAttempts.delete(key);
+      }
+    }
   }
 
   private handleMessage(ws: AuthenticatedWebSocket, message: WebSocketMessage) {
