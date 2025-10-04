@@ -370,17 +370,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const { eq, and, lte, gte, sql } = await import('drizzle-orm');
 
   // Check if specific content is available for current user
+  // TEMP: Authentication check disabled for development
   app.get("/api/content/availability", async (req, res) => {
     try {
       const { contentType, contentId } = req.query;
-      const userId = req.session.userId;
+      // TEMP: Use mock user ID during development
+      const userId = req.session.userId || 'dev-user-id';
 
+      /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
       if (!userId) {
         return res.json({
           isAvailable: false,
           reason: 'Authentication required'
         });
       }
+      */
 
       // Check if user has access to this content
       const accessRecord = await db
@@ -441,13 +445,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get all available content for current user
+  // TEMP: Authentication check disabled for development
   app.get("/api/content/available", async (req, res) => {
     try {
-      const userId = req.session.userId;
+      // TEMP: Use mock user ID during development
+      const userId = req.session.userId || 'dev-user-id';
 
+      /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
       if (!userId) {
         return res.json({ availableContent: [] });
       }
+      */
 
       const availableContent = await db
         .select()
@@ -499,17 +507,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Check content access conditions
+  // TEMP: Authentication check disabled for development
   app.get("/api/content/conditions", async (req, res) => {
     try {
       const { contentType, contentId } = req.query;
-      const userId = req.session.userId;
+      // TEMP: Use mock user ID during development
+      const userId = req.session.userId || 'dev-user-id';
 
+      /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
       if (!userId) {
         return res.json({
           canAccess: false,
           missingConditions: [{ type: 'authentication', description: 'User must be logged in' }]
         });
       }
+      */
 
       // For now, return basic implementation
       // In a real system, this would check complex conditions
