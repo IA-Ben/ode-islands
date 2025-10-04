@@ -424,9 +424,64 @@ def process():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/process-pubsub', methods=['POST'])
+def process_pubsub():
+    """Process transcoding request from Pub/Sub push subscription"""
+    envelope = request.get_json()
+    
+    if not envelope:
+        return jsonify({'error': 'No Pub/Sub message received'}), 400
+    
+    # Decode Pub/Sub message
+    import base64
+    
+    try:
+        pubsub_message = envelope.get('message', {})
+        message_data = pubsub_message.get('data', '')
+        
+        # Decode base64 message
+        decoded_data = base64.b64decode(message_data).decode('utf-8')
+        data = json.loads(decoded_data)
+        
+        input_uri = data.get('input_uri') or data.get('inputUri')
+        video_id = data.get('video_id') or data.get('videoId')
+        
+        if not input_uri or not video_id:
+            return jsonify({'error': 'Missing input_uri or video_id in message'}), 400
+        
+        print(f"📨 Received Pub/Sub transcoding request for video: {video_id}")
+        
+        # Process video asynchronously (return 200 immediately to ack message)
+        import threading
+        thread = threading.Thread(
+            target=process_video_with_error_handling,
+            args=(input_uri, video_id)
+        )
+        thread.start()
+        
+        return jsonify({'status': 'processing', 'video_id': video_id}), 200
+        
+    except Exception as e:
+        print(f"Error processing Pub/Sub message: {str(e)}")
+        return jsonify({'error': str(e)}), 400
+
+
+def process_video_with_error_handling(input_uri, video_id):
+    """Wrapper to handle errors in async processing"""
+    try:
+        process_video(input_uri, video_id)
+    except Exception as e:
+        print(f"Error in async video processing: {str(e)}")
+        # Status already updated by process_video error handling
+
+
 @app.route('/health', methods=['GET'])
 def health():
-    return jsonify({'status': 'healthy'})
+    mem_status = memory_manager.get_status()
+    return jsonify({
+        'status': 'healthy',
+        'memory': mem_status
+    })
 
 
 if __name__ == '__main__':

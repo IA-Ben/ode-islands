@@ -20,6 +20,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@google-cloud/pubsub": "^5.2.0",
     "@google-cloud/storage": "^7.17.1",
     "@neondatabase/serverless": "^1.0.1",
     "@react-three/drei": "^10.7.6",
