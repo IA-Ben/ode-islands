@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function middleware(request: NextRequest) {
+  // TEMP: Authentication disabled for development
+  // All routes are accessible without authentication
+  // TODO: Re-enable authentication before production deployment
+  return NextResponse.next();
+  
+  /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
   const { pathname } = request.nextUrl;
 
   // Only protect /admin/* routes
@@ -54,6 +60,7 @@ export async function middleware(request: NextRequest) {
     const loginUrl = new URL('/api/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
+  */
 }
 
 export const config = {

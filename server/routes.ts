@@ -17,20 +17,32 @@ import adminApiRoutes from './adminApi';
 const express = require('express');
 
 // Simple auth middleware
+// TEMP: Authentication disabled for development
+// TODO: Re-enable before production deployment
 function isAuthenticated(req: any, res: any, next: any) {
+  // TEMP: Always allow access during development
+  next();
+  
+  /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
   if (req.session.isAuthenticated) {
     next();
   } else {
     res.status(401).json({ error: 'Authentication required' });
   }
+  */
 }
 
 function isAdmin(req: any, res: any, next: any) {
+  // TEMP: Always allow admin access during development
+  next();
+  
+  /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
   if (req.session.isAuthenticated) {
     next();
   } else {
     res.status(401).json({ error: 'Admin access required' });
   }
+  */
 }
 
 // Re-export auth middleware
