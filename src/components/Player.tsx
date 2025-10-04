@@ -37,7 +37,8 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const { getVideoQuality, shouldReduceAnimations, isMobile } = useMobile();
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
-  const BUFFER_CLEANUP_INTERVAL = 5 * 60 * 1000;
+  const BASE_BUFFER_CLEANUP_INTERVAL = 30 * 1000; // 30 seconds base interval
+  const lastBufferSizeRef = useRef<number>(0);
   const STATUS_CHECK_TIMEOUT = 90000;
   
   // Handle both full URLs and identifiers - NO URL rewriting for quality
@@ -140,32 +141,85 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     }
   };
 
-  // Periodic buffer cleanup to prevent memory leaks
+  // Smart buffer cleanup with dynamic thresholds and HLS.js API
   const cleanupBuffer = useCallback(() => {
     if (hlsRef.current && hlsRef.current.media) {
-      const currentTime = hlsRef.current.media.currentTime;
-      const buffered = hlsRef.current.media.buffered;
+      const hls = hlsRef.current;
+      const media = hls.media;
+      if (!media) return;
+      
+      const currentTime = media.currentTime;
+      const buffered = media.buffered;
       
       if (buffered.length > 0) {
+        const bufferStart = buffered.start(0);
         const bufferEnd = buffered.end(buffered.length - 1);
-        const bufferSize = bufferEnd - currentTime;
+        const totalBufferSize = bufferEnd - bufferStart;
+        const forwardBuffer = bufferEnd - currentTime;
+        const backBuffer = currentTime - bufferStart;
         
-        console.log(`Buffer cleanup: ${bufferSize.toFixed(1)}s buffered, cleaning old segments`);
+        // Dynamic thresholds based on bandwidth
+        const avgBandwidth = getAverageBandwidth();
+        const backBufferThreshold = isMobile ? 30 : (avgBandwidth > 5000 ? 90 : 60);
+        const forwardBufferThreshold = isMobile ? 120 : (avgBandwidth > 5000 ? 300 : 180);
+        
+        // Log buffer state
+        console.log(`Buffer state: back=${backBuffer.toFixed(1)}s, forward=${forwardBuffer.toFixed(1)}s, total=${totalBufferSize.toFixed(1)}s`);
         
         try {
-          const backBufferLength = isMobile ? 30 : 90;
-          if (currentTime > backBufferLength) {
-            const removeEnd = currentTime - backBufferLength;
-            if (removeEnd > 0) {
-              hlsRef.current.media.currentTime = currentTime;
+          // Cleanup back buffer if exceeds threshold using HLS.js bufferController
+          if (backBuffer > backBufferThreshold && currentTime > backBufferThreshold) {
+            const targetEnd = currentTime - backBufferThreshold;
+            
+            if (targetEnd > 0 && bufferStart < targetEnd) {
+              console.log(`Removing back buffer: 0s to ${targetEnd.toFixed(1)}s`);
+              
+              try {
+                // Use HLS.js buffer controller to remove buffered data
+                const bufferController = (hls as any).bufferController;
+                if (bufferController && typeof bufferController.removeBuffer === 'function') {
+                  // Remove video buffer
+                  bufferController.removeBuffer(0, targetEnd, 'video');
+                  console.log('Back buffer removed via bufferController');
+                } else {
+                  // Fallback: adjust backBufferLength config to trigger automatic cleanup
+                  hls.config.backBufferLength = Math.max(10, backBufferThreshold / 2);
+                  console.log(`Adjusted backBufferLength to ${hls.config.backBufferLength}s for cleanup`);
+                }
+              } catch (e) {
+                console.error('Buffer cleanup failed:', e);
+              }
             }
+          }
+          
+          // Cleanup forward buffer if too large (memory pressure)
+          if (forwardBuffer > forwardBufferThreshold) {
+            console.log(`Forward buffer too large (${forwardBuffer.toFixed(1)}s), applying restrictions`);
+            
+            // Reduce quality to prevent excessive buffering
+            if (hls.autoLevelEnabled && hls.currentLevel > 0) {
+              hls.nextLoadLevel = Math.max(0, hls.currentLevel - 1);
+              console.log(`Reducing quality from level ${hls.currentLevel} to ${hls.nextLoadLevel}`);
+            }
+            
+            // Aggressively limit forward buffer
+            const targetMaxBuffer = forwardBufferThreshold / 2;
+            hls.config.maxBufferLength = Math.min(hls.config.maxBufferLength, targetMaxBuffer);
+            hls.config.maxMaxBufferLength = Math.min(hls.config.maxMaxBufferLength, targetMaxBuffer * 2);
+            
+            console.log(`Limited buffer: maxBufferLength=${hls.config.maxBufferLength}s`);
+          } else {
+            // Restore normal buffer config when buffer is healthy
+            const dynamicConfig = getDynamicBufferConfig();
+            hls.config.maxBufferLength = dynamicConfig.maxBufferLength;
+            hls.config.maxMaxBufferLength = dynamicConfig.maxMaxBufferLength;
           }
         } catch (err) {
           console.error('Buffer cleanup error:', err);
         }
       }
     }
-  }, [isMobile]);
+  }, [isMobile, getAverageBandwidth]);
 
   // Enhanced cleanup function
   const cleanupVideo = useCallback((preserveRetryCount = false) => {
@@ -186,6 +240,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     }
     
     if (bufferCleanupIntervalRef.current) {
+      clearTimeout(bufferCleanupIntervalRef.current);
       clearInterval(bufferCleanupIntervalRef.current);
       bufferCleanupIntervalRef.current = null;
     }
@@ -293,10 +348,40 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
         }
       });
       
-      // Set up periodic buffer cleanup to prevent memory leaks
-      bufferCleanupIntervalRef.current = setInterval(() => {
-        cleanupBuffer();
-      }, BUFFER_CLEANUP_INTERVAL);
+      // Set up adaptive buffer cleanup with dynamic intervals
+      const scheduleNextCleanup = () => {
+        const media = hls.media;
+        if (!media) return;
+        
+        const buffered = media.buffered;
+        let nextInterval = BASE_BUFFER_CLEANUP_INTERVAL;
+        
+        if (buffered.length > 0) {
+          const bufferStart = buffered.start(0);
+          const bufferEnd = buffered.end(buffered.length - 1);
+          const totalBufferSize = bufferEnd - bufferStart;
+          lastBufferSizeRef.current = totalBufferSize;
+          
+          // Adaptive interval: cleanup more frequently when buffer is large
+          if (totalBufferSize > 300) {
+            nextInterval = 15 * 1000; // Every 15s for very large buffers
+          } else if (totalBufferSize > 180) {
+            nextInterval = 30 * 1000; // Every 30s for large buffers
+          } else if (totalBufferSize > 90) {
+            nextInterval = 60 * 1000; // Every 60s for medium buffers
+          } else {
+            nextInterval = 120 * 1000; // Every 2min for small buffers
+          }
+        }
+        
+        bufferCleanupIntervalRef.current = setTimeout(() => {
+          cleanupBuffer();
+          scheduleNextCleanup(); // Schedule next cleanup
+        }, nextInterval);
+      };
+      
+      // Start the adaptive cleanup cycle
+      scheduleNextCleanup();
       
       hls.on(Hls.Events.MANIFEST_LOADED, () => {
         console.log('HLS manifest loaded successfully');
@@ -362,6 +447,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     } else if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
       videoEl.src = url;
       
+      // Safari native HLS - simpler periodic cleanup
       bufferCleanupIntervalRef.current = setInterval(() => {
         if (videoEl && videoEl.currentTime > 0) {
           const currentTime = videoEl.currentTime;
@@ -373,7 +459,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
             console.log(`Safari buffer: ${bufferSize.toFixed(1)}s buffered`);
           }
         }
-      }, BUFFER_CLEANUP_INTERVAL);
+      }, BASE_BUFFER_CLEANUP_INTERVAL);
     } else {
       console.error("HLS not supported in this browser");
       setHasError(true);
