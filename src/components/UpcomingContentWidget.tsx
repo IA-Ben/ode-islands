@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ContentAvailabilityService, ContentTypeUtils } from '@/lib/contentAvailability';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useUnifiedWebSocket } from '@/contexts/UnifiedWebSocketContext';
 
 interface UpcomingContent {
   contentType: string;
@@ -29,18 +29,19 @@ export default function UpcomingContentWidget({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // WebSocket connection for real-time updates
-  const wsUrl = typeof window !== 'undefined' 
-    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
-    : null;
+  // Use unified WebSocket service for real-time updates
+  const { subscribeToTypes } = useUnifiedWebSocket();
 
-  const { lastMessage } = useWebSocket(wsUrl, {
-    onMessage: (message) => {
+  // Subscribe to content scheduling messages
+  useEffect(() => {
+    const unsubscribe = subscribeToTypes(['content_scheduled', 'content_available'], (message) => {
       if (message.type === 'content_scheduled' || message.type === 'content_available') {
         loadUpcomingContent(); // Refresh the list
       }
-    }
-  });
+    });
+
+    return () => unsubscribe();
+  }, [subscribeToTypes]);
 
   useEffect(() => {
     loadUpcomingContent();
