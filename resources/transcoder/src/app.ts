@@ -232,7 +232,14 @@ const verifySegments = async (
     
     try {
       const playlistContent = await fs.readFile(playlistPath, 'utf-8');
-      const segmentMatches = playlistContent.match(/segment_\d+\.ts/g) || [];
+      
+      // Match actual segment pattern: segment_%v_%03d.ts (e.g., segment_0_000.ts, segment_0_001.ts)
+      const segmentMatches = playlistContent.match(/segment_\d+_\d+\.ts/g) || [];
+      
+      if (segmentMatches.length === 0) {
+        console.error(`❌ No segments found in playlist for ${profile.name}`);
+        return false;
+      }
       
       for (const segmentFile of segmentMatches) {
         const segmentPath = path.join(qualityDir, segmentFile);
