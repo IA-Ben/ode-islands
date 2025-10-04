@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ContentTypeUtils } from '@/lib/contentAvailability';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useUnifiedWebSocket } from '@/contexts/UnifiedWebSocketContext';
 
 interface NewContentAlert {
   id: string;
@@ -18,13 +18,11 @@ export default function NewContentNotification() {
   const [alerts, setAlerts] = useState<NewContentAlert[]>([]);
   const [isVisible, setIsVisible] = useState(false);
 
-  // WebSocket connection for real-time content updates
-  const wsUrl = typeof window !== 'undefined' 
-    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
-    : null;
+  // Use unified WebSocket service for real-time content updates
+  const { subscribeToTypes } = useUnifiedWebSocket();
 
-  const { lastMessage } = useWebSocket(wsUrl, {
-    onMessage: (message) => {
+  useEffect(() => {
+    const unsubscribe = subscribeToTypes(['content_available'], (message) => {
       if (message.type === 'content_available') {
         const newAlert: NewContentAlert = {
           id: `${message.payload.contentType}-${message.payload.contentId}-${Date.now()}`,
@@ -43,8 +41,10 @@ export default function NewContentNotification() {
           setAlerts(prev => prev.filter(alert => alert.id !== newAlert.id));
         }, 8000);
       }
-    }
-  });
+    });
+
+    return () => unsubscribe();
+  }, [subscribeToTypes]);
 
   useEffect(() => {
     if (alerts.length > 0) {
