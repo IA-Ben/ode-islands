@@ -1,0 +1,746 @@
+Test End-to-End Video Playback Pipeline
+Objective
+Validate the complete video pipeline from CMS upload through cloud transcoding, storage, CDN delivery, and final playback. Ensure all components work together seamlessly and handle edge cases properly.
+
+Test Scope
+Phase 1: CMS Upload Testing
+Test 1.1: Basic Upload Flow
+bash
+# Test file upload via CMS endpoint
+curl -X POST http://localhost:3000/api/cms/media/upload \
+  -F "file=@test_videos/sample_30s.mp4" \
+  -F 'metadata={"title":"Test Video","description":"E2E Test"}'
+
+# Expected Response:
+{
+  "success": true,
+  "videoId": "uuid-here",
+  "status": "processing",
+  "statusUrl": "/api/video-status/uuid-here",
+  "estimatedTime": 45,
+  "playbackUrl": "https://cdn.../videos/uuid-here/manifest/master.m3u8"
+}
+Test 1.2: Multiple File Types
+Test various input formats to ensure compatibility:
+
+javascript
+// test/e2e/upload.test.js
+const testFiles = [
+  'sample.mp4',    // Standard H.264
+  'sample.mov',    // QuickTime
+  'sample.webm',   // WebM/VP9
+  'sample.avi',    // Legacy AVI
+  'vertical.mp4',  // 9:16 portrait video
+  'hdr.mp4',       // HDR content
+  'vfr.mp4',       // Variable frame rate
+  '4k.mp4',        // 4K resolution
+];
+
+for (const file of testFiles) {
+  const response = await uploadVideo(file);
+  assert(response.status === 200, `Failed to upload ${file}`);
+  trackUpload(file, response.videoId);
+}
+Test 1.3: Edge Cases
+javascript
+// Edge case uploads
+const edgeCases = [
+  { file: 'corrupted.mp4', expectedStatus: 400 },
+  { file: 'zero_duration.mp4', expectedStatus: 400 },
+  { file: 'audio_only.mp4', expectedStatus: 400 },
+  { file: 'huge_file_2gb.mp4', expectedStatus: 200 },
+  { file: 'tiny_file_10kb.mp4', expectedStatus: 200 },
+  { file: 'extreme_aspect_100_1.mp4', expectedStatus: 400 },
+];
+Phase 2: Cloud Transcoding Validation
+Test 2.1: Verify Transcoding Trigger
+javascript
+// Monitor GCS bucket for file movement
+async function verifyTranscodingStarted(videoId) {
+  const storage = new Storage();
+  const inputBucket = storage.bucket('ode-islands-video-input');
+  
+  // Check file moved from pending/ to processing/
+  const pendingFile = inputBucket.file(`pending/${videoId}_*`);
+  const processingFile = inputBucket.file(`processing/${videoId}_*`);
+  
+  // Poll for up to 10 seconds
+  for (let i = 0; i < 10; i++) {
+    const [pendingExists] = await pendingFile.exists();
+    const [processingExists] = await processingFile.exists();
+    
+    if (!pendingExists && processingExists) {
+      console.log(`✅ Video ${videoId} moved to processing`);
+      return true;
+    }
+    await sleep(1000);
+  }
+  
+  throw new Error(`Transcoding not triggered for ${videoId}`);
+}
+Test 2.2: Monitor Transcoding Progress
+javascript
+// Check real-time progress updates
+async function monitorTranscodingProgress(videoId) {
+  const progressLog = [];
+  const startTime = Date.now();
+  
+  while (true) {
+    const status = await fetch(`/api/video-status/${videoId}`);
+    const data = await status.json();
+    
+    progressLog.push({
+      time: Date.now() - startTime,
+      status: data.status,
+      progress: data.progress,
+      profilesComplete: data.profilesComplete
+    });
+    
+    if (data.status === 'completed') {
+      break;
+    }
+    
+    if (Date.now() - startTime > 300000) { // 5 min timeout
+      throw new Error('Transcoding timeout');
+    }
+    
+    await sleep(2000);
+  }
+  
+  // Verify progress was incremental
+  const progressValues = progressLog.map(p => p.profilesComplete || 0);
+  assert(isMonotonicallyIncreasing(progressValues), 'Progress should increase');
+  
+  return progressLog;
+}
+Test 2.3: Validate Adaptive Streams Generated
+javascript
+async function validateAdaptiveStreams(videoId) {
+  const storage = new Storage();
+  const bucket = storage.bucket('ode-islands-video-cdn');
+  
+  const expectedProfiles = [
+    '144p', '240p', '360p', '480p', '540p', 
+    '720p', '1080p', '1440p', '2160p'
+  ];
+  
+  const results = {
+    masterPlaylist: false,
+    profiles: {},
+    segments: {},
+    thumbnails: false
+  };
+  
+  // Check master playlist
+  const masterFile = bucket.file(`videos/${videoId}/manifest/master.m3u8`);
+  const [masterExists] = await masterFile.exists();
+  results.masterPlaylist = masterExists;
+  
+  // Verify master playlist content
+  if (masterExists) {
+    const [content] = await masterFile.download();
+    const masterContent = content.toString();
+    
+    // Validate HLS format
+    assert(masterContent.includes('#EXTM3U'), 'Invalid HLS header');
+    assert(masterContent.includes('#EXT-X-STREAM-INF'), 'Missing stream info');
+    
+    // Check bandwidth ladder
+    const bandwidths = [...masterContent.matchAll(/BANDWIDTH=(\d+)/g)]
+      .map(m => parseInt(m[1]));
+    assert(isMonotonicallyIncreasing(bandwidths), 'Bandwidth not ordered');
+  }
+  
+  // Check each quality profile
+  for (const profile of expectedProfiles) {
+    const profilePath = `videos/${videoId}/${profile}/`;
+    const [files] = await bucket.getFiles({ prefix: profilePath });
+    
+    if (files.length > 0) {
+      results.profiles[profile] = true;
+      
+      // Verify playlist exists
+      const playlist = files.find(f => f.name.endsWith('playlist.m3u8'));
+      assert(playlist, `No playlist for ${profile}`);
+      
+      // Count segments
+      const segments = files.filter(f => f.name.endsWith('.ts'));
+      results.segments[profile] = segments.length;
+      
+      // Verify minimum segments (at least 5 for 30s video)
+      assert(segments.length >= 5, `Too few segments for ${profile}`);
+      
+      // Check segment naming pattern
+      const validNaming = segments.every(s => 
+        /segment_\d{3}\.ts$/.test(s.name)
+      );
+      assert(validNaming, `Invalid segment naming in ${profile}`);
+    }
+  }
+  
+  // Check thumbnails
+  const posterFile = bucket.file(`videos/${videoId}/thumbnails/poster.jpg`);
+  const [posterExists] = await posterFile.exists();
+  results.thumbnails = posterExists;
+  
+  // Validate codec compatibility
+  await validateCodecProfiles(videoId, results.profiles);
+  
+  return results;
+}
+
+async function validateCodecProfiles(videoId, profiles) {
+  // Lower quality should use Baseline for compatibility
+  if (profiles['144p'] || profiles['240p']) {
+    const file = await downloadSegment(videoId, '240p', 'segment_000.ts');
+    const codecInfo = await getCodecInfo(file);
+    assert(
+      codecInfo.profile === 'Baseline' || codecInfo.profile === 'Main',
+      'Low quality should use compatible codec'
+    );
+  }
+  
+  // High quality can use High profile
+  if (profiles['1080p']) {
+    const file = await downloadSegment(videoId, '1080p', 'segment_000.ts');
+    const codecInfo = await getCodecInfo(file);
+    assert(
+      ['Main', 'High'].includes(codecInfo.profile),
+      'HD should use Main or High profile'
+    );
+  }
+}
+Phase 3: Storage & CDN Testing
+Test 3.1: Verify CDN Accessibility
+javascript
+async function testCDNAccess(videoId) {
+  const cdnBase = process.env.NEXT_PUBLIC_CDN_URL;
+  const tests = [];
+  
+  // Test direct CDN access
+  const masterUrl = `${cdnBase}/videos/${videoId}/manifest/master.m3u8`;
+  const response = await fetch(masterUrl);
+  tests.push({
+    test: 'Master playlist accessible',
+    pass: response.status === 200
+  });
+  
+  // Test CORS headers
+  const headers = response.headers;
+  tests.push({
+    test: 'CORS headers present',
+    pass: headers.get('access-control-allow-origin') !== null
+  });
+  
+  // Test cache headers
+  tests.push({
+    test: 'Cache headers set',
+    pass: headers.get('cache-control') !== null
+  });
+  
+  // Test segment availability
+  const segmentUrl = `${cdnBase}/videos/${videoId}/480p/segment_000.ts`;
+  const segmentResponse = await fetch(segmentUrl);
+  tests.push({
+    test: 'Segments accessible',
+    pass: segmentResponse.status === 200
+  });
+  
+  // Test bandwidth (download speed)
+  const startTime = Date.now();
+  const segmentData = await segmentResponse.arrayBuffer();
+  const downloadTime = Date.now() - startTime;
+  const sizeMB = segmentData.byteLength / (1024 * 1024);
+  const speedMbps = (sizeMB * 8) / (downloadTime / 1000);
+  
+  tests.push({
+    test: 'CDN speed > 10 Mbps',
+    pass: speedMbps > 10,
+    value: `${speedMbps.toFixed(2)} Mbps`
+  });
+  
+  return tests;
+}
+Test 3.2: Verify No Race Conditions
+javascript
+async function testNoRaceConditions(videoId) {
+  // Immediately try to play after upload
+  const uploadTime = Date.now();
+  
+  // This should not 404 but show processing state
+  const statusResponse = await fetch(`/api/video-status/${videoId}`);
+  const status = await statusResponse.json();
+  
+  assert(
+    status.status === 'processing' || status.status === 'completed',
+    'Should handle immediate access gracefully'
+  );
+  
+  // Try to access master playlist (should handle gracefully)
+  const cdnUrl = `${process.env.NEXT_PUBLIC_CDN_URL}/videos/${videoId}/manifest/master.m3u8`;
+  const playlistResponse = await fetch(cdnUrl);
+  
+  if (status.status === 'processing') {
+    assert(
+      playlistResponse.status === 404 || playlistResponse.status === 503,
+      'Should return appropriate status when processing'
+    );
+  }
+  
+  // Wait for completion and verify all segments exist
+  await waitForCompletion(videoId);
+  
+  // Now verify no 404s
+  const segments = await getAllSegmentUrls(videoId);
+  const segmentChecks = await Promise.all(
+    segments.map(async (url) => {
+      const response = await fetch(url, { method: 'HEAD' });
+      return { url, status: response.status };
+    })
+  );
+  
+  const missing = segmentChecks.filter(s => s.status === 404);
+  assert(missing.length === 0, `Missing segments: ${JSON.stringify(missing)}`);
+}
+Phase 4: Playback Testing
+Test 4.1: Player Integration
+javascript
+// Playwright/Puppeteer E2E test
+async function testPlayerPlayback(videoId) {
+  const browser = await playwright.chromium.launch();
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  
+  // Monitor network requests
+  const requests = [];
+  page.on('request', req => {
+    if (req.url().includes('.m3u8') || req.url().includes('.ts')) {
+      requests.push({
+        url: req.url(),
+        type: req.resourceType(),
+        method: req.method()
+      });
+    }
+  });
+  
+  // Monitor console for errors
+  const errors = [];
+  page.on('console', msg => {
+    if (msg.type() === 'error') {
+      errors.push(msg.text());
+    }
+  });
+  
+  // Navigate to video page
+  await page.goto(`http://localhost:3000/video/${videoId}`);
+  
+  // Wait for video element
+  const video = await page.waitForSelector('video', { timeout: 10000 });
+  
+  // Check initial state
+  const initialState = await video.evaluate(el => ({
+    readyState: el.readyState,
+    duration: el.duration,
+    paused: el.paused,
+    currentTime: el.currentTime
+  }));
+  
+  console.log('Initial state:', initialState);
+  
+  // Start playback
+  await video.click();
+  await page.waitForTimeout(1000);
+  
+  // Verify playback started
+  const playingState = await video.evaluate(el => ({
+    paused: el.paused,
+    currentTime: el.currentTime,
+    buffered: el.buffered.length > 0 ? el.buffered.end(0) : 0
+  }));
+  
+  assert(!playingState.paused, 'Video should be playing');
+  assert(playingState.currentTime > 0, 'Playback should progress');
+  assert(playingState.buffered > 0, 'Should have buffered content');
+  
+  // Test quality switching
+  await testQualitySwitching(page, video);
+  
+  // Test seeking
+  await testSeeking(page, video);
+  
+  // Check for errors
+  assert(errors.length === 0, `Console errors: ${errors.join(', ')}`);
+  
+  // Verify adaptive streaming worked
+  const m3u8Requests = requests.filter(r => r.url.includes('.m3u8'));
+  const tsRequests = requests.filter(r => r.url.includes('.ts'));
+  
+  assert(m3u8Requests.length >= 2, 'Should load master + quality playlist');
+  assert(tsRequests.length >= 5, 'Should load multiple segments');
+  
+  await browser.close();
+  
+  return {
+    requests: requests.length,
+    errors: errors.length,
+    playbackSuccess: true
+  };
+}
+
+async function testQualitySwitching(page, video) {
+  // Get current quality
+  const initialQuality = await page.evaluate(() => {
+    return window.hlsInstance?.currentLevel || -1;
+  });
+  
+  // Force quality change
+  await page.evaluate(() => {
+    if (window.hlsInstance) {
+      window.hlsInstance.currentLevel = 2; // Switch to 360p
+    }
+  });
+  
+  await page.waitForTimeout(3000);
+  
+  // Verify quality changed
+  const newQuality = await page.evaluate(() => {
+    return window.hlsInstance?.currentLevel || -1;
+  });
+  
+  assert(newQuality !== initialQuality, 'Quality should change');
+  
+  // Verify no playback interruption
+  const isPlaying = await video.evaluate(el => !el.paused);
+  assert(isPlaying, 'Playback should continue during switch');
+}
+
+async function testSeeking(page, video) {
+  // Get duration
+  const duration = await video.evaluate(el => el.duration);
+  
+  // Seek to middle
+  await video.evaluate(el => {
+    el.currentTime = el.duration / 2;
+  });
+  
+  await page.waitForTimeout(2000);
+  
+  // Verify seek completed
+  const currentTime = await video.evaluate(el => el.currentTime);
+  assert(
+    Math.abs(currentTime - duration / 2) < 2,
+    'Seek should work'
+  );
+}
+Test 4.2: Device Compatibility
+javascript
+async function testDeviceCompatibility(videoId) {
+  const devices = [
+    { name: 'iPhone 12', userAgent: 'Mozilla/5.0 (iPhone...)' },
+    { name: 'Android', userAgent: 'Mozilla/5.0 (Linux; Android...)' },
+    { name: 'Desktop Chrome', userAgent: 'Mozilla/5.0 (Windows...)' },
+    { name: 'Safari', userAgent: 'Mozilla/5.0 (Macintosh...)' }
+  ];
+  
+  const results = [];
+  
+  for (const device of devices) {
+    const browser = await playwright.chromium.launch();
+    const context = await browser.newContext({
+      userAgent: device.userAgent,
+      viewport: device.name.includes('iPhone') 
+        ? { width: 390, height: 844 }
+        : { width: 1920, height: 1080 }
+    });
+    
+    const page = await context.newPage();
+    
+    try {
+      await page.goto(`http://localhost:3000/video/${videoId}`);
+      await page.waitForSelector('video', { timeout: 10000 });
+      
+      const video = await page.$('video');
+      await video.click();
+      await page.waitForTimeout(3000);
+      
+      const state = await video.evaluate(el => ({
+        playing: !el.paused,
+        error: el.error,
+        currentTime: el.currentTime
+      }));
+      
+      results.push({
+        device: device.name,
+        success: state.playing && !state.error,
+        details: state
+      });
+      
+    } catch (error) {
+      results.push({
+        device: device.name,
+        success: false,
+        error: error.message
+      });
+    }
+    
+    await browser.close();
+  }
+  
+  return results;
+}
+Test 4.3: Performance Metrics
+javascript
+async function testPerformanceMetrics(videoId) {
+  const browser = await playwright.chromium.launch();
+  const page = await browser.newPage();
+  
+  // Enable performance tracking
+  await page.evaluateOnNewDocument(() => {
+    window.performanceMetrics = {
+      ttff: null,
+      rebuffers: 0,
+      qualitySwitches: 0,
+      bandwidth: [],
+      bufferHealth: []
+    };
+    
+    // Track Time to First Frame
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        if (entry.name.includes('first-frame')) {
+          window.performanceMetrics.ttff = entry.startTime;
+        }
+      }
+    });
+    observer.observe({ entryTypes: ['measure'] });
+  });
+  
+  await page.goto(`http://localhost:3000/video/${videoId}`);
+  
+  const video = await page.waitForSelector('video');
+  await video.click();
+  
+  // Monitor for 30 seconds
+  await page.waitForTimeout(30000);
+  
+  const metrics = await page.evaluate(() => window.performanceMetrics);
+  
+  // Validate performance
+  assert(metrics.ttff < 3000, `TTFF too high: ${metrics.ttff}ms`);
+  assert(metrics.rebuffers < 2, `Too many rebuffers: ${metrics.rebuffers}`);
+  assert(metrics.qualitySwitches < 5, `Excessive quality switches: ${metrics.qualitySwitches}`);
+  
+  await browser.close();
+  
+  return metrics;
+}
+Phase 5: Load & Stress Testing
+Test 5.1: Concurrent Uploads
+javascript
+async function testConcurrentUploads() {
+  const files = Array(10).fill('test_videos/sample_30s.mp4');
+  
+  const uploadPromises = files.map((file, index) => 
+    uploadVideo(file, { title: `Concurrent Test ${index}` })
+  );
+  
+  const results = await Promise.allSettled(uploadPromises);
+  
+  const successful = results.filter(r => r.status === 'fulfilled');
+  assert(successful.length >= 8, 'At least 80% should succeed');
+  
+  // Track all video IDs for cleanup
+  const videoIds = successful.map(r => r.value.videoId);
+  
+  // Wait for all to complete transcoding
+  const transcodingResults = await Promise.allSettled(
+    videoIds.map(id => waitForCompletion(id, 300000)) // 5 min timeout
+  );
+  
+  const completed = transcodingResults.filter(r => r.status === 'fulfilled');
+  assert(completed.length >= 8, 'At least 80% should transcode');
+  
+  return { uploaded: successful.length, transcoded: completed.length };
+}
+Test 5.2: Memory Monitoring
+javascript
+async function testMemoryUnderLoad(videoIds) {
+  const browsers = [];
+  
+  // Open 5 concurrent playback sessions
+  for (let i = 0; i < 5; i++) {
+    const browser = await playwright.chromium.launch();
+    const page = await browser.newPage();
+    
+    await page.goto(`http://localhost:3000/video/${videoIds[i % videoIds.length]}`);
+    
+    browsers.push({ browser, page });
+    
+    // Start playback
+    const video = await page.$('video');
+    await video.click();
+  }
+  
+  // Monitor for 5 minutes
+  const memoryReadings = [];
+  
+  for (let minute = 0; minute < 5; minute++) {
+    await new Promise(resolve => setTimeout(resolve, 60000));
+    
+    // Collect memory metrics from each browser
+    for (let i = 0; i < browsers.length; i++) {
+      const metrics = await browsers[i].page.evaluate(() => {
+        if (performance.memory) {
+          return {
+            usedJSHeapSize: performance.memory.usedJSHeapSize / (1024 * 1024),
+            totalJSHeapSize: performance.memory.totalJSHeapSize / (1024 * 1024)
+          };
+        }
+        return null;
+      });
+      
+      if (metrics) {
+        memoryReadings.push({ minute, session: i, ...metrics });
+      }
+    }
+  }
+  
+  // Check for memory leaks (should not grow linearly)
+  const session0Memory = memoryReadings.filter(r => r.session === 0);
+  const memoryGrowth = session0Memory[4].usedJSHeapSize - session0Memory[0].usedJSHeapSize;
+  
+  assert(memoryGrowth < 100, `Memory leak detected: ${memoryGrowth}MB growth`);
+  
+  // Cleanup
+  for (const { browser } of browsers) {
+    await browser.close();
+  }
+  
+  return memoryReadings;
+}
+Test Execution Script
+bash
+#!/bin/bash
+# run_e2e_test.sh
+
+echo "🎬 Starting End-to-End Video Pipeline Test"
+echo "=========================================="
+
+# 1. Start services
+echo "📦 Starting services..."
+npm run dev &
+DEV_PID=$!
+
+# Wait for services
+sleep 5
+
+# 2. Run upload tests
+echo "📤 Testing CMS Upload..."
+npm run test:upload
+
+# 3. Monitor transcoding
+echo "⚙️ Testing Cloud Transcoding..."
+npm run test:transcoding
+
+# 4. Verify storage
+echo "💾 Testing Storage & CDN..."
+npm run test:cdn
+
+# 5. Test playback
+echo "▶️ Testing Video Playback..."
+npm run test:playback
+
+# 6. Run load tests
+echo "🔥 Running Load Tests..."
+npm run test:load
+
+# 7. Generate report
+echo "📊 Generating Test Report..."
+npm run test:report
+
+# Cleanup
+kill $DEV_PID
+
+echo "✅ E2E Test Complete!"
+Success Criteria
+✅ Pipeline Health Metrics
+ Upload success rate > 95%
+ Transcoding success rate > 95%
+ All quality profiles generated (where applicable)
+ No segment 404 errors
+ Playback starts within 3 seconds
+✅ Performance Targets
+ TTFF < 3 seconds on 4G
+ Rebuffer rate < 0.5 per minute
+ Memory usage stable over 30 minutes
+ Parallel transcoding 75% faster than sequential
+ CDN delivery > 10 Mbps
+✅ Compatibility Matrix
+ iOS Safari: Playback works
+ Android Chrome: Playback works
+ Desktop Chrome: Playback works
+ Desktop Safari: Playback works
+ Low-bandwidth (3G): Adapts to low quality
+ High-bandwidth (WiFi): Uses HD quality
+✅ Error Handling
+ Corrupted uploads rejected gracefully
+ Processing status shown during transcode
+ Network errors retry successfully
+ Quality switching without interruption
+Test Report Template
+markdown
+# E2E Video Pipeline Test Report
+Date: [DATE]
+Version: [VERSION]
+
+## Summary
+- Total Tests: X
+- Passed: X
+- Failed: X
+- Success Rate: X%
+
+## Component Results
+
+### CMS Upload
+- Files Tested: X
+- Success Rate: X%
+- Avg Upload Time: Xs
+- Edge Cases Handled: ✅/❌
+
+### Cloud Transcoding  
+- Videos Processed: X
+- Profiles Generated: X
+- Avg Time (30s video): Xs
+- Parallel Speedup: X%
+
+### Storage & CDN
+- Segments Verified: X
+- 404 Errors: X
+- CDN Speed: X Mbps
+- CORS Configured: ✅/❌
+
+### Playback
+- Devices Tested: X
+- Compatibility: X%
+- Avg TTFF: Xms
+- Rebuffer Rate: X/min
+
+### Performance Under Load
+- Concurrent Uploads: X
+- Memory Stable: ✅/❌
+- No OOM Kills: ✅/❌
+- Response Time P95: Xs
+
+## Issues Found
+1. [Issue description and severity]
+2. [Issue description and severity]
+
+## Recommendations
+1. [Improvement suggestion]
+2. [Improvement suggestion]
+Run this comprehensive test suite to validate the entire video pipeline is working correctly end-to-end.
+
+
+
+
+
