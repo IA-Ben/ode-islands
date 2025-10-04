@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useUnifiedWebSocket } from '@/contexts/UnifiedWebSocketContext';
 import type { FanScoreData, ScoreToastData, ActivityType } from '@/@typings/fanScore';
 
 interface UseFanScoreOptions {
@@ -40,37 +40,22 @@ export const useFanScore = (options: UseFanScoreOptions = {}): UseFanScoreReturn
   
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // WebSocket connection for real-time score updates
-  const wsUrl = typeof window !== 'undefined' 
-    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
-    : null;
+  // Use unified WebSocket service for real-time score updates
+  const { subscribeToTypes } = useUnifiedWebSocket();
 
-  const { connectionStatus, lastMessage } = useWebSocket(wsUrl, {
-    onMessage: (message) => {
-      if (message.type === 'fan_score_update' && message.payload) {
-        const update = message.payload;
-        
-        // Show toast for new points earned
-        if (update.pointsAwarded && update.pointsAwarded > 0) {
-          // Map server activity type to UI activity type for proper display
-          const uiActivityType = mapServerToUIActivityType(update.activityType);
-          
-          showToast({
-            points: update.pointsAwarded,
-            activityType: uiActivityType,
-            title: getActivityTitle(uiActivityType),
-            description: getActivityDescription(uiActivityType, update.pointsAwarded),
-            duration: 4000
-          });
-        }
+  const showToast = useCallback((toastData: ScoreToastData): void => {
+    const newToast = {
+      ...toastData,
+      duration: toastData.duration || 3000
+    };
 
-        // Refresh score data after a brief delay to ensure backend is updated
-        setTimeout(() => {
-          refreshScore();
-        }, 500);
-      }
-    }
-  });
+    setToasts(prev => [newToast, ...prev.slice(0, 2)]); // Keep max 3 toasts
+
+    // Auto-dismiss toast after duration
+    setTimeout(() => {
+      setToasts(prev => prev.filter(toast => toast !== newToast));
+    }, newToast.duration);
+  }, []);
 
   const fetchScoreData = useCallback(async (): Promise<void> => {
     try {
@@ -103,23 +88,39 @@ export const useFanScore = (options: UseFanScoreOptions = {}): UseFanScoreReturn
     await fetchScoreData();
   }, [fetchScoreData]);
 
-  const showToast = useCallback((toastData: ScoreToastData): void => {
-    const newToast = {
-      ...toastData,
-      duration: toastData.duration || 3000
-    };
-
-    setToasts(prev => [newToast, ...prev.slice(0, 2)]); // Keep max 3 toasts
-
-    // Auto-dismiss toast after duration
-    setTimeout(() => {
-      setToasts(prev => prev.filter(toast => toast !== newToast));
-    }, newToast.duration);
-  }, []);
-
   const dismissToast = useCallback((index: number): void => {
     setToasts(prev => prev.filter((_, i) => i !== index));
   }, []);
+
+  // Subscribe to fan score updates
+  useEffect(() => {
+    const unsubscribe = subscribeToTypes(['fan_score_update'], (message) => {
+      if (message.type === 'fan_score_update' && message.payload) {
+        const update = message.payload;
+        
+        // Show toast for new points earned
+        if (update.pointsAwarded && update.pointsAwarded > 0) {
+          // Map server activity type to UI activity type for proper display
+          const uiActivityType = mapServerToUIActivityType(update.activityType);
+          
+          showToast({
+            points: update.pointsAwarded,
+            activityType: uiActivityType,
+            title: getActivityTitle(uiActivityType),
+            description: getActivityDescription(uiActivityType, update.pointsAwarded),
+            duration: 4000
+          });
+        }
+
+        // Refresh score data after a brief delay to ensure backend is updated
+        setTimeout(() => {
+          refreshScore();
+        }, 500);
+      }
+    });
+
+    return () => unsubscribe();
+  }, [subscribeToTypes, showToast, refreshScore]);
 
   // Initial fetch
   useEffect(() => {
