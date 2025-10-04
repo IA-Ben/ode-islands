@@ -11,6 +11,7 @@ from pathlib import Path
 from google.cloud import storage
 from flask import Flask, request, jsonify
 from config import QUALITY_PROFILES, GCS_INPUT_BUCKET, GCS_OUTPUT_BUCKET
+from memory_monitor import memory_manager
 
 app = Flask(__name__)
 storage_client = storage.Client()
@@ -18,6 +19,9 @@ storage_client = storage.Client()
 # Resource management to prevent OOM
 MAX_PARALLEL_JOBS = int(os.environ.get('MAX_PARALLEL_JOBS', 4))
 memory_semaphore = Semaphore(MAX_PARALLEL_JOBS)
+
+# Start memory monitoring
+memory_manager.start()
 
 
 def get_video_dimensions(input_file):
@@ -296,6 +300,11 @@ def process_video(input_uri, video_id):
             
             # Process critical profiles first (COMPLETE before moving on)
             if critical_profiles:
+                # Check memory before starting (critical profiles always run unless emergency)
+                mem_status = memory_manager.get_status()
+                if mem_status.get('emergency_mode'):
+                    print("⚠️ WARNING: Emergency memory mode - only processing critical profiles")
+                
                 print("Processing critical profiles...")
                 critical_futures = {
                     executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
@@ -316,7 +325,7 @@ def process_video(input_uri, video_id):
                     update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
             
             # Only process standard profiles after critical ones complete
-            if standard_profiles:
+            if standard_profiles and not memory_manager.should_skip_variant('standard'):
                 print("Processing standard profiles...")
                 standard_futures = {
                     executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
@@ -336,8 +345,8 @@ def process_video(input_uri, video_id):
                     
                     update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
             
-            # Finally process premium profiles
-            if premium_profiles:
+            # Finally process premium profiles (skip if memory pressure)
+            if premium_profiles and not memory_manager.should_skip_variant('premium'):
                 print("Processing premium profiles...")
                 premium_futures = {
                     executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
@@ -356,6 +365,8 @@ def process_video(input_uri, video_id):
                         failed_count += 1
                     
                     update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
+            elif premium_profiles:
+                print("⚠️ Skipping premium profiles due to memory pressure")
         
         print(f"✅ Generated {len(successful_profiles)}/{len(applicable_profiles)} variants ({failed_count} failed)")
         
