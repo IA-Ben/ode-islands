@@ -237,7 +237,7 @@ export function resetConfig(): void {
 /**
  * Check if a feature is enabled
  */
-export function isFeatureEnabled(feature: keyof AppConfig['features']): boolean {
+export function isFeatureEnabled(feature: keyof AppConfig['features']): boolean | number {
   return getConfig().features[feature];
 }
 
