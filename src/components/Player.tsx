@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import Hls from "hls.js";
-import { getConfig } from '@/lib/config';
+import { getVideoUrl } from '@/lib/cdnConfig';
 import { useMobile } from '@/contexts/MobileContext';
 
 interface PlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
@@ -34,7 +34,6 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const [transcodingStatus, setTranscodingStatus] = useState<'checking' | 'ready' | 'processing' | 'error'>('checking');
   const statusCheckStartTimeRef = useRef<number>(0);
   const hasCheckedStatusRef = useRef<string>('');
-  const cdnUrl = getConfig().cdnUrl;
   const { getVideoQuality, shouldReduceAnimations, isMobile } = useMobile();
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
@@ -45,11 +44,11 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   let videoUrl: string | null = null;
   if (video?.url) {
     if (video.url.startsWith('http')) {
-      // It's already a full URL, add master.m3u8
-      videoUrl = `${video.url}/master.m3u8`;
+      // It's already a full URL, use as-is
+      videoUrl = video.url;
     } else {
-      // It's an identifier, construct the full URL
-      videoUrl = `${cdnUrl}/vid/${video.url}/master.m3u8`;
+      // It's an identifier, use the helper function
+      videoUrl = getVideoUrl(video.url);
     }
   }
   
