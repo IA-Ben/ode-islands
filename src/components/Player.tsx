@@ -28,6 +28,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const videoListenersCleanupRef = useRef<(() => void) | null>(null);
   const bufferCleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const bandwidthSamplesRef = useRef<number[]>([]);
+  const loadVideoRef = useRef<((url: string) => void) | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const cdnUrl = getConfig().cdnUrl;
@@ -65,7 +66,8 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   }, []);
 
   const getDynamicBufferConfig = useCallback(() => {
-    const avgBandwidth = getAverageBandwidth();
+    const samples = bandwidthSamplesRef.current;
+    const avgBandwidth = samples.length === 0 ? 5000 : samples.reduce((a, b) => a + b, 0) / samples.length;
     
     if (avgBandwidth < 1000) {
       return {
@@ -100,7 +102,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
         maxBufferHole: 0.5
       };
     }
-  }, [getAverageBandwidth]);
+  }, []);
 
   // Periodic buffer cleanup to prevent memory leaks
   const cleanupBuffer = useCallback(() => {
@@ -187,7 +189,9 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     console.log(`Retrying video load (attempt ${retryCountRef.current}/${MAX_RETRIES}) in ${delay}ms`);
     
     retryTimeoutRef.current = setTimeout(() => {
-      loadVideo(url);
+      if (loadVideoRef.current) {
+        loadVideoRef.current(url);
+      }
     }, delay);
   }, []);
 
@@ -228,9 +232,6 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       // Native HLS support (Safari)
       videoEl.src = url;
     } else if (Hls.isSupported()) {
-      // Get dynamic buffer configuration based on measured bandwidth
-      const dynamicConfig = getDynamicBufferConfig();
-      
       // Adjust HLS configuration based on mobile and data saver settings
       const hlsConfig: any = {
         enableWorker: true,
@@ -238,7 +239,11 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
         autoStartLoad: true,
         startFragPrefetch: !isMobile,
         capLevelToPlayerSize: true,
-        ...dynamicConfig,
+        backBufferLength: isMobile ? 30 : 90,
+        maxBufferLength: isMobile ? 60 : 120,
+        maxMaxBufferLength: isMobile ? 300 : 600,
+        maxBufferSize: isMobile ? 30 * 1000 * 1000 : 60 * 1000 * 1000,
+        maxBufferHole: isMobile ? 2 : 0.5,
         fpsDroppedMonitoringPeriod: isMobile ? 10000 : 5000,
         fpsDroppedMonitoringThreshold: isMobile ? 0.3 : 0.2
       };
@@ -326,7 +331,10 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       setHasError(true);
       setIsLoading(false);
     }
-  }, [cleanupVideo, retryVideoLoad]);
+  }, [cleanupVideo, retryVideoLoad, isMobile, getVideoQuality, measureBandwidth, cleanupBuffer]);
+
+  // Store loadVideo in ref to break circular dependency
+  loadVideoRef.current = loadVideo;
 
   // Load HLS video once when url updates
   useEffect(() => {
