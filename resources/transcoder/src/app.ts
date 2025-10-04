@@ -13,6 +13,8 @@ interface QualityProfile {
   audioBitrate: string;
   maxrate: string;
   bufsize: string;
+  profile: 'baseline' | 'main' | 'high';
+  level: string;
 }
 
 interface VideoConfig {
@@ -26,22 +28,48 @@ interface VideoConfig {
   '-hls_playlist_type': string;
   '-hls_flags': string;
   '-hls_list_size': string;
+  '-g': string;
+  '-keyint_min': string;
   '-ac': string;
   '-ar': string;
   '-b:a': string;
   '-hls_segment_filename': string;
 }
 
-// Define quality profiles for adaptive streaming
+// Define quality profiles for adaptive streaming with optimized codec profiles
 const qualityProfiles: QualityProfile[] = [
+  {
+    name: '144p',
+    width: 256,
+    height: 144,
+    videoBitrate: '100k',
+    audioBitrate: '32k',
+    maxrate: '150k',
+    bufsize: '200k',
+    profile: 'baseline',
+    level: '3.0'
+  },
   {
     name: '240p',
     width: 426,
     height: 240,
-    videoBitrate: '400k',
+    videoBitrate: '300k',
+    audioBitrate: '48k',
+    maxrate: '450k',
+    bufsize: '600k',
+    profile: 'baseline',
+    level: '3.0'
+  },
+  {
+    name: '360p',
+    width: 640,
+    height: 360,
+    videoBitrate: '600k',
     audioBitrate: '64k',
-    maxrate: '400k',
-    bufsize: '800k'
+    maxrate: '900k',
+    bufsize: '1200k',
+    profile: 'baseline',
+    level: '3.1'
   },
   {
     name: '480p',
@@ -49,8 +77,21 @@ const qualityProfiles: QualityProfile[] = [
     height: 480,
     videoBitrate: '1000k',
     audioBitrate: '96k',
-    maxrate: '1000k',
-    bufsize: '2000k'
+    maxrate: '1500k',
+    bufsize: '2000k',
+    profile: 'main',
+    level: '3.1'
+  },
+  {
+    name: '540p',
+    width: 960,
+    height: 540,
+    videoBitrate: '1500k',
+    audioBitrate: '96k',
+    maxrate: '2250k',
+    bufsize: '3000k',
+    profile: 'main',
+    level: '4.0'
   },
   {
     name: '720p',
@@ -58,23 +99,71 @@ const qualityProfiles: QualityProfile[] = [
     height: 720,
     videoBitrate: '2500k',
     audioBitrate: '128k',
-    maxrate: '2500k',
-    bufsize: '5000k'
+    maxrate: '3750k',
+    bufsize: '5000k',
+    profile: 'main',
+    level: '4.0'
+  },
+  {
+    name: '720p60',
+    width: 1280,
+    height: 720,
+    videoBitrate: '3500k',
+    audioBitrate: '128k',
+    maxrate: '5250k',
+    bufsize: '7000k',
+    profile: 'main',
+    level: '4.0'
   },
   {
     name: '1080p',
     width: 1920,
     height: 1080,
     videoBitrate: '5000k',
-    audioBitrate: '128k',
-    maxrate: '5000k',
-    bufsize: '10000k'
+    audioBitrate: '192k',
+    maxrate: '7500k',
+    bufsize: '10000k',
+    profile: 'high',
+    level: '4.0'
+  },
+  {
+    name: '1080p60',
+    width: 1920,
+    height: 1080,
+    videoBitrate: '7500k',
+    audioBitrate: '192k',
+    maxrate: '11250k',
+    bufsize: '15000k',
+    profile: 'high',
+    level: '4.2'
+  },
+  {
+    name: '1440p',
+    width: 2560,
+    height: 1440,
+    videoBitrate: '10000k',
+    audioBitrate: '256k',
+    maxrate: '15000k',
+    bufsize: '20000k',
+    profile: 'high',
+    level: '5.0'
+  },
+  {
+    name: '2160p',
+    width: 3840,
+    height: 2160,
+    videoBitrate: '20000k',
+    audioBitrate: '256k',
+    maxrate: '30000k',
+    bufsize: '40000k',
+    profile: 'high',
+    level: '5.1'
   }
 ];
 
 const createVideoConfig = (segmentOutputDir: string, profile: QualityProfile): VideoConfig => ({
-  '-profile:v': 'high',
-  '-level': '4.0',
+  '-profile:v': profile.profile,
+  '-level': profile.level,
   '-x264-params': 'nal-hrd=cbr:force-cfr=1',
   '-b:v': profile.videoBitrate,
   '-maxrate': profile.maxrate,
@@ -83,6 +172,8 @@ const createVideoConfig = (segmentOutputDir: string, profile: QualityProfile): V
   '-hls_playlist_type': 'vod',
   '-hls_flags': 'independent_segments',
   '-hls_list_size': '0',
+  '-g': '48',
+  '-keyint_min': '48',
   '-ac': '2',
   '-ar': '48000',
   '-b:a': profile.audioBitrate,
@@ -128,6 +219,41 @@ const generateQualityStream = (
   }
 };
 
+// Verify all segments are present before creating master playlist
+const verifySegments = async (
+  videoOutputDir: string,
+  applicableProfiles: QualityProfile[]
+): Promise<boolean> => {
+  const fs = await import('fs/promises');
+  
+  for (const profile of applicableProfiles) {
+    const qualityDir = path.join(videoOutputDir, profile.name);
+    const playlistPath = path.join(qualityDir, 'playlist.m3u8');
+    
+    try {
+      const playlistContent = await fs.readFile(playlistPath, 'utf-8');
+      const segmentMatches = playlistContent.match(/segment_\d+\.ts/g) || [];
+      
+      for (const segmentFile of segmentMatches) {
+        const segmentPath = path.join(qualityDir, segmentFile);
+        try {
+          await fs.access(segmentPath);
+        } catch (err) {
+          console.error(`❌ Missing segment: ${segmentPath}`);
+          return false;
+        }
+      }
+      
+      console.log(`✓ Verified ${segmentMatches.length} segments for ${profile.name}`);
+    } catch (err) {
+      console.error(`❌ Error verifying ${profile.name}:`, err);
+      return false;
+    }
+  }
+  
+  return true;
+};
+
 // Generate master playlist for adaptive streaming
 const generateMasterPlaylist = async (
   videoOutputDir: string,
@@ -140,6 +266,12 @@ const generateMasterPlaylist = async (
     profile => profile.width <= originalDimensions.width && profile.height <= originalDimensions.height
   );
   
+  // Verify all segments are present
+  const segmentsVerified = await verifySegments(videoOutputDir, applicableProfiles);
+  if (!segmentsVerified) {
+    throw new Error('Segment verification failed - some segments are missing');
+  }
+  
   let masterContent = '#EXTM3U\n#EXT-X-VERSION:6\n\n';
   
   for (const profile of applicableProfiles) {
@@ -151,7 +283,7 @@ const generateMasterPlaylist = async (
   }
   
   await fs.writeFile(path.join(videoOutputDir, 'master.m3u8'), masterContent);
-  console.log('- Master playlist generated');
+  console.log('- Master playlist generated successfully');
 };
 
 // Generate adaptive streaming with multiple qualities

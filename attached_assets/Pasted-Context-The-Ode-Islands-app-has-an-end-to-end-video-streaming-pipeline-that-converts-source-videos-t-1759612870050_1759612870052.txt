@@ -1,0 +1,457 @@
+Context
+The Ode Islands app has an end-to-end video streaming pipeline that converts source videos to adaptive HLS format. The pipeline consists of FFmpeg transcoding, GCS/CDN storage, and client-side HLS.js playback. However, there are several critical issues affecting video playback reliability and user experience.
+Current Critical Issues to Fix
+1. Codec Compatibility (HIGHEST PRIORITY)
+
+Current H.264 High Profile Level 4.0 fails on older mobile browsers and some Android devices
+Causes "Fatal media error" after manifest loads
+Fix: Downgrade to H.264 Main or Baseline profile for broader compatibility
+
+2. CDN Segment 404 Errors
+
+Segments return 404 during playback because they're referenced before fully uploaded to GCS
+Breaks adaptive streaming on quality switches
+Fix: Implement sync verification before playlist generation
+
+3. Manifest Parse Failures
+
+Race condition between network request and HLS.js initialization
+Fix: Improve initialization sequencing and error recovery
+
+4. Memory Leaks
+
+HLS.js buffer not properly cleaned on long sessions (30+ minutes)
+Fix: Implement proper buffer cleanup and memory management
+
+Required Improvements
+Transcoding Updates (resources/transcoder/)
+
+Change codec profile from High to Main profile:
+
+Update x264 parameters to use Main profile instead of High
+Test with Baseline profile as fallback option
+Keep Level at 4.0 or consider 3.1 for wider support
+
+
+Add CDN sync verification:
+
+After transcoding, verify all .ts segments are accessible via HEAD requests
+Only generate master.m3u8 after confirming all segments are uploaded
+Add retry logic for failed uploads
+
+
+Generate fallback stream:
+
+Always create a 480p single-quality fallback stream
+Use most compatible settings (Baseline profile, Level 3.0)
+
+
+
+Player Updates (src/components/Player.tsx)
+
+Fix memory leaks:
+
+Implement periodic buffer cleanup (every 5 minutes)
+Add explicit segment disposal after playback
+Monitor and limit total buffer size
+
+
+Improve mobile buffering:
+
+Increase maxBufferHole from 1 to 2 for mobile
+Implement dynamic buffer sizing based on measured bandwidth
+Add bandwidth estimation smoothing to prevent quality thrashing
+
+
+Add error telemetry:
+
+Log codec support detection results
+Track manifest load failures with details
+Report quality switch performance metrics
+Send telemetry to backend for monitoring
+
+
+Optimize quality switching:
+
+Implement predictive prefetching for likely next quality level
+Reduce keyframe interval in transcoding for faster switches
+Add smooth transition overlay during quality changes
+
+
+
+Additional Enhancements
+
+Bandwidth-adaptive buffer configuration:
+
+javascript   // Dynamically adjust buffer based on measured bandwidth
+   if (measuredBandwidth < 1000) { // < 1 Mbps
+     // Use conservative mobile settings
+   } else if (measuredBandwidth < 5000) { // 1-5 Mbps  
+     // Use balanced settings
+   } else { // > 5 Mbps
+     // Use aggressive desktop settings
+   }
+
+Add codec capability detection:
+
+Test H.264 profile support before playback
+Fall back to compatible quality level if High profile unsupported
+Cache capability results in localStorage
+
+
+Implement intelligent retry:
+
+Different retry strategies for different error types
+Exponential backoff with jitter
+Circuit breaker pattern for persistent failures
+
+
+
+Testing Requirements
+
+Test on: older Android devices, iOS Safari, low-bandwidth connections
+Verify no memory leaks over 60+ minute sessions
+Confirm all quality levels play without codec errors
+Validate smooth quality transitions
+
+Success Metrics
+
+Reduce "Fatal media error" rate by 90%
+Eliminate segment 404 errors completely
+Achieve <2 second quality switch time
+Maintain stable memory usage over long sessions
+
+Please implement these improvements, focusing first on the codec compatibility and CDN sync issues as they have the highest user impact. Ensure all changes are backwards compatible with existing video content.RetryXI'd like a few more streams for adaptive stream. I'd like a video processing pipeline to be brought onto the cloud from it's place locally. I'd like streams to be uploaded to google cloud in the right location.EditStrategized cloud migration and adaptive streaming for Ode Islands.The user wants to enhance the Ode Islands video streaming pipeline with:
+
+More adaptive bitrate streams (currently has 4: 240p, 480p, 720p, 1080p)
+Move the video processing pipeline from local to cloud
+Ensure proper GCS bucket location/organization for the streams
+
+I should create a comprehensive prompt that addresses these requirements while also fixing the existing critical issues.Improve & Migrate Ode Islands Video Streaming Pipeline to Cloud
+Context
+The Ode Islands app currently runs video transcoding locally (resources/transcoder/) and needs to be migrated to a cloud-based processing pipeline with expanded adaptive bitrate options and proper GCS organization.
+Core Requirements
+1. Expand Adaptive Bitrate Ladder
+Current ladder only has 4 profiles (240p, 480p, 720p, 1080p). Add more granular options for better adaptive streaming:
+Profile    Resolution   Video Bitrate  Audio Bitrate  Use Case
+--------------------------------------------------------------
+144p       256x144      100 kbps      32 kbps        Ultra-low bandwidth
+240p       426x240      300 kbps      48 kbps        Low bandwidth  
+360p       640x360      600 kbps      64 kbps        Mobile 3G
+480p       854x480      1000 kbps     96 kbps        Mobile 4G
+540p       960x540      1500 kbps     96 kbps        Tablet/Mobile
+720p       1280x720     2500 kbps     128 kbps       HD Standard
+720p60     1280x720     3500 kbps     128 kbps       HD High framerate
+1080p      1920x1080    5000 kbps     192 kbps       Full HD
+1080p60    1920x1080    7500 kbps     192 kbps       Full HD High framerate
+1440p      2560x1440    10000 kbps    256 kbps       2K (if source permits)
+2160p      3840x2160    20000 kbps    256 kbps       4K (if source permits)
+2. Cloud Video Processing Pipeline
+Architecture:
+User Upload → GCS Input Bucket → Cloud Run/Functions → Media Transcoding API → GCS Output Bucket → CDN
+Implementation Requirements:
+A. Input Processing:
+
+Create GCS bucket structure:
+
+  ode-islands-video-input/
+    └── pending/
+    └── processing/
+    └── completed/
+    └── failed/
+B. Cloud Processing Service:
+
+Use Google Cloud Run with FFmpeg container OR Transcoder API
+Trigger on file upload to pending/ folder
+Move to processing/ during transcode
+Move to completed/ after success or failed/ on error
+
+C. Output Organization in GCS:
+ode-islands-video-cdn/
+  └── videos/
+      └── [video-id]/
+          ├── manifest/
+          │   └── master.m3u8
+          ├── thumbnails/
+          │   ├── poster.jpg
+          │   ├── preview.gif (new: animated preview)
+          │   └── timeline/ (new: scrubber thumbnails)
+          │       ├── thumb_001.jpg
+          │       └── ...
+          ├── 144p/
+          │   ├── playlist.m3u8
+          │   └── segment_*.ts
+          ├── 240p/
+          │   ├── playlist.m3u8
+          │   └── segment_*.ts
+          ... (all quality levels)
+          └── metadata.json (processing info, codec details)
+3. Cloud Implementation Details
+Option A: Google Transcoder API (Recommended)
+python# Cloud Function triggered by GCS upload
+import json
+from google.cloud import transcoder_v1
+from google.cloud import storage
+
+def transcode_video(event, context):
+    """Triggered by upload to ode-islands-video-input/pending/"""
+    
+    input_uri = f"gs://{event['bucket']}/{event['name']}"
+    video_id = extract_video_id(event['name'])
+    output_uri = f"gs://ode-islands-video-cdn/videos/{video_id}/"
+    
+    # Create job config with all quality levels
+    job_config = {
+        "input_uri": input_uri,
+        "output_uri": output_uri,
+        "elementary_streams": [
+            # Video streams - Main/Baseline profile for compatibility
+            {"key": "video-144p", "video_stream": {
+                "h264": {
+                    "bitrate_bps": 100000,
+                    "frame_rate": 30,
+                    "height_pixels": 144,
+                    "width_pixels": 256,
+                    "profile": "baseline",
+                    "preset": "veryfast"
+                }
+            }},
+            # ... repeat for all quality levels
+        ],
+        "mux_streams": [
+            # Create HLS variants for each quality
+            {
+                "key": "144p",
+                "segment_settings": {"segment_duration": "6s"},
+                "elementary_streams": ["video-144p", "audio-low"]
+            },
+            # ... repeat for all quality levels
+        ],
+        "manifests": [{
+            "file_name": "manifest/master.m3u8",
+            "type": "HLS",
+            "mux_streams": ["144p", "240p", "360p", "480p", ...]
+        }]
+    }
+    
+    # Submit transcoding job
+    client = transcoder_v1.TranscoderServiceClient()
+    response = client.create_job(parent=parent, job=job_config)
+    
+    # Move input file to processing
+    move_file(input_uri, "processing")
+    
+    return response.name
+Option B: Cloud Run with FFmpeg
+dockerfile# Dockerfile for Cloud Run
+FROM jrottenberg/ffmpeg:4.4-alpine
+
+RUN apk add --no-cache python3 py3-pip
+COPY requirements.txt .
+RUN pip3 install -r requirements.txt
+
+COPY transcode.py .
+CMD ["python3", "transcode.py"]
+python# transcode.py
+import os
+import subprocess
+from google.cloud import storage
+
+def generate_variant(input_file, output_dir, resolution, bitrate, profile="main"):
+    """Generate single quality variant with H.264 Main/Baseline profile"""
+    
+    width, height = resolution.split('x')
+    output_path = f"{output_dir}/{height}p/"
+    
+    # FFmpeg command with improved compatibility
+    cmd = [
+        'ffmpeg', '-i', input_file,
+        '-c:v', 'libx264',
+        '-profile:v', profile,  # Use 'baseline' for maximum compatibility
+        '-level', '3.1',  # More compatible than 4.0
+        '-preset', 'fast',
+        '-b:v', bitrate,
+        '-maxrate', bitrate,
+        '-bufsize', str(int(bitrate.rstrip('k')) * 2) + 'k',
+        '-vf', f'scale={width}:{height}:force_original_aspect_ratio=decrease,pad={width}:{height}',
+        '-c:a', 'aac',
+        '-b:a', '128k',
+        '-ar', '48000',
+        '-hls_time', '6',
+        '-hls_playlist_type', 'vod',
+        '-hls_segment_filename', f'{output_path}segment_%03d.ts',
+        '-hls_flags', 'independent_segments',
+        '-keyint_min', '48',  # Shorter keyframe interval for faster switching
+        '-g', '48',
+        f'{output_path}playlist.m3u8'
+    ]
+    
+    subprocess.run(cmd, check=True)
+    
+def process_video(gcs_input_path):
+    """Main processing pipeline"""
+    
+    # Download from GCS
+    local_input = download_from_gcs(gcs_input_path)
+    video_id = extract_video_id(gcs_input_path)
+    
+    # Generate all variants
+    variants = [
+        ('256x144', '100k', 'baseline'),   # Ultra compatibility
+        ('426x240', '300k', 'baseline'),
+        ('640x360', '600k', 'main'),
+        ('854x480', '1000k', 'main'),
+        ('960x540', '1500k', 'main'),
+        ('1280x720', '2500k', 'main'),
+        ('1920x1080', '5000k', 'high'),
+        ('2560x1440', '10000k', 'high'),
+        ('3840x2160', '20000k', 'high'),
+    ]
+    
+    for resolution, bitrate, profile in variants:
+        # Only generate if source is large enough
+        if source_supports_resolution(local_input, resolution):
+            generate_variant(local_input, f'/tmp/{video_id}', resolution, bitrate, profile)
+    
+    # Generate master playlist
+    create_master_playlist(f'/tmp/{video_id}/manifest/master.m3u8', variants)
+    
+    # Generate thumbnails
+    generate_thumbnails(local_input, f'/tmp/{video_id}/thumbnails/')
+    
+    # Upload everything to GCS
+    upload_to_gcs(f'/tmp/{video_id}/', f'videos/{video_id}/')
+    
+    # Clean up and mark complete
+    move_gcs_file(gcs_input_path, 'completed')
+4. CDN Configuration Updates
+javascript// Update CDN paths in application
+const CDN_BASE = 'https://storage.googleapis.com/ode-islands-video-cdn';
+// OR use custom domain: 'https://cdn.odeislands.com'
+
+const getVideoUrl = (videoId) => {
+  return `${CDN_BASE}/videos/${videoId}/manifest/master.m3u8`;
+};
+
+const getThumbnailUrl = (videoId, type = 'poster') => {
+  return `${CDN_BASE}/videos/${videoId}/thumbnails/${type}.jpg`;
+};
+5. Critical Bug Fixes to Include
+A. Codec Compatibility:
+
+Use H.264 Baseline for lowest 3 tiers (144p, 240p, 360p)
+Use H.264 Main for middle tiers (480p-1080p)
+Use H.264 High only for premium tiers (1440p+)
+
+B. Segment Availability Verification:
+pythondef verify_segments_uploaded(bucket_name, video_id):
+    """Verify all segments are accessible before publishing playlist"""
+    client = storage.Client()
+    bucket = client.bucket(bucket_name)
+    
+    # Check each quality level
+    for quality in ['144p', '240p', '360p', ...]:
+        playlist_path = f"videos/{video_id}/{quality}/playlist.m3u8"
+        
+        # Parse playlist and verify each segment exists
+        segments = parse_m3u8_segments(playlist_path)
+        for segment in segments:
+            blob = bucket.blob(f"videos/{video_id}/{quality}/{segment}")
+            if not blob.exists():
+                raise Exception(f"Segment {segment} not found")
+    
+    # Only create master playlist after verification
+    create_and_upload_master_playlist(video_id)
+C. Memory Management:
+python# Add cleanup in transcoding pipeline
+def cleanup_after_processing():
+    """Ensure proper cleanup to prevent memory issues"""
+    subprocess.run(['sync'])  # Flush file system buffers
+    subprocess.run(['echo', '1', '>', '/proc/sys/vm/drop_caches'])  # Clear cache
+    
+    # Remove temporary files
+    shutil.rmtree('/tmp/transcode_temp', ignore_errors=True)
+6. Monitoring & Error Handling
+python# Add comprehensive logging and monitoring
+import logging
+from google.cloud import error_reporting
+
+def process_with_monitoring(video_path):
+    error_client = error_reporting.Client()
+    
+    try:
+        # Log start
+        logging.info(f"Starting transcode: {video_path}")
+        
+        # Process with timeout
+        with timeout(3600):  # 1 hour timeout
+            result = process_video(video_path)
+        
+        # Log success metrics
+        log_metrics({
+            'video_id': video_id,
+            'duration': processing_time,
+            'variants_created': len(variants),
+            'total_size': total_output_size
+        })
+        
+    except Exception as e:
+        error_client.report_exception()
+        move_gcs_file(video_path, 'failed')
+        
+        # Store error metadata
+        save_error_metadata(video_id, str(e))
+7. Client Player Updates (src/components/Player.tsx)
+typescript// Add quality level detection and fallback
+const detectSupportedProfiles = async (): Promise<string[]> => {
+  const video = document.createElement('video');
+  const profiles = [];
+  
+  // Test codec support
+  if (video.canPlayType('video/mp4; codecs="avc1.42E01E"')) {
+    profiles.push('baseline');
+  }
+  if (video.canPlayType('video/mp4; codecs="avc1.4D401F"')) {
+    profiles.push('main');
+  }
+  if (video.canPlayType('video/mp4; codecs="avc1.64001F"')) {
+    profiles.push('high');
+  }
+  
+  return profiles;
+};
+
+// Filter quality levels based on device capability
+const filterQualityLevels = (levels: Level[], supportedProfiles: string[]) => {
+  return levels.filter(level => {
+    // Map resolution to expected profile
+    if (level.height <= 360 && !supportedProfiles.includes('baseline')) {
+      return false;
+    }
+    if (level.height <= 1080 && !supportedProfiles.includes('main')) {
+      return false;
+    }
+    if (level.height > 1080 && !supportedProfiles.includes('high')) {
+      return false;
+    }
+    return true;
+  });
+};
+Implementation Priority
+
+Phase 1: Set up GCS buckets and Cloud Run/Functions infrastructure
+Phase 2: Implement transcoding with expanded bitrate ladder
+Phase 3: Add verification and monitoring
+Phase 4: Update client player with compatibility detection
+Phase 5: Migrate existing content
+
+Success Metrics
+
+Support 11+ quality levels for smooth adaptation
+100% cloud-based processing (no local dependencies)
+<5 minute processing time for 10-minute 1080p video
+Zero segment 404 errors
+99%+ device compatibility
+Proper GCS organization with CDN-optimized structure
+
+Please implement this cloud migration while ensuring backward compatibility with existing content and fixing all critical bugs identified in the original specification.
