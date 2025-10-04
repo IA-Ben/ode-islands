@@ -4,12 +4,25 @@ import { validateExpressSession, parseCookies, ValidatedSession } from './sessio
 /**
  * Session-based authentication middleware for Next.js API routes
  * Uses Express session validation instead of JWT tokens
+ * TEMP: Authentication disabled for development
+ * TODO: Re-enable before production deployment
  */
 export function withSessionAuth(
   handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>,
   options: { requireAdmin?: boolean } = {}
 ) {
   return async (request: NextRequest, context: { params?: any }) => {
+    // TEMP: Bypass auth during development
+    // Create mock session for development
+    (request as any).session = {
+      isAuthenticated: true,
+      userId: 'dev-user-id',
+      isAdmin: true,
+      sessionId: 'dev-session-id'
+    };
+    return handler(request, context);
+    
+    /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
     // Parse cookies from request headers
     const cookieHeader = request.headers.get('cookie') || '';
     const cookies = parseCookies(cookieHeader);
@@ -35,17 +48,30 @@ export function withSessionAuth(
     (request as any).session = session;
 
     return handler(request, context);
+    */
   };
 }
 
 /**
  * User-scoped authentication middleware for Next.js API routes
  * Users can only access their own data, admins can access any data
+ * TEMP: Authentication disabled for development
+ * TODO: Re-enable before production deployment
  */
 export function withUserSessionAuth(
   handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, context: { params?: any }) => {
+    // TEMP: Bypass auth during development
+    (request as any).session = {
+      isAuthenticated: true,
+      userId: 'dev-user-id',
+      isAdmin: true,
+      sessionId: 'dev-session-id'
+    };
+    return handler(request, context);
+    
+    /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
     // Parse cookies from request headers
     const cookieHeader = request.headers.get('cookie') || '';
     const cookies = parseCookies(cookieHeader);
@@ -94,6 +120,7 @@ export function withUserSessionAuth(
 
     (request as any).session = session;
     return handler(request, context);
+    */
   };
 }
 
