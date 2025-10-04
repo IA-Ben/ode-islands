@@ -20,7 +20,7 @@ interface ChannelSubscription {
   handler: (message: WebSocketMessage) => void | Promise<void>;
 }
 
-type ConnectionStatus = 'connecting' | 'open' | 'closing' | 'closed' | 'error';
+type ConnectionStatus = 'connecting' | 'open' | 'closing' | 'closed' | 'error' | 'circuit_open';
 
 /**
  * Unified WebSocket Service with channel-based message routing
@@ -46,11 +46,15 @@ class WebSocketService {
   private statusListeners = new Set<(status: ConnectionStatus) => void>();
   private isOnline = true;
 
+  private lastConnectionAttempt = 0;
+  private circuitBreakerUntil = 0;
+  private isIntentionalClose = false;
+
   constructor(config: WebSocketServiceConfig = {}) {
     this.config = {
       url: '/ws',
-      reconnectInterval: 1000,
-      maxReconnectAttempts: 5,
+      reconnectInterval: 3000,
+      maxReconnectAttempts: 10,
       heartbeatInterval: 30000,
       heartbeatTimeout: 35000,
       ...config
@@ -142,10 +146,29 @@ class WebSocketService {
     if (!this.isOnline || 
         this.ws?.readyState === WebSocket.OPEN || 
         this.ws?.readyState === WebSocket.CONNECTING) {
+      console.log('WebSocket already connected/connecting or offline, skipping');
+      return;
+    }
+
+    const now = Date.now();
+
+    if (this.circuitBreakerUntil > now) {
+      console.log(`🔌 Circuit breaker open until ${new Date(this.circuitBreakerUntil).toISOString()}`);
+      this.setStatus('circuit_open');
+      return;
+    }
+
+    const timeSinceLastAttempt = now - this.lastConnectionAttempt;
+    const minDelay = 1000;
+
+    if (timeSinceLastAttempt < minDelay) {
+      console.log('⏱️ Rate limit: Connection attempt too soon, waiting...');
+      setTimeout(() => this.connect(), minDelay - timeSinceLastAttempt);
       return;
     }
 
     try {
+      this.lastConnectionAttempt = now;
       this.setStatus('connecting');
       
       // Construct WebSocket URL
@@ -153,14 +176,16 @@ class WebSocketService {
       const host = window.location.host;
       const wsUrl = `${protocol}//${host}${this.config.url}`;
       
-      console.log('WebSocket connecting to:', wsUrl);
+      console.log(`WebSocket connecting (attempt ${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts}) to:`, wsUrl);
       this.ws = new WebSocket(wsUrl);
 
       this.ws.onopen = () => {
-        console.log('WebSocket connected with enhanced resilience');
+        console.log('✅ WebSocket connected successfully with enhanced resilience');
         this.setStatus('open');
         this.reconnectAttempts = 0;
-        this.lastHeartbeat = Date.now(); // Reset heartbeat timestamp
+        this.circuitBreakerUntil = 0;
+        this.isIntentionalClose = false;
+        this.lastHeartbeat = Date.now();
         this.startHeartbeat();
         this.flushMessageQueue();
       };
@@ -170,7 +195,15 @@ class WebSocketService {
       };
 
       this.ws.onclose = (event) => {
-        console.log('WebSocket disconnected', { code: event.code, reason: event.reason });
+        console.log(`WebSocket disconnected (code: ${event.code}, reason: ${event.reason || 'none'})`);
+        
+        if (this.isIntentionalClose) {
+          console.log('Intentional close, not reconnecting');
+          this.setStatus('closed');
+          this.stopHeartbeat();
+          return;
+        }
+
         this.setStatus('closed');
         this.stopHeartbeat();
         this.scheduleReconnect();
@@ -195,14 +228,33 @@ class WebSocketService {
    * Manually reconnect
    */
   reconnect(): void {
-    this.disconnect();
-    setTimeout(() => this.connect(), 100);
+    console.log('Manual reconnect requested');
+    this.isIntentionalClose = true;
+
+    if (this.reconnectTimeoutId) {
+      clearTimeout(this.reconnectTimeoutId);
+      this.reconnectTimeoutId = null;
+    }
+
+    if (this.ws) {
+      this.ws.close(1000, 'Manual reconnect');
+      this.ws = null;
+    }
+
+    this.reconnectAttempts = 0;
+    this.circuitBreakerUntil = 0;
+    this.isIntentionalClose = false;
+
+    const reconnectDelay = this.getReconnectDelay(0);
+    console.log(`Reconnecting in ${reconnectDelay}ms...`);
+    setTimeout(() => this.connect(), reconnectDelay);
   }
 
   /**
    * Disconnect from WebSocket
    */
   disconnect(): void {
+    this.isIntentionalClose = true;
     this.stopHeartbeat();
     this.stopCacheCleanup();
     
@@ -212,10 +264,11 @@ class WebSocketService {
     }
 
     if (this.ws) {
-      this.ws.close();
+      this.ws.close(1000, 'Client initiated disconnect');
       this.ws = null;
     }
     
+    this.reconnectAttempts = 0;
     this.setStatus('closed');
   }
 
@@ -312,13 +365,20 @@ class WebSocketService {
   }
 
   private scheduleReconnect(): void {
-    if (this.reconnectAttempts >= this.config.maxReconnectAttempts || !this.isOnline) {
-      console.warn('Max reconnection attempts reached or offline');
+    if (!this.isOnline) {
+      console.warn('Offline, not scheduling reconnect');
+      return;
+    }
+
+    if (this.reconnectAttempts >= this.config.maxReconnectAttempts) {
+      console.error(`❌ Max reconnection attempts (${this.config.maxReconnectAttempts}) reached. Opening circuit breaker for 5 minutes.`);
+      this.circuitBreakerUntil = Date.now() + (5 * 60 * 1000);
+      this.setStatus('circuit_open');
       return;
     }
 
     const delay = this.getReconnectDelay(this.reconnectAttempts);
-    console.log(`Attempting to reconnect (${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts}) in ${Math.round(delay / 1000)}s...`);
+    console.log(`🔄 Scheduling reconnection attempt ${this.reconnectAttempts + 1}/${this.config.maxReconnectAttempts} in ${Math.round(delay / 1000)}s (exponential backoff + jitter)...`);
     
     this.reconnectTimeoutId = setTimeout(() => {
       this.reconnectAttempts++;
@@ -328,11 +388,13 @@ class WebSocketService {
 
   private getReconnectDelay(attempt: number): number {
     const baseDelay = this.config.reconnectInterval;
-    const maxDelay = 30000; // 30 seconds max
+    const maxDelay = 60000;
+    
     const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
-    // Add jitter (±25% of the delay)
-    const jitter = exponentialDelay * 0.25 * (Math.random() * 2 - 1);
-    return Math.max(500, exponentialDelay + jitter);
+    
+    const jitter = Math.random() * exponentialDelay * 0.3;
+    
+    return Math.floor(exponentialDelay + jitter);
   }
 
   private flushMessageQueue(): void {
