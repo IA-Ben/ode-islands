@@ -1,0 +1,214 @@
+# Analyze & Debug Ode Islands Video Playback System
+
+## Task Overview
+Please perform a comprehensive analysis of the entire end-to-end video streaming pipeline in the Ode Islands application. Identify all bugs, performance issues, and potential improvements across the transcoding, delivery, and playback systems.
+
+## System Components to Analyze
+
+### 1. **Transcoding Pipeline** (`resources/transcoder/`)
+- Review the FFmpeg configuration and parameters
+- Check the transcoding script logic and error handling
+- Analyze the HLS output generation process
+- Examine codec choices (currently H.264 High Profile Level 4.0)
+- Validate segment generation and playlist creation
+- Look for edge cases with different input formats
+
+### 2. **CDN/Storage Layer**
+- Examine the Google Cloud Storage upload process
+- Check for race conditions between upload and serving
+- Analyze the URL patterns and path resolution
+- Review CDN caching headers and configurations
+- Investigate segment availability timing issues
+
+### 3. **Client Player** (`src/components/Player.tsx`)
+- Analyze HLS.js initialization and configuration
+- Review error handling and retry logic
+- Check memory management and cleanup procedures
+- Examine buffer configuration for different devices
+- Validate quality switching logic
+- Look for event listener leaks
+
+### 4. **Integration Points**
+- Trace the complete data flow from upload to playback
+- Identify synchronization issues between components
+- Check for missing error propagation
+- Review timeout configurations across the pipeline
+
+## Specific Areas of Investigation
+
+### Known Issues to Validate & Fix:
+1. **Codec Compatibility** - H.264 High Profile failing on some devices
+2. **Segment 404s** - CDN sync issues causing missing segments
+3. **Memory Leaks** - Growing memory usage during long sessions
+4. **Buffer Underruns** - Frequent stalling on mobile networks
+5. **Quality Switch Delays** - 2-5 second freezes during transitions
+6. **Manifest Parse Failures** - Race conditions on slow networks
+7. **Safari Native HLS** - Quality capping being ignored
+
+### Additional Analysis Required:
+
+#### Performance Profiling:
+- Measure transcoding time vs. video duration ratio
+- Calculate time-to-first-frame (TTFF) metrics
+- Analyze rebuffering frequency and duration
+- Check bandwidth efficiency and waste
+- Profile CPU/memory usage during playback
+
+#### Compatibility Testing:
+```javascript
+// Check these scenarios:
+- Older Android devices (Android 8 and below)
+- iOS Safari (various versions)
+- Low-end devices with limited memory
+- Variable frame rate (VFR) source videos
+- Different video codecs (HEVC, VP9, AV1 inputs)
+- Portrait/vertical videos
+- HDR content handling
+```
+
+#### Network Resilience:
+- Test behavior on network interruptions
+- Analyze performance on varying bandwidth (3G/4G/5G/WiFi)
+- Check for proper timeout handling
+- Validate exponential backoff implementation
+- Test parallel segment downloading
+
+#### Error Scenarios to Test:
+1. Corrupted video uploads
+2. Partial file uploads
+3. Manifest without segments
+4. Segments without manifest
+5. Codec changes mid-stream
+6. Extreme aspect ratios
+7. Zero-duration videos
+8. Audio-only or video-only streams
+
+## Code Review Focus Areas
+
+### Look for Anti-patterns:
+- Event listeners not being removed
+- Promises without error handling
+- Synchronous operations blocking the main thread
+- Hardcoded values that should be configurable
+- Missing null/undefined checks
+- Race conditions in async operations
+
+### Security Concerns:
+- Input validation on uploaded videos
+- Path traversal in file operations
+- Resource exhaustion attacks (huge videos)
+- XSS via video metadata
+- CORS configuration issues
+
+### Optimization Opportunities:
+- Parallel processing in transcoding
+- Lazy loading of video segments
+- Predictive prefetching based on viewing patterns
+- Smart caching strategies
+- Progressive enhancement for better devices
+
+## Deliverables Requested
+
+### 1. **Bug Report**
+Create a detailed bug report with:
+- Bug severity (Critical/High/Medium/Low)
+- Steps to reproduce
+- Root cause analysis
+- Recommended fix
+- Code snippets showing the issue
+
+### 2. **Performance Analysis**
+Provide metrics on:
+- Current performance baselines
+- Bottlenecks identified
+- Performance under load
+- Memory usage patterns
+- Network utilization efficiency
+
+### 3. **Improvement Recommendations**
+Prioritized list of improvements:
+- Quick wins (< 1 hour to implement)
+- Medium improvements (1-8 hours)
+- Major enhancements (> 8 hours)
+- Architecture changes if needed
+
+### 4. **Code Fixes**
+For each bug found:
+```javascript
+// Current problematic code
+// [show the issue]
+
+// Fixed code
+// [show the solution]
+
+// Explanation
+// [why this fixes the issue]
+```
+
+### 5. **Testing Additions**
+Suggest test cases that should be added:
+- Unit tests for critical functions
+- Integration tests for the pipeline
+- E2E tests for playback scenarios
+- Performance benchmarks
+
+## Special Focus Areas
+
+### Mobile Experience:
+- Why is buffering so frequent on mobile?
+- Are buffer sizes appropriate for mobile memory constraints?
+- Is the 480p cap for mobile too restrictive?
+- Should we use different segment sizes for mobile?
+
+### Error Recovery:
+- Is the current retry strategy optimal?
+- Should different errors have different recovery strategies?
+- Are we leaking resources during error recovery?
+- Is user feedback during errors sufficient?
+
+### Codec Strategy:
+- Should we use H.264 Baseline for better compatibility?
+- Is Level 4.0 too high for broad device support?
+- Should we generate WebM/VP9 alternatives?
+- Would shorter keyframe intervals improve switching?
+
+### Monitoring Gaps:
+- What metrics are we not tracking that we should?
+- Where do failures occur silently?
+- How can we better understand real-world performance?
+
+## Output Format
+
+Please provide your analysis in this structure:
+
+```markdown
+## Executive Summary
+[Brief overview of major findings]
+
+## Critical Issues Found
+[List of bugs requiring immediate attention]
+
+## Performance Analysis
+[Current state and bottlenecks]
+
+## Recommended Fixes
+### Priority 1: Critical Bugs
+[Detailed fixes with code]
+
+### Priority 2: Performance Improvements
+[Optimization recommendations]
+
+### Priority 3: Enhancements
+[Nice-to-have improvements]
+
+## Implementation Plan
+[Step-by-step order of fixes]
+
+## Testing Requirements
+[What tests need to be added]
+
+## Monitoring Recommendations
+[What metrics to track going forward]
+```
+
+Please analyze all code thoroughly, test edge cases, and provide actionable recommendations with code examples. Focus on finding issues that are currently causing user-facing problems, but also identify potential future issues as the system scales.
