@@ -1,0 +1,36 @@
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: video-transcoder
+  labels:
+    cloud.googleapis.com/location: us-central1
+spec:
+  template:
+    metadata:
+      annotations:
+        run.googleapis.com/execution-environment: gen2
+        run.googleapis.com/cpu-throttling: "false"
+        autoscaling.knative.dev/maxScale: "10"
+        autoscaling.knative.dev/minScale: "0"
+    spec:
+      containerConcurrency: 10
+      timeoutSeconds: 3600
+      serviceAccountName: video-transcoder-sa
+      containers:
+      - image: gcr.io/PROJECT_ID/video-transcoder:latest
+        resources:
+          limits:
+            cpu: "4"
+            memory: "16Gi"
+          requests:
+            cpu: "4"
+            memory: "8Gi"
+        env:
+        - name: INPUT_BUCKET
+          value: ode-islands-video-input
+        - name: OUTPUT_BUCKET
+          value: ode-islands-video-cdn
+        - name: MAX_PARALLEL_JOBS
+          value: "4"
+        - name: MEMORY_THRESHOLD_MB
+          value: "14000"

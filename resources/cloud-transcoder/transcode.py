@@ -5,6 +5,8 @@ import json
 import subprocess
 import tempfile
 import shutil
+import concurrent.futures
+from threading import Semaphore
 from pathlib import Path
 from google.cloud import storage
 from flask import Flask, request, jsonify
@@ -12,6 +14,10 @@ from config import QUALITY_PROFILES, GCS_INPUT_BUCKET, GCS_OUTPUT_BUCKET
 
 app = Flask(__name__)
 storage_client = storage.Client()
+
+# Resource management to prevent OOM
+MAX_PARALLEL_JOBS = int(os.environ.get('MAX_PARALLEL_JOBS', 4))
+memory_semaphore = Semaphore(MAX_PARALLEL_JOBS)
 
 
 def get_video_dimensions(input_file):
@@ -73,6 +79,12 @@ def get_video_dimensions(input_file):
         raise Exception("Video analysis timeout (file too large or corrupted)")
     except Exception as e:
         raise Exception(f"Video validation failed: {str(e)}")
+
+
+def generate_variant_with_resource_management(input_file, output_dir, profile):
+    """Wrapper to manage resources during parallel transcoding"""
+    with memory_semaphore:  # Acquire semaphore before processing
+        return generate_variant(input_file, output_dir, profile)
 
 
 def generate_variant(input_file, output_dir, profile):
@@ -184,6 +196,50 @@ def generate_thumbnails(input_file, output_dir):
     print('✓ Poster thumbnail generated')
 
 
+def update_processing_status(video_id, completed, total):
+    """Update real-time processing status in GCS metadata"""
+    try:
+        bucket = storage_client.bucket(GCS_OUTPUT_BUCKET)
+        status_blob = bucket.blob(f"videos/{video_id}/status.json")
+        
+        metadata = {
+            "status": "processing",
+            "progress": f"{completed}/{total}",
+            "percentage": round((completed / total) * 100, 1),
+            "completed_variants": completed,
+            "total_variants": total
+        }
+        
+        status_blob.upload_from_string(
+            json.dumps(metadata),
+            content_type='application/json'
+        )
+        print(f"Status updated: {completed}/{total} variants complete")
+    except Exception as e:
+        print(f"Failed to update status: {e}")
+
+
+def update_processing_status_failed(video_id, error_message):
+    """Update status to failed state"""
+    try:
+        bucket = storage_client.bucket(GCS_OUTPUT_BUCKET)
+        status_blob = bucket.blob(f"videos/{video_id}/status.json")
+        
+        metadata = {
+            "status": "failed",
+            "error": error_message,
+            "percentage": 0
+        }
+        
+        status_blob.upload_from_string(
+            json.dumps(metadata),
+            content_type='application/json'
+        )
+        print(f"Status updated to failed: {error_message}")
+    except Exception as e:
+        print(f"Failed to update failure status: {e}")
+
+
 def upload_to_gcs(local_dir, video_id):
     bucket = storage_client.bucket(GCS_OUTPUT_BUCKET)
     
@@ -223,17 +279,97 @@ def process_video(input_uri, video_id):
             if p['width'] <= width and p['height'] <= height
         ]
         
-        print(f"Generating {len(applicable_profiles)} quality variants...")
+        # Group profiles by priority for smarter processing
+        critical_profiles = [p for p in applicable_profiles if p['height'] <= 480]  # 144p-480p
+        standard_profiles = [p for p in applicable_profiles if 480 < p['height'] <= 1080]  # 540p-1080p
+        premium_profiles = [p for p in applicable_profiles if p['height'] > 1080]  # 1440p-4K
         
-        for profile in applicable_profiles:
-            success = generate_variant(input_file, output_dir, profile)
-            if not success:
-                raise Exception(f"Failed to generate {profile['name']}")
+        print(f"Generating {len(applicable_profiles)} quality variants in parallel...")
+        print(f"  Critical: {len(critical_profiles)}, Standard: {len(standard_profiles)}, Premium: {len(premium_profiles)}")
         
-        if not verify_segments(output_dir, applicable_profiles):
+        # Track successful profiles for downstream processing
+        successful_profiles = []
+        failed_count = 0
+        
+        # Process in strict priority order with controlled parallelism
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_PARALLEL_JOBS) as executor:
+            
+            # Process critical profiles first (COMPLETE before moving on)
+            if critical_profiles:
+                print("Processing critical profiles...")
+                critical_futures = {
+                    executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
+                    for p in critical_profiles
+                }
+                
+                for future in concurrent.futures.as_completed(critical_futures):
+                    profile = critical_futures[future]
+                    try:
+                        if future.result(timeout=600):
+                            successful_profiles.append(profile)
+                        else:
+                            failed_count += 1
+                    except Exception as e:
+                        print(f"Failed to generate {profile['name']}: {e}")
+                        failed_count += 1
+                    
+                    update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
+            
+            # Only process standard profiles after critical ones complete
+            if standard_profiles:
+                print("Processing standard profiles...")
+                standard_futures = {
+                    executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
+                    for p in standard_profiles
+                }
+                
+                for future in concurrent.futures.as_completed(standard_futures):
+                    profile = standard_futures[future]
+                    try:
+                        if future.result(timeout=600):
+                            successful_profiles.append(profile)
+                        else:
+                            failed_count += 1
+                    except Exception as e:
+                        print(f"Failed to generate {profile['name']}: {e}")
+                        failed_count += 1
+                    
+                    update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
+            
+            # Finally process premium profiles
+            if premium_profiles:
+                print("Processing premium profiles...")
+                premium_futures = {
+                    executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
+                    for p in premium_profiles
+                }
+                
+                for future in concurrent.futures.as_completed(premium_futures):
+                    profile = premium_futures[future]
+                    try:
+                        if future.result(timeout=600):
+                            successful_profiles.append(profile)
+                        else:
+                            failed_count += 1
+                    except Exception as e:
+                        print(f"Failed to generate {profile['name']}: {e}")
+                        failed_count += 1
+                    
+                    update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
+        
+        print(f"✅ Generated {len(successful_profiles)}/{len(applicable_profiles)} variants ({failed_count} failed)")
+        
+        if len(successful_profiles) == 0:
+            # Update status to failed
+            update_processing_status_failed(video_id, "All transcoding variants failed")
+            raise Exception("All transcoding variants failed")
+        
+        # Only verify and use successful profiles
+        if not verify_segments(output_dir, successful_profiles):
+            update_processing_status_failed(video_id, "Segment verification failed")
             raise Exception("Segment verification failed")
         
-        generate_master_playlist(output_dir, applicable_profiles)
+        generate_master_playlist(output_dir, successful_profiles)
         
         generate_thumbnails(input_file, output_dir)
         
