@@ -19,16 +19,60 @@ def get_video_dimensions(input_file):
         'ffprobe',
         '-v', 'error',
         '-select_streams', 'v:0',
-        '-show_entries', 'stream=width,height',
+        '-show_entries', 'stream=width,height,duration,r_frame_rate,codec_name',
         '-of', 'json',
         input_file
     ]
     
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    data = json.loads(result.stdout)
-    
-    stream = data['streams'][0]
-    return int(stream['width']), int(stream['height'])
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        
+        if result.returncode != 0:
+            raise Exception(f"FFprobe failed: {result.stderr}")
+        
+        data = json.loads(result.stdout)
+        
+        if 'streams' not in data or len(data['streams']) == 0:
+            raise Exception("No video stream found (audio-only file?)")
+        
+        stream = data['streams'][0]
+        width = int(stream.get('width', 0))
+        height = int(stream.get('height', 0))
+        duration = float(stream.get('duration', 0))
+        codec = stream.get('codec_name', 'unknown')
+        
+        if width == 0 or height == 0:
+            raise Exception(f"Invalid dimensions: {width}x{height}")
+        
+        if duration == 0:
+            raise Exception("Zero-duration video")
+        
+        aspect_ratio = width / height
+        if aspect_ratio > 10 or aspect_ratio < 0.1:
+            raise Exception(f"Extreme aspect ratio: {aspect_ratio:.2f}:1 - unsupported")
+        
+        fps_str = stream.get('r_frame_rate', '0/0')
+        try:
+            num, den = map(int, fps_str.split('/'))
+            if den == 0:
+                print("⚠️ Warning: Variable frame rate detected, forcing CFR")
+        except:
+            print(f"⚠️ Warning: Could not parse frame rate: {fps_str}")
+        
+        supported_codecs = ['h264', 'hevc', 'vp8', 'vp9', 'mpeg4', 'mjpeg']
+        if codec not in supported_codecs:
+            print(f"⚠️ Warning: Uncommon codec detected: {codec}, transcoding may take longer")
+        
+        print(f"✓ Video validated: {width}x{height}, {duration:.1f}s, {codec}")
+        
+        return width, height
+        
+    except json.JSONDecodeError as e:
+        raise Exception(f"Corrupted video file: {e}")
+    except subprocess.TimeoutExpired:
+        raise Exception("Video analysis timeout (file too large or corrupted)")
+    except Exception as e:
+        raise Exception(f"Video validation failed: {str(e)}")
 
 
 def generate_variant(input_file, output_dir, profile):

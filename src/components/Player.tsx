@@ -31,11 +31,15 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const loadVideoRef = useRef<((url: string) => void) | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [transcodingStatus, setTranscodingStatus] = useState<'checking' | 'ready' | 'processing' | 'error'>('checking');
+  const statusCheckStartTimeRef = useRef<number>(0);
+  const hasCheckedStatusRef = useRef<string>('');
   const cdnUrl = getConfig().cdnUrl;
   const { getVideoQuality, shouldReduceAnimations, isMobile } = useMobile();
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
   const BUFFER_CLEANUP_INTERVAL = 5 * 60 * 1000;
+  const STATUS_CHECK_TIMEOUT = 90000;
   
   // Handle both full URLs and identifiers - NO URL rewriting for quality
   let videoUrl: string | null = null;
@@ -103,6 +107,38 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       };
     }
   }, []);
+
+  const checkTranscodingStatusRef = useRef<((videoId: string, retryCount?: number) => Promise<void>) | null>(null);
+  
+  checkTranscodingStatusRef.current = async (videoId: string, retryCount: number = 0): Promise<void> => {
+    if (Date.now() - statusCheckStartTimeRef.current > STATUS_CHECK_TIMEOUT) {
+      console.log('Status check timeout - assuming video is ready');
+      setTranscodingStatus('ready');
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/video-status/${videoId}`);
+      const data = await response.json();
+      
+      if (data.status === 'completed') {
+        setTranscodingStatus('ready');
+      } else if (data.status === 'processing') {
+        setTranscodingStatus('processing');
+        const delay = Math.min(5000, 1000 * Math.pow(1.5, retryCount));
+        setTimeout(() => {
+          if (checkTranscodingStatusRef.current) {
+            checkTranscodingStatusRef.current(videoId, retryCount + 1);
+          }
+        }, delay);
+      } else {
+        setTranscodingStatus('error');
+      }
+    } catch (err) {
+      console.error('Status check error:', err);
+      setTranscodingStatus('ready');
+    }
+  };
 
   // Periodic buffer cleanup to prevent memory leaks
   const cleanupBuffer = useCallback(() => {
@@ -228,10 +264,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       videoEl.removeEventListener('error', handleError);
     };
     
-    if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
-      // Native HLS support (Safari)
-      videoEl.src = url;
-    } else if (Hls.isSupported()) {
+    if (Hls.isSupported()) {
       // Adjust HLS configuration based on mobile and data saver settings
       const hlsConfig: any = {
         enableWorker: true,
@@ -326,6 +359,21 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       
       hls.loadSource(url);
       hls.attachMedia(videoEl);
+    } else if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
+      videoEl.src = url;
+      
+      bufferCleanupIntervalRef.current = setInterval(() => {
+        if (videoEl && videoEl.currentTime > 0) {
+          const currentTime = videoEl.currentTime;
+          const buffered = videoEl.buffered;
+          
+          if (buffered.length > 0) {
+            const bufferEnd = buffered.end(buffered.length - 1);
+            const bufferSize = bufferEnd - currentTime;
+            console.log(`Safari buffer: ${bufferSize.toFixed(1)}s buffered`);
+          }
+        }
+      }, BUFFER_CLEANUP_INTERVAL);
     } else {
       console.error("HLS not supported in this browser");
       setHasError(true);
@@ -336,10 +384,32 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   // Store loadVideo in ref to break circular dependency
   loadVideoRef.current = loadVideo;
 
-  // Load HLS video once when url updates
+  useEffect(() => {
+    const currentVideoUrl = video?.url || '';
+    
+    if (hasCheckedStatusRef.current === currentVideoUrl) {
+      return;
+    }
+    
+    hasCheckedStatusRef.current = currentVideoUrl;
+    
+    if (!currentVideoUrl) {
+      setTranscodingStatus('ready');
+      return;
+    }
+
+    if (currentVideoUrl.startsWith('http')) {
+      setTranscodingStatus('ready');
+    } else {
+      statusCheckStartTimeRef.current = Date.now();
+      if (checkTranscodingStatusRef.current) {
+        checkTranscodingStatusRef.current(currentVideoUrl);
+      }
+    }
+  }, [video?.url]);
+
   useEffect(() => {
     if (!active) {
-      // Force fresh initialization when becoming inactive
       videoUrlRef.current = "";
       cleanupVideo();
       return;
@@ -348,12 +418,13 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     const videoEl = videoRef.current;
     if (!videoEl || !videoUrl) return;
     
-    // Only skip if the same video is already loaded and playing
+    if (transcodingStatus !== 'ready') return;
+    
     if (videoUrl === videoUrlRef.current && !videoEl.paused && !videoEl.ended && !hasError) return;
     
     videoUrlRef.current = videoUrl || "";
     loadVideo(videoUrl);
-  }, [videoUrl, active, loadVideo, cleanupVideo, hasError]);
+  }, [videoUrl, active, loadVideo, cleanupVideo, hasError, transcodingStatus]);
 
   // Enhanced play/pause with better error handling and autoplay policies
   useEffect(() => {
@@ -475,11 +546,13 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       />
       
       {/* Loading indicator */}
-      {isLoading && (
+      {(isLoading || transcodingStatus === 'processing') && (
         <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 backdrop-blur-sm">
           <div className="flex items-center space-x-2 text-white">
             <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-sm">Loading video...</span>
+            <span className="text-sm">
+              {transcodingStatus === 'processing' ? 'Processing video...' : 'Loading video...'}
+            </span>
           </div>
         </div>
       )}
