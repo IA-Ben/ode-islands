@@ -1,0 +1,24 @@
+{
+  "name": "video-pipeline-load-testing",
+  "version": "1.0.0",
+  "description": "Load testing suite for video transcoding pipeline",
+  "main": "concurrent-upload-test.js",
+  "scripts": {
+    "test:load": "node concurrent-upload-test.js",
+    "test:stress": "CONCURRENT_UPLOADS=10 TOTAL_UPLOADS=50 node concurrent-upload-test.js",
+    "test:light": "CONCURRENT_UPLOADS=2 TOTAL_UPLOADS=5 node concurrent-upload-test.js"
+  },
+  "dependencies": {
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.7.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "load-testing",
+    "video",
+    "transcoding",
+    "performance"
+  ],
+  "author": "",
+  "license": "MIT"
+}
