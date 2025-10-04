@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { ContentAvailabilityService, ContentTypeUtils } from '@/lib/contentAvailability';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useUnifiedWebSocket } from '@/contexts/UnifiedWebSocketContext';
 
 interface ContentAvailabilityIndicatorProps {
   contentType: string;
@@ -24,13 +24,12 @@ export default function ContentAvailabilityIndicator({
   const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [reason, setReason] = useState<string>('');
 
-  // WebSocket connection for real-time updates
-  const wsUrl = typeof window !== 'undefined' 
-    ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws`
-    : null;
+  // Use unified WebSocket service for real-time updates
+  const { subscribeToTypes } = useUnifiedWebSocket();
 
-  const { lastMessage } = useWebSocket(wsUrl, {
-    onMessage: (message) => {
+  // Subscribe to content availability messages for this specific content
+  useEffect(() => {
+    const unsubscribe = subscribeToTypes(['content_available'], (message) => {
       if (message.type === 'content_available' && 
           message.payload?.contentType === contentType && 
           message.payload?.contentId === contentId) {
@@ -39,8 +38,10 @@ export default function ContentAvailabilityIndicator({
         setReason('');
         onContentAvailable?.();
       }
-    }
-  });
+    });
+
+    return () => unsubscribe();
+  }, [contentType, contentId, subscribeToTypes, onContentAvailable]);
 
   useEffect(() => {
     checkAvailability();
