@@ -1,0 +1,25 @@
+{
+  "name": "video-pipeline-e2e-testing",
+  "version": "1.0.0",
+  "description": "End-to-end testing and metrics validation for video pipeline",
+  "main": "e2e-metrics-validation.js",
+  "scripts": {
+    "test:e2e": "node e2e-metrics-validation.js",
+    "test:ci": "node e2e-metrics-validation.js 2>&1 | tee test-results.log"
+  },
+  "dependencies": {
+    "form-data": "^4.0.0",
+    "node-fetch": "^2.7.0",
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {},
+  "keywords": [
+    "e2e",
+    "testing",
+    "video",
+    "performance",
+    "metrics"
+  ],
+  "author": "",
+  "license": "MIT"
+}
