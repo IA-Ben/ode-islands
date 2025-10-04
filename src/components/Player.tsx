@@ -26,12 +26,15 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const retryCountRef = useRef<number>(0);
   const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const videoListenersCleanupRef = useRef<(() => void) | null>(null);
+  const bufferCleanupIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const bandwidthSamplesRef = useRef<number[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
   const cdnUrl = getConfig().cdnUrl;
   const { getVideoQuality, shouldReduceAnimations, isMobile } = useMobile();
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 2000;
+  const BUFFER_CLEANUP_INTERVAL = 5 * 60 * 1000;
   
   // Handle both full URLs and identifiers - NO URL rewriting for quality
   let videoUrl: string | null = null;
@@ -46,6 +49,85 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   }
   
   // const posterUrl = videoUrl?.replace("/master.m3u8", "/poster.jpg") || "";
+
+  // Measure bandwidth and adjust buffer dynamically
+  const measureBandwidth = useCallback((bandwidth: number) => {
+    bandwidthSamplesRef.current.push(bandwidth);
+    if (bandwidthSamplesRef.current.length > 10) {
+      bandwidthSamplesRef.current.shift();
+    }
+  }, []);
+
+  const getAverageBandwidth = useCallback((): number => {
+    if (bandwidthSamplesRef.current.length === 0) return 5000;
+    const sum = bandwidthSamplesRef.current.reduce((a, b) => a + b, 0);
+    return sum / bandwidthSamplesRef.current.length;
+  }, []);
+
+  const getDynamicBufferConfig = useCallback(() => {
+    const avgBandwidth = getAverageBandwidth();
+    
+    if (avgBandwidth < 1000) {
+      return {
+        backBufferLength: 15,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 120,
+        maxBufferSize: 15 * 1000 * 1000,
+        maxBufferHole: 2
+      };
+    } else if (avgBandwidth < 3000) {
+      return {
+        backBufferLength: 30,
+        maxBufferLength: 60,
+        maxMaxBufferLength: 240,
+        maxBufferSize: 30 * 1000 * 1000,
+        maxBufferHole: 1.5
+      };
+    } else if (avgBandwidth < 5000) {
+      return {
+        backBufferLength: 60,
+        maxBufferLength: 90,
+        maxMaxBufferLength: 360,
+        maxBufferSize: 45 * 1000 * 1000,
+        maxBufferHole: 1
+      };
+    } else {
+      return {
+        backBufferLength: 90,
+        maxBufferLength: 120,
+        maxMaxBufferLength: 600,
+        maxBufferSize: 60 * 1000 * 1000,
+        maxBufferHole: 0.5
+      };
+    }
+  }, [getAverageBandwidth]);
+
+  // Periodic buffer cleanup to prevent memory leaks
+  const cleanupBuffer = useCallback(() => {
+    if (hlsRef.current && hlsRef.current.media) {
+      const currentTime = hlsRef.current.media.currentTime;
+      const buffered = hlsRef.current.media.buffered;
+      
+      if (buffered.length > 0) {
+        const bufferEnd = buffered.end(buffered.length - 1);
+        const bufferSize = bufferEnd - currentTime;
+        
+        console.log(`Buffer cleanup: ${bufferSize.toFixed(1)}s buffered, cleaning old segments`);
+        
+        try {
+          const backBufferLength = isMobile ? 30 : 90;
+          if (currentTime > backBufferLength) {
+            const removeEnd = currentTime - backBufferLength;
+            if (removeEnd > 0) {
+              hlsRef.current.media.currentTime = currentTime;
+            }
+          }
+        } catch (err) {
+          console.error('Buffer cleanup error:', err);
+        }
+      }
+    }
+  }, [isMobile]);
 
   // Enhanced cleanup function
   const cleanupVideo = useCallback((preserveRetryCount = false) => {
@@ -63,6 +145,11 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     if (retryTimeoutRef.current) {
       clearTimeout(retryTimeoutRef.current);
       retryTimeoutRef.current = null;
+    }
+    
+    if (bufferCleanupIntervalRef.current) {
+      clearInterval(bufferCleanupIntervalRef.current);
+      bufferCleanupIntervalRef.current = null;
     }
     
     // Clean up video event listeners
@@ -141,38 +228,37 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       // Native HLS support (Safari)
       videoEl.src = url;
     } else if (Hls.isSupported()) {
+      // Get dynamic buffer configuration based on measured bandwidth
+      const dynamicConfig = getDynamicBufferConfig();
+      
       // Adjust HLS configuration based on mobile and data saver settings
       const hlsConfig: any = {
         enableWorker: true,
         lowLatencyMode: false,
         autoStartLoad: true,
-        startFragPrefetch: !isMobile, // Reduce prefetching on mobile
-        capLevelToPlayerSize: true
+        startFragPrefetch: !isMobile,
+        capLevelToPlayerSize: true,
+        ...dynamicConfig,
+        fpsDroppedMonitoringPeriod: isMobile ? 10000 : 5000,
+        fpsDroppedMonitoringThreshold: isMobile ? 0.3 : 0.2
       };
-      
-      if (isMobile || shouldReduceAnimations) {
-        // Mobile-optimized settings
-        hlsConfig.backBufferLength = 30;
-        hlsConfig.maxBufferLength = 60;
-        hlsConfig.maxMaxBufferLength = 300;
-        hlsConfig.maxBufferSize = 30 * 1000 * 1000;
-        hlsConfig.maxBufferHole = 1;
-        hlsConfig.fpsDroppedMonitoringPeriod = 10000;
-        hlsConfig.fpsDroppedMonitoringThreshold = 0.3;
-      } else {
-        // Desktop settings
-        hlsConfig.backBufferLength = 90;
-        hlsConfig.maxBufferLength = 120;
-        hlsConfig.maxMaxBufferLength = 600;
-        hlsConfig.maxBufferSize = 60 * 1000 * 1000;
-        hlsConfig.maxBufferHole = 0.5;
-        hlsConfig.fpsDroppedMonitoringPeriod = 5000;
-        hlsConfig.fpsDroppedMonitoringThreshold = 0.2;
-      }
       
       const hls = new Hls(hlsConfig);
       
       hlsRef.current = hls;
+      
+      // Measure bandwidth for adaptive buffer sizing
+      hls.on(Hls.Events.LEVEL_SWITCHED, (event, data) => {
+        const currentLevel = hls.levels[data.level];
+        if (currentLevel && currentLevel.bitrate) {
+          measureBandwidth(currentLevel.bitrate / 1000);
+        }
+      });
+      
+      // Set up periodic buffer cleanup to prevent memory leaks
+      bufferCleanupIntervalRef.current = setInterval(() => {
+        cleanupBuffer();
+      }, BUFFER_CLEANUP_INTERVAL);
       
       hls.on(Hls.Events.MANIFEST_LOADED, () => {
         console.log('HLS manifest loaded successfully');
