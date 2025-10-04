@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { useWebSocket } from '@/hooks/useWebSocket';
+import { useUnifiedWebSocket } from '@/contexts/UnifiedWebSocketContext';
 
 // Types for the Interactive Choice System
 interface Choice {
@@ -76,11 +76,14 @@ export default function InteractiveChoiceSystem({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // WebSocket connection for real-time updates
-  const { sendMessage } = useWebSocket(
-    typeof window !== 'undefined' && eventId ? `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}/ws` : null,
-    {
-      onMessage: (message) => {
+  // Use unified WebSocket service for real-time updates
+  const { sendMessage, subscribeToTypes, connectionStatus } = useUnifiedWebSocket();
+
+  // Subscribe to choice-related messages
+  useEffect(() => {
+    const unsubscribe = subscribeToTypes(
+      ['choice_response_update', 'choice_activated', 'choice_deactivated'],
+      (message) => {
         if (message.type === 'choice_response_update' && message.payload.choiceId === choice.id) {
           // Update response statistics in real-time
           setResponseStats(message.payload.responseStats || {});
@@ -92,19 +95,22 @@ export default function InteractiveChoiceSystem({
           // Choice has been deactivated
           console.log('Choice deactivated:', message.payload);
         }
-      },
-      onOpen: () => {
-        // Join the event for real-time updates
-        if (eventId) {
-          sendMessage({
-            type: 'join_event',
-            payload: { eventId },
-            timestamp: Date.now(),
-          });
-        }
       }
+    );
+
+    return () => unsubscribe();
+  }, [choice.id, subscribeToTypes]);
+
+  // Join event when connected
+  useEffect(() => {
+    if (connectionStatus === 'open' && eventId) {
+      sendMessage({
+        type: 'join_event',
+        payload: { eventId },
+        timestamp: Date.now(),
+      });
     }
-  );
+  }, [connectionStatus, eventId, sendMessage]);
 
   // Fetch current results and check if user has responded
   const fetchResults = useCallback(async () => {
@@ -133,11 +139,6 @@ export default function InteractiveChoiceSystem({
   // Initialize component
   useEffect(() => {
     fetchResults();
-    
-    // Extract event ID from choice for WebSocket connection
-    if ((choice as any).eventId) {
-      setEventId((choice as any).eventId);
-    }
     
     // Set up time limit if specified
     if (choice.timeLimit) {
