@@ -64,6 +64,26 @@ All 6 element types (Text, Image, Video, Button, Divider, Spacer) are fully func
 ### Security & Data Integrity
 All mutation endpoints require CSRF token validation. Sensitive routes are protected by `isAdmin` and `isAdminWithCSRF` middleware. Server-side validation is enforced for all user input, and Drizzle ORM's parameterized queries prevent SQL injection. Sensitive data is not exposed to clients, and foreign key constraints ensure referential integrity.
 
+## Memory Wallet & Gamification System
+A comprehensive reward and collection system enables users to collect memories through QR codes, location-based triggers, and story interactions with gamification features.
+
+### Database Architecture
+**Memory Templates (`memory_templates`)**: Reusable memory configurations with title, description, media assets (image/video/3D model), gamification data (points, rarity: common/rare/epic/legendary), set collections (setId, setName, setIndex, setTotal), metadata schema (JSONB), and OG share settings for social media.
+
+**User Memory Wallet (`user_memory_wallet`)**: Extended with 11 nullable fields for backwards compatibility including mediaType (image/video/model_3d), source tracking (sourceType, cardId, subchapterId, ruleId, qrCode, geoLocation), set collection data (setId, setName, setIndex, setTotal), and metadata (JSONB). Original fields (id, userId, templateId, earnedAt, title, image) remain unchanged.
+
+**Reward Rules (`reward_rules`)**: Trigger configurations defining how memories are awarded with type (qr_code/location/action), memoryTemplateId reference, eventId, match configuration (JSONB: QR payload patterns, geofence coords/radius, action types), constraints (JSONB: time windows, user limits, prerequisites), anti-abuse settings (JSONB: rate limits, cooldowns, duplicate prevention), and validity period (validFrom/validTo).
+
+**QR Nonces (`qr_nonces`)**: Prevents QR code replay attacks by tracking used nonce values with eventId, nonce (unique), usedAt timestamp, and optional userId for attribution.
+
+### CMS Management
+**Memory Templates Manager** (`/admin/cms/memory-templates`): Full CRUD interface with template listing (filterable by event, rarity, set, active status), creation/editing form (all fields including media library integration), referential integrity protection (templates cannot be deleted if referenced by user memories or reward rules with detailed error messages showing counts), and admin-only access with CSRF protection.
+
+**Reward Rules Builder** (`/admin/cms/reward-rules`): Configure reward triggers with type-specific UI (QR Code/Location/Action selector), memory template selection (dropdown of available templates), JSON editors for match configuration (QR patterns, geofence data, action triggers), constraints (time windows, limits, prerequisites), and anti-abuse settings (rate limits, cooldowns). Includes filtering by event/type/template/status and admin-only access.
+
+### Referential Integrity
+Memory templates use dual-protection deletion logic: checks both `user_memory_wallet.templateId` references (awarded memories) and `reward_rules.memoryTemplateId` references (active rules). The API returns comprehensive error messages like "This template is referenced by 5 user memories and 3 reward rules and cannot be deleted" with proper 409 Conflict status.
+
 # External Dependencies
 
 ## Core Framework Dependencies
