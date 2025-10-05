@@ -11,6 +11,7 @@ import {
   liveEvents,
   adminRoles,
   userRoles,
+  auditLogs,
   type User,
   type UpsertUser,
   type MediaAsset,
@@ -111,6 +112,11 @@ export interface IStorage {
   trackMediaUsage(mediaId: string, entityType: string, entityId: string, fieldName: string): Promise<void>;
   getMediaUsage(mediaId: string): Promise<MediaUsage[]>;
   removeMediaUsage(mediaId: string, entityType: string, entityId: string, fieldName: string): Promise<void>;
+  
+  // Audit log operations
+  createAuditLog(entry: AuditLogEntry): Promise<void>;
+  getAuditLogs(filters: AuditLogFilters): Promise<AuditLog[]>;
+  getEntityAuditHistory(entityType: string, entityId: string): Promise<AuditLog[]>;
 }
 
 // Search interfaces
@@ -196,6 +202,34 @@ export interface BulkDeleteResult {
   deleted: string[];
   failed: Array<{ id: string; reason: string }>;
 }
+
+// Audit Log interfaces
+export interface AuditLogEntry {
+  userId: string;
+  userEmail?: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  changes?: any;
+  metadata?: any;
+  category?: string;
+  severity?: string;
+  description?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+export interface AuditLogFilters {
+  userId?: string;
+  entityType?: string;
+  entityId?: string;
+  action?: string;
+  category?: string;
+  limit?: number;
+  offset?: number;
+}
+
+type AuditLog = typeof auditLogs.$inferSelect;
 
 export class DatabaseStorage implements IStorage {
   // Admin seeding functionality
@@ -1828,6 +1862,51 @@ export class DatabaseStorage implements IStorage {
       .slice(0, limit);
 
     return suggestions;
+  }
+
+  async createAuditLog(entry: AuditLogEntry): Promise<void> {
+    await db.insert(auditLogs).values(entry);
+  }
+
+  async getAuditLogs(filters: AuditLogFilters): Promise<AuditLog[]> {
+    let query = db.select().from(auditLogs);
+    const conditions = [];
+
+    if (filters.userId) {
+      conditions.push(eq(auditLogs.userId, filters.userId));
+    }
+    if (filters.entityType) {
+      conditions.push(eq(auditLogs.entityType, filters.entityType));
+    }
+    if (filters.entityId) {
+      conditions.push(eq(auditLogs.entityId, filters.entityId));
+    }
+    if (filters.action) {
+      conditions.push(eq(auditLogs.action, filters.action));
+    }
+    if (filters.category) {
+      conditions.push(eq(auditLogs.category, filters.category));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return query
+      .orderBy(desc(auditLogs.createdAt))
+      .limit(filters.limit || 100)
+      .offset(filters.offset || 0);
+  }
+
+  async getEntityAuditHistory(entityType: string, entityId: string): Promise<AuditLog[]> {
+    return db
+      .select()
+      .from(auditLogs)
+      .where(and(
+        eq(auditLogs.entityType, entityType),
+        eq(auditLogs.entityId, entityId)
+      ))
+      .orderBy(desc(auditLogs.createdAt));
   }
 }
 

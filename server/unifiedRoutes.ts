@@ -15,6 +15,9 @@ import adminApiRoutes from './adminApi';
 import { requireRole, requirePermission, requireAnyPermission, combineMiddleware } from './rbac';
 import { seedRoles } from './seedRoles';
 
+// Import Audit Logger
+import { AuditLogger } from './auditLogger';
+
 // Re-export unified auth middleware
 export { isAuthenticated };
 
@@ -562,6 +565,15 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
         await storage.trackMediaUsage(videoMediaId, 'chapter', newChapter.id, 'video');
       }
 
+      // Audit log
+      await AuditLogger.logCreate(
+        req.user.claims.sub,
+        'chapter',
+        newChapter.id,
+        newChapter,
+        req
+      );
+
       res.json({ message: "Chapter created successfully", chapter: newChapter });
     } catch (error) {
       console.error("Error creating chapter:", error);
@@ -605,6 +617,16 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
         await storage.trackMediaUsage(newVideoMediaId, 'chapter', id, 'video');
       }
 
+      // Audit log
+      await AuditLogger.logUpdate(
+        req.user.claims.sub,
+        'chapter',
+        id,
+        existingChapter,
+        updatedChapter,
+        req
+      );
+
       res.json({ message: "Chapter updated successfully", chapter: updatedChapter });
     } catch (error) {
       console.error("Error updating chapter:", error);
@@ -629,6 +651,18 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
       }
       
       await storage.deleteChapter(id);
+
+      // Audit log
+      if (chapter) {
+        await AuditLogger.logDelete(
+          req.user.claims.sub,
+          'chapter',
+          id,
+          chapter,
+          req
+        );
+      }
+
       res.json({ message: "Chapter deleted successfully" });
     } catch (error) {
       console.error("Error deleting chapter:", error);
@@ -1146,6 +1180,37 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error saving theme:", error);
       res.status(500).json({ message: "Failed to save theme" });
+    }
+  });
+
+  // Audit Log API Routes
+  app.get('/api/admin/audit-logs', isAdmin, async (req, res) => {
+    try {
+      const filters = {
+        userId: req.query.userId as string | undefined,
+        entityType: req.query.entityType as string | undefined,
+        action: req.query.action as string | undefined,
+        category: req.query.category as string | undefined,
+        limit: parseInt(req.query.limit as string) || 100,
+        offset: parseInt(req.query.offset as string) || 0,
+      };
+      
+      const logs = await storage.getAuditLogs(filters);
+      res.json(logs);
+    } catch (error) {
+      console.error('Error fetching audit logs:', error);
+      res.status(500).json({ error: 'Failed to fetch audit logs' });
+    }
+  });
+
+  app.get('/api/admin/audit-logs/:entityType/:entityId', isAdmin, async (req, res) => {
+    try {
+      const { entityType, entityId } = req.params;
+      const history = await storage.getEntityAuditHistory(entityType, entityId);
+      res.json(history);
+    } catch (error) {
+      console.error('Error fetching entity audit history:', error);
+      res.status(500).json({ error: 'Failed to fetch audit history' });
     }
   });
 

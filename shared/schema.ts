@@ -1033,6 +1033,47 @@ export const adminAuditLog = pgTable("admin_audit_log", {
   };
 });
 
+// CMS Audit Logging System
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Who made the change
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  userEmail: varchar("user_email"),
+  
+  // What was changed
+  entityType: varchar("entity_type").notNull(),
+  entityId: varchar("entity_id").notNull(),
+  
+  // What action was performed
+  action: varchar("action").notNull(),
+  
+  // Change details
+  changes: jsonb("changes"),
+  metadata: jsonb("metadata"),
+  
+  // Categorization
+  category: varchar("category"),
+  severity: varchar("severity").default('info'),
+  
+  // Context
+  description: text("description"),
+  ipAddress: varchar("ip_address"),
+  userAgent: text("user_agent"),
+  
+  // Timestamp
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    userIdIndex: index("audit_logs_user_id_idx").on(table.userId),
+    entityTypeIndex: index("audit_logs_entity_type_idx").on(table.entityType),
+    entityIdIndex: index("audit_logs_entity_id_idx").on(table.entityId),
+    actionIndex: index("audit_logs_action_idx").on(table.action),
+    createdAtIndex: index("audit_logs_created_at_idx").on(table.createdAt),
+    categoryIndex: index("audit_logs_category_idx").on(table.category),
+  };
+});
+
 // Collection Grid progress tracking per event (passport pages)
 export const collectibleProgress = pgTable("collectible_progress", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
