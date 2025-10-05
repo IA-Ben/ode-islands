@@ -12,6 +12,28 @@ The application features a unified phase navigation system that allows seamless 
 
 # Recent Changes
 
+**October 2025 - Database-Driven Content Architecture Migration**
+Successfully completed migration from dual storage system (JSON + PostgreSQL) to fully database-driven content architecture:
+
+**Migration Achievements:**
+- **Data Migration**: Successfully transferred 32 cards across 4 chapters from JSON to PostgreSQL storyCards table
+- **Zero Downtime**: Maintained full backward compatibility during migration with chapter key lookup methods
+- **Data Integrity**: Created automated backup system and validation checks during migration process
+- **API Modernization**: Updated all content CRUD operations to use database storage layer
+
+**Technical Implementation:**
+- **Database Schema**: Extended storyCards table with JSONB content field, chapter relationships, and AR flags
+- **Migration Script**: Created automated migration tool (`scripts/migrate-json-to-db.ts`) with validation and backup creation
+- **Storage Layer**: Added `getChapterByKey()` and `getChapterCards()` methods for backward compatibility
+- **API Routes**: Updated `/api/cards/[chapterKey]` and `/api/cms/chapters` to use database exclusively
+- **Content Backup**: JSON file retained as backup reference while all live content served from database
+
+**Benefits:**
+- **Scalability**: Database-driven content allows for complex querying, filtering, and relationship management
+- **Version Control**: Built-in backup system for content changes with user attribution
+- **Performance**: Optimized queries with proper indexing and chapter-based card retrieval
+- **Reliability**: Transactional consistency and data integrity guarantees from PostgreSQL
+
 **December 2024 - Complete CMS Integration for After Experience**
 Successfully implemented comprehensive Content Management System capabilities for the entire After experience, enabling content managers to control all aspects of the post-event journey without code changes:
 

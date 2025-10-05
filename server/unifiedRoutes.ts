@@ -190,9 +190,9 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
       const isHealthy = metricsHealth.overall === 'healthy' && flagsHealth.status === 'healthy';
       
       // Even when enterprise mode is enabled, prioritize CI/CD deployment over strict health checks
-      // Only return non-200 status if there's a global kill switch or critical deployment blocker
+      // Only return non-200 status if there's a global kill switch or critical system health
       const shouldBlockDeployment = flagsHealth.globalKillSwitch || 
-                                  (metricsHealth.overall === 'critical' && metricsHealth.deploymentBlocked);
+                                  (metricsHealth.overall === 'critical' && metricsHealth.criticalAlerts > 0);
       
       const httpStatus = shouldBlockDeployment ? 503 : 200;
       const status = isHealthy ? 'healthy' : (shouldBlockDeployment ? 'unhealthy' : 'degraded');
