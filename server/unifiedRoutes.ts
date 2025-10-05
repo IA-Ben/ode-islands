@@ -577,6 +577,53 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // FIXED: New single transactional hierarchy reorder endpoint (Issue 2)
+  app.post("/api/cms/chapters/reorder-hierarchy", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { updates } = req.body;
+      
+      // Validation
+      if (!Array.isArray(updates)) {
+        return res.status(400).json({ 
+          success: false,
+          message: "updates must be an array" 
+        });
+      }
+
+      if (updates.length === 0) {
+        return res.status(400).json({ 
+          success: false,
+          message: "updates array cannot be empty" 
+        });
+      }
+
+      // Validate each update has required fields
+      for (const update of updates) {
+        if (!update.id || update.order === undefined) {
+          return res.status(400).json({ 
+            success: false,
+            message: "Each update must have id and order fields" 
+          });
+        }
+      }
+
+      // All updates performed in single transaction - either all succeed or all fail
+      await storage.reorderHierarchy(updates);
+      
+      res.json({ 
+        success: true,
+        message: "Hierarchy reordered successfully" 
+      });
+    } catch (error) {
+      console.error("Error reordering hierarchy:", error);
+      const errorMessage = error instanceof Error ? error.message : "Failed to reorder hierarchy";
+      res.status(500).json({ 
+        success: false,
+        message: errorMessage 
+      });
+    }
+  });
+
   // Content Versioning Routes
   app.get("/api/cms/versions/:contentType/:contentId", isAdmin, async (req, res) => {
     try {

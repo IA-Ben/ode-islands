@@ -6,6 +6,13 @@ import odeIslandsData from '../../data/ode-islands.json';
 export async function GET(request: NextRequest) {
   try {
     const eventId = request.nextUrl.searchParams.get('eventId');
+    const tree = request.nextUrl.searchParams.get('tree') === 'true';
+    
+    if (tree) {
+      const chapterTree = await storage.getChapterTree(eventId || undefined);
+      return NextResponse.json(chapterTree);
+    }
+    
     const chapters = await storage.getChapters(eventId || undefined);
     
     // Map database chapters to JSON chapter keys
@@ -53,6 +60,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       title: data.title,
       summary: data.summary,
       eventId: data.eventId,
+      parentId: data.parentId || null,
       order: data.order || 0,
       hasAR: data.hasAR || false,
     });
@@ -60,6 +68,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     return NextResponse.json(chapter);
   } catch (error) {
     console.error('Error creating chapter:', error);
-    return NextResponse.json({ error: 'Failed to create chapter' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to create chapter';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 });

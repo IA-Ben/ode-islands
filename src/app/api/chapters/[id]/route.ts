@@ -56,7 +56,8 @@ export async function PUT(
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Error updating chapter:', error);
-    return NextResponse.json({ error: 'Failed to update chapter' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to update chapter';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
@@ -70,11 +71,19 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
+    const children = await storage.getChapterChildren(params.id);
+    if (children.length > 0) {
+      return NextResponse.json({ 
+        error: `Cannot delete chapter with ${children.length} child chapter(s). Please delete or move the children first.` 
+      }, { status: 400 });
+    }
+    
     await storage.deleteChapter(params.id);
     
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting chapter:', error);
-    return NextResponse.json({ error: 'Failed to delete chapter' }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : 'Failed to delete chapter';
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }

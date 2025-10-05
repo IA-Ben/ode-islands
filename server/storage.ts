@@ -42,6 +42,12 @@ export interface IStorage {
   updateChapter(id: string, updates: Partial<Chapter>): Promise<Chapter>;
   deleteChapter(id: string): Promise<void>;
   reorderChapters(chapterOrders: Array<{ id: string; order: number }>): Promise<void>;
+  reorderHierarchy(updates: Array<{ id: string; parentId: string | null; order: number }>): Promise<void>;
+  
+  // Hierarchy operations
+  getChapterTree(eventId?: string): Promise<any[]>;
+  getChapterChildren(chapterId: string): Promise<Chapter[]>;
+  validateHierarchy(chapterId: string | null, parentId: string | null): Promise<{ valid: boolean; error?: string }>;
   
   // Sub-chapter operations
   createSubChapter(subChapter: Omit<typeof subChapters.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<SubChapter>;
@@ -496,11 +502,43 @@ export class DatabaseStorage implements IStorage {
   
   // Chapter operations
   async createChapter(chapter: Omit<typeof chapters.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<Chapter> {
+    const validation = await this.validateHierarchy(null, chapter.parentId || null);
+    if (!validation.valid) {
+      throw new Error(validation.error);
+    }
+
+    let depth = 0;
+    let parentPath = '';
+
+    if (chapter.parentId) {
+      const parent = await this.getChapter(chapter.parentId);
+      if (parent) {
+        depth = (parent.depth || 0) + 1;
+        // FIXED: Handle NULL parent.path (legacy data) by using parent.id as fallback
+        parentPath = parent.path || parent.id;
+      }
+    }
+
     const [newChapter] = await db
       .insert(chapters)
-      .values(chapter)
+      .values({
+        ...chapter,
+        depth,
+        path: ''
+      })
       .returning();
-    return newChapter;
+
+    const correctPath = parentPath 
+      ? `${parentPath}/${newChapter.id}` 
+      : newChapter.id;
+
+    const [updatedChapter] = await db
+      .update(chapters)
+      .set({ path: correctPath })
+      .where(eq(chapters.id, newChapter.id))
+      .returning();
+
+    return updatedChapter;
   }
 
   async getChapters(eventId?: string): Promise<Chapter[]> {
@@ -547,15 +585,90 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateChapter(id: string, updates: Partial<Chapter>): Promise<Chapter> {
-    const [updated] = await db
-      .update(chapters)
-      .set({
-        ...updates,
-        updatedAt: new Date(),
-      })
-      .where(eq(chapters.id, id))
-      .returning();
-    return updated;
+    // FIXED: All hierarchy updates wrapped in single transaction for atomicity
+    return await db.transaction(async (tx) => {
+      if (updates.parentId !== undefined) {
+        const validation = await this.validateHierarchy(id, updates.parentId || null);
+        if (!validation.valid) {
+          throw new Error(validation.error);
+        }
+
+        let depth = 0;
+        let path = '';
+
+        if (updates.parentId) {
+          const parent = await this.getChapter(updates.parentId);
+          if (parent) {
+            depth = (parent.depth || 0) + 1;
+            // FIXED: Handle NULL parent.path (legacy data) by using parent.id as fallback
+            path = parent.path ? `${parent.path}/${id}` : `${parent.id}/${id}`;
+          }
+        } else {
+          // Root-level chapter: path is just the chapter ID
+          path = id;
+        }
+
+        updates.depth = depth;
+        updates.path = path;
+      }
+
+      // Parent update happens within transaction
+      const [updated] = await tx
+        .update(chapters)
+        .set({
+          ...updates,
+          updatedAt: new Date(),
+        })
+        .where(eq(chapters.id, id))
+        .returning();
+
+      // Descendant recalculation also within same transaction
+      // If this fails, parent update will be rolled back
+      if (updates.parentId !== undefined || updates.depth !== undefined || updates.path !== undefined) {
+        await this.recalculateChildrenHierarchyInTransaction(tx, id);
+      }
+
+      return updated;
+    });
+  }
+
+  private async recalculateChildrenHierarchy(parentId: string): Promise<void> {
+    await db.transaction(async (tx) => {
+      await this.recalculateChildrenHierarchyInTransaction(tx, parentId);
+    });
+  }
+
+  private async recalculateChildrenHierarchyInTransaction(tx: any, parentId: string): Promise<void> {
+    const children = await tx
+      .select()
+      .from(chapters)
+      .where(eq(chapters.parentId, parentId))
+      .orderBy(asc(chapters.order));
+
+    const [parent] = await tx
+      .select()
+      .from(chapters)
+      .where(eq(chapters.id, parentId));
+
+    if (!parent) return;
+
+    for (const child of children) {
+      const newDepth = (parent.depth || 0) + 1;
+      // FIXED: Handle NULL parent.path (legacy data) by using parent.id as fallback
+      const newPath = parent.path ? `${parent.path}/${child.id}` : `${parent.id}/${child.id}`;
+
+      await tx
+        .update(chapters)
+        .set({
+          depth: newDepth,
+          path: newPath,
+          updatedAt: new Date(),
+        })
+        .where(eq(chapters.id, child.id));
+
+      // Recursively update all descendants
+      await this.recalculateChildrenHierarchyInTransaction(tx, child.id);
+    }
   }
 
   async deleteChapter(id: string): Promise<void> {
@@ -589,6 +702,164 @@ export class DatabaseStorage implements IStorage {
           .where(eq(chapters.id, id));
       }
     });
+  }
+
+  async reorderHierarchy(updates: Array<{ id: string; parentId: string | null; order: number }>): Promise<void> {
+    // FIXED: Single transaction for all hierarchy updates (Issue 2)
+    // All updates succeed or all fail - no partial updates
+    await db.transaction(async (tx) => {
+      // First, validate all updates before making any changes
+      for (const update of updates) {
+        const validation = await this.validateHierarchy(update.id, update.parentId);
+        if (!validation.valid) {
+          throw new Error(`Validation failed for chapter ${update.id}: ${validation.error}`);
+        }
+      }
+
+      // Track chapters that need path recalculation
+      const chaptersToRecalculate = new Set<string>();
+
+      // Apply all updates within the transaction
+      for (const update of updates) {
+        let depth = 0;
+        let path = '';
+
+        if (update.parentId) {
+          // Get parent from database
+          const [parent] = await tx
+            .select()
+            .from(chapters)
+            .where(eq(chapters.id, update.parentId));
+
+          if (parent) {
+            depth = (parent.depth || 0) + 1;
+            // FIXED: Handle NULL parent.path (legacy data) by using parent.id as fallback
+            path = parent.path ? `${parent.path}/${update.id}` : `${parent.id}/${update.id}`;
+          }
+        } else {
+          // Root-level chapter
+          path = update.id;
+        }
+
+        // Update the chapter
+        await tx
+          .update(chapters)
+          .set({
+            parentId: update.parentId,
+            order: update.order,
+            depth,
+            path,
+            updatedAt: new Date(),
+          })
+          .where(eq(chapters.id, update.id));
+
+        // Mark for descendant recalculation
+        chaptersToRecalculate.add(update.id);
+      }
+
+      // Recalculate paths for all descendants of updated chapters
+      for (const chapterId of chaptersToRecalculate) {
+        await this.recalculateChildrenHierarchyInTransaction(tx, chapterId);
+      }
+    });
+  }
+
+  async getChapterTree(eventId?: string): Promise<any[]> {
+    const allChapters = await this.getChapters(eventId);
+    
+    const buildTree = (parentId: string | null = null): any[] => {
+      return allChapters
+        .filter(chapter => chapter.parentId === parentId)
+        .sort((a, b) => (a.order || 0) - (b.order || 0))
+        .map(chapter => ({
+          ...chapter,
+          children: buildTree(chapter.id)
+        }));
+    };
+    
+    return buildTree(null);
+  }
+
+  async getChapterChildren(chapterId: string): Promise<Chapter[]> {
+    return await db
+      .select()
+      .from(chapters)
+      .where(eq(chapters.parentId, chapterId))
+      .orderBy(asc(chapters.order));
+  }
+
+  async validateHierarchy(chapterId: string | null, parentId: string | null): Promise<{ valid: boolean; error?: string }> {
+    if (!parentId) {
+      return { valid: true };
+    }
+
+    if (chapterId === parentId) {
+      return { valid: false, error: 'A chapter cannot be its own parent' };
+    }
+
+    const parent = await this.getChapter(parentId);
+    if (!parent) {
+      return { valid: false, error: 'Parent chapter not found' };
+    }
+
+    const parentDepth = parent.depth || 0;
+    if (parentDepth >= 4) {
+      return { valid: false, error: 'Maximum hierarchy depth of 5 levels exceeded' };
+    }
+
+    if (chapterId) {
+      if (parent.path && parent.path.includes(chapterId)) {
+        return { valid: false, error: 'Circular reference detected: cannot make a chapter the child of its own descendant' };
+      }
+
+      const result = await db.execute(sql`
+        WITH RECURSIVE chapter_tree AS (
+          SELECT id, parent_id, depth, path, 1 as level
+          FROM chapters
+          WHERE id = ${parentId}
+          
+          UNION ALL
+          
+          SELECT c.id, c.parent_id, c.depth, c.path, ct.level + 1
+          FROM chapters c
+          INNER JOIN chapter_tree ct ON c.parent_id = ct.id
+          WHERE ct.level < 10
+        )
+        SELECT MAX(level) as max_depth
+        FROM chapter_tree
+      `);
+
+      const maxDepth = result.rows[0]?.max_depth || 0;
+      if (maxDepth >= 5) {
+        return { valid: false, error: 'Maximum hierarchy depth of 5 levels would be exceeded' };
+      }
+
+      if (chapterId) {
+        const childResult = await db.execute(sql`
+          WITH RECURSIVE descendants AS (
+            SELECT id, parent_id
+            FROM chapters
+            WHERE id = ${chapterId}
+            
+            UNION ALL
+            
+            SELECT c.id, c.parent_id
+            FROM chapters c
+            INNER JOIN descendants d ON c.parent_id = d.id
+          )
+          SELECT COUNT(*) as count
+          FROM descendants
+          WHERE id = ${parentId}
+        `);
+
+        const descendantCount = parseInt(childResult.rows[0]?.count || '0');
+        if (descendantCount > 0) {
+          return { valid: false, error: 'Circular reference detected: parent is a descendant of this chapter' };
+        }
+      }
+    }
+
+    return { valid: true };
   }
   
   // Sub-chapter operations

@@ -34,8 +34,10 @@ export default function AddChapterModal({
   const [formData, setFormData] = useState({
     title: '',
     summary: '',
-    hasAR: false
+    hasAR: false,
+    parentId: null as string | null
   });
+  const [availableParents, setAvailableParents] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState<'edit' | 'history'>('edit');
@@ -49,9 +51,30 @@ export default function AddChapterModal({
 
   useEffect(() => {
     if (initialData) {
-      setFormData(initialData);
+      setFormData({ ...initialData, parentId: (initialData as any).parentId || null });
     }
   }, [initialData]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchAvailableParents();
+    }
+  }, [isOpen]);
+
+  const fetchAvailableParents = async () => {
+    try {
+      const response = await fetch('/api/chapters');
+      if (response.ok) {
+        const chapters = await response.json();
+        const filteredChapters = editMode && chapterId 
+          ? chapters.filter((ch: any) => ch.id !== chapterId && ch.depth < 4)
+          : chapters.filter((ch: any) => ch.depth < 4);
+        setAvailableParents(filteredChapters);
+      }
+    } catch (err) {
+      console.error('Failed to fetch parent chapters:', err);
+    }
+  };
 
   useEffect(() => {
     if (isOpen && !editMode) {
@@ -112,7 +135,8 @@ export default function AddChapterModal({
     setFormData({
       title: '',
       summary: '',
-      hasAR: false
+      hasAR: false,
+      parentId: null
     });
     setError('');
     setActiveTab('edit');
@@ -221,6 +245,25 @@ export default function AddChapterModal({
                       onChange={(e) => setFormData(prev => ({ ...prev, summary: e.target.value }))}
                       placeholder="Enter chapter summary or description"
                     />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Parent Chapter (Optional)</label>
+                    <select
+                      className="w-full p-2 border border-gray-300 rounded-md"
+                      value={formData.parentId || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, parentId: e.target.value || null }))}
+                    >
+                      <option value="">No Parent (Root Level)</option>
+                      {availableParents.map((parent) => (
+                        <option key={parent.id} value={parent.id}>
+                          {'  '.repeat(parent.depth || 0)}{parent.title} (Level {parent.depth || 0})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Select a parent chapter to create a sub-chapter. Maximum depth is 5 levels.
+                    </p>
                   </div>
 
                   <div className="flex items-center space-x-2">

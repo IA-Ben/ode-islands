@@ -50,6 +50,12 @@ export const chapters = pgTable("chapters", {
   title: varchar("title").notNull(),
   summary: text("summary"),
   eventId: varchar("event_id").references(() => liveEvents.id),
+  
+  // Hierarchy fields
+  parentId: varchar("parent_id").references((): any => chapters.id),
+  depth: integer("depth").default(0),
+  path: varchar("path"),
+  
   order: integer("order").default(0),
   hasAR: boolean("has_ar").default(false),
   createdAt: timestamp("created_at").defaultNow(),
@@ -57,6 +63,9 @@ export const chapters = pgTable("chapters", {
 }, (table) => {
   return {
     eventIdIndex: index("chapters_event_id_idx").on(table.eventId),
+    parentIdIndex: index("chapters_parent_id_idx").on(table.parentId),
+    depthIndex: index("chapters_depth_idx").on(table.depth),
+    pathIndex: index("chapters_path_idx").on(table.path),
     orderIndex: index("chapters_order_idx").on(table.order),
   };
 });

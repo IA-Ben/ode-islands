@@ -525,6 +525,7 @@ export default function CMSPage() {
                     onReorderStart={() => console.log('Started reordering chapters')}
                     onDelete={handleDeleteChapter}
                     className="mb-6"
+                    csrfToken={csrfToken}
                   />
                 ) : (
                   <div className="flex flex-wrap gap-3">
