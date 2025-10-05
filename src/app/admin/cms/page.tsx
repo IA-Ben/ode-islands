@@ -38,6 +38,7 @@ export default function CMSPage() {
   const [showSearch, setShowSearch] = useState(false);
   const [chapterSubChapters, setChapterSubChapters] = useState<Record<string, any[]>>({});
   const [loadingSubChapters, setLoadingSubChapters] = useState(false);
+  const [editingChapter, setEditingChapter] = useState<any>(null);
 
   console.log('CMS Page component loaded - debugging active');
 
@@ -115,6 +116,24 @@ export default function CMSPage() {
   const handleChapterAdded = () => {
     // Refresh chapters and get updated list
     fetchChapters();
+    setEditingChapter(null);
+  };
+
+  const handleEditChapter = async (chapter: any) => {
+    try {
+      const response = await fetch(`/api/chapters/${chapter.id}`);
+      if (response.ok) {
+        const fullChapterData = await response.json();
+        setEditingChapter(fullChapterData);
+        setShowAddChapterModal(true);
+      } else {
+        console.error('Failed to fetch chapter details for editing');
+        alert('Failed to load chapter details for editing');
+      }
+    } catch (error) {
+      console.error('Error fetching chapter for edit:', error);
+      alert('Error loading chapter for editing');
+    }
   };
 
   const handleDeleteChapter = async (chapterId: string, chapterTitle: string) => {
@@ -588,6 +607,7 @@ export default function CMSPage() {
                     onReorderComplete={handleChapterReorder}
                     onReorderStart={() => console.log('Started reordering chapters')}
                     onDelete={handleDeleteChapter}
+                    onEdit={handleEditChapter}
                     className="mb-6"
                     csrfToken={csrfToken}
                   />
@@ -802,9 +822,22 @@ export default function CMSPage() {
       {/* Modals */}
       <AddChapterModal
         isOpen={showAddChapterModal}
-        onClose={() => setShowAddChapterModal(false)}
+        onClose={() => {
+          setShowAddChapterModal(false);
+          setEditingChapter(null);
+        }}
         onChapterAdded={handleChapterAdded}
         csrfToken={csrfToken}
+        editMode={!!editingChapter}
+        chapterId={editingChapter?.id}
+        initialData={editingChapter ? {
+          title: editingChapter.title,
+          summary: editingChapter.summary,
+          hasAR: editingChapter.hasAR,
+          parentId: editingChapter.parentId,
+          imageMediaId: editingChapter.imageMediaId,
+          videoMediaId: editingChapter.videoMediaId,
+        } : undefined}
       />
     </div>
   );

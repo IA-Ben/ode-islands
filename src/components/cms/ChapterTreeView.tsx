@@ -35,6 +35,7 @@ interface ChapterTreeViewProps {
   chapters: TreeChapter[];
   onReorder: (updates: Array<{ id: string; order: number; parentId: string | null }>) => void;
   onDelete?: (id: string, title: string) => void;
+  onEdit?: (chapter: TreeChapter) => void;
 }
 
 const MAX_DEPTH = 5;
@@ -44,12 +45,14 @@ function TreeNode({
   onToggleExpand,
   isExpanded,
   onDelete,
+  onEdit,
   isDragOverlay = false,
 }: {
   chapter: TreeChapter;
   onToggleExpand: (id: string) => void;
   isExpanded: boolean;
   onDelete?: (id: string, title: string) => void;
+  onEdit?: (chapter: TreeChapter) => void;
   isDragOverlay?: boolean;
 }) {
   const {
@@ -137,6 +140,26 @@ function TreeNode({
           </div>
 
           <div className="flex items-center space-x-2">
+            {onEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(chapter);
+                }}
+                className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                title="Edit chapter"
+                type="button"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+            )}
             {onDelete && (
               <button
                 onClick={(e) => {
@@ -230,7 +253,7 @@ function buildTree(flatChapters: TreeChapter[]): TreeChapter[] {
   return roots;
 }
 
-export function ChapterTreeView({ chapters, onReorder, onDelete }: ChapterTreeViewProps) {
+export function ChapterTreeView({ chapters, onReorder, onDelete, onEdit }: ChapterTreeViewProps) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -265,6 +288,7 @@ export function ChapterTreeView({ chapters, onReorder, onDelete }: ChapterTreeVi
           onToggleExpand={toggleExpand}
           isExpanded={expandedIds.has(chapter.id)}
           onDelete={onDelete}
+          onEdit={onEdit}
         />
       );
 

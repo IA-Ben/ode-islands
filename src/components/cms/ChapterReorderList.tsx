@@ -19,6 +19,7 @@ interface ChapterReorderListProps {
   onReorderComplete: (newOrder: Array<{ id: string; order: number; parentId?: string | null }>) => Promise<void>;
   onReorderStart?: () => void;
   onDelete?: (id: string, title: string) => Promise<void>;
+  onEdit?: (chapter: TreeChapter) => void;
   className?: string;
   csrfToken?: string;
 }
@@ -28,6 +29,7 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
   onReorderComplete,
   onReorderStart,
   onDelete,
+  onEdit,
   className = '',
   csrfToken = '',
 }) => {
@@ -318,6 +320,7 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
                 chapters={treeChapters}
                 onReorder={handleTreeReorder}
                 onDelete={onDelete}
+                onEdit={onEdit}
               />
             </div>
           )}

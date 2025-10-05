@@ -516,7 +516,7 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   // Chapter Management Routes
   app.post("/api/cms/chapters/create", isAdminWithCSRF, async (req, res) => {
     try {
-      const { title, summary, eventId, order } = req.body;
+      const { title, summary, eventId, order, imageMediaId, videoMediaId, hasAR, parentId } = req.body;
       
       if (!title) {
         return res.status(400).json({ message: "Title is required" });
@@ -527,8 +527,19 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
         summary: summary || null,
         eventId: eventId || null,
         order: order !== undefined ? order : 0,
-        hasAR: false,
+        hasAR: hasAR || false,
+        parentId: parentId || null,
+        imageMediaId: imageMediaId || null,
+        videoMediaId: videoMediaId || null,
       });
+
+      // Track media usage
+      if (imageMediaId) {
+        await storage.trackMediaUsage(imageMediaId, 'chapter', newChapter.id, 'image');
+      }
+      if (videoMediaId) {
+        await storage.trackMediaUsage(videoMediaId, 'chapter', newChapter.id, 'video');
+      }
 
       res.json({ message: "Chapter created successfully", chapter: newChapter });
     } catch (error) {
@@ -542,7 +553,37 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
       const { id } = req.params;
       const updates = req.body;
 
+      // Get existing chapter to compare media IDs
+      const existingChapter = await storage.getChapter(id);
+      if (!existingChapter) {
+        return res.status(404).json({ message: "Chapter not found" });
+      }
+
+      // Update media usage tracking
+      const oldImageMediaId = existingChapter.imageMediaId;
+      const oldVideoMediaId = existingChapter.videoMediaId;
+      const newImageMediaId = updates.imageMediaId;
+      const newVideoMediaId = updates.videoMediaId;
+
+      // Update the chapter
       const updatedChapter = await storage.updateChapter(id, updates);
+
+      // Track image media changes
+      if (oldImageMediaId && oldImageMediaId !== newImageMediaId) {
+        await storage.removeMediaUsage(oldImageMediaId, 'chapter', id, 'image');
+      }
+      if (newImageMediaId && newImageMediaId !== oldImageMediaId) {
+        await storage.trackMediaUsage(newImageMediaId, 'chapter', id, 'image');
+      }
+
+      // Track video media changes
+      if (oldVideoMediaId && oldVideoMediaId !== newVideoMediaId) {
+        await storage.removeMediaUsage(oldVideoMediaId, 'chapter', id, 'video');
+      }
+      if (newVideoMediaId && newVideoMediaId !== oldVideoMediaId) {
+        await storage.trackMediaUsage(newVideoMediaId, 'chapter', id, 'video');
+      }
+
       res.json({ message: "Chapter updated successfully", chapter: updatedChapter });
     } catch (error) {
       console.error("Error updating chapter:", error);
@@ -553,6 +594,19 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   app.delete("/api/cms/chapters/:id", isAdminWithCSRF, async (req, res) => {
     try {
       const { id } = req.params;
+      
+      // Get chapter to clean up media usage
+      const chapter = await storage.getChapter(id);
+      if (chapter) {
+        // Remove media usage tracking
+        if (chapter.imageMediaId) {
+          await storage.removeMediaUsage(chapter.imageMediaId, 'chapter', id, 'image');
+        }
+        if (chapter.videoMediaId) {
+          await storage.removeMediaUsage(chapter.videoMediaId, 'chapter', id, 'video');
+        }
+      }
+      
       await storage.deleteChapter(id);
       res.json({ message: "Chapter deleted successfully" });
     } catch (error) {

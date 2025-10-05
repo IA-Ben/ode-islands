@@ -59,6 +59,10 @@ export const chapters = pgTable("chapters", {
   order: integer("order").default(0),
   hasAR: boolean("has_ar").default(false),
   
+  // Media Library integration
+  imageMediaId: varchar("image_media_id").references(() => mediaAssets.id),
+  videoMediaId: varchar("video_media_id").references(() => mediaAssets.id),
+  
   // Full-text search vector
   searchVector: text("search_vector"),
   
@@ -72,6 +76,8 @@ export const chapters = pgTable("chapters", {
     pathIndex: index("chapters_path_idx").on(table.path),
     orderIndex: index("chapters_order_idx").on(table.order),
     hasARIndex: index("chapters_has_ar_idx").on(table.hasAR),
+    imageMediaIdIndex: index("chapters_image_media_id_idx").on(table.imageMediaId),
+    videoMediaIdIndex: index("chapters_video_media_id_idx").on(table.videoMediaId),
     createdAtIndex: index("chapters_created_at_idx").on(table.createdAt),
     updatedAtIndex: index("chapters_updated_at_idx").on(table.updatedAt),
     searchVectorIndex: index("chapters_search_vector_idx").using('gin', sql`to_tsvector('english', COALESCE(${table.title}, '') || ' ' || COALESCE(${table.summary}, ''))`),
@@ -103,6 +109,10 @@ export const storyCards = pgTable("story_cards", {
   content: jsonb("content").notNull(), // JSON containing text, images, video references
   hasAR: boolean("has_ar").default(false),
   
+  // Media Library integration
+  imageMediaId: varchar("image_media_id").references(() => mediaAssets.id),
+  videoMediaId: varchar("video_media_id").references(() => mediaAssets.id),
+  
   // Full-text search vector
   searchVector: text("search_vector"),
   
@@ -113,6 +123,8 @@ export const storyCards = pgTable("story_cards", {
     chapterIdIndex: index("story_cards_chapter_id_idx").on(table.chapterId),
     orderIndex: index("story_cards_order_idx").on(table.order),
     hasARIndex: index("story_cards_has_ar_idx").on(table.hasAR),
+    imageMediaIdIndex: index("story_cards_image_media_id_idx").on(table.imageMediaId),
+    videoMediaIdIndex: index("story_cards_video_media_id_idx").on(table.videoMediaId),
     createdAtIndex: index("story_cards_created_at_idx").on(table.createdAt),
     updatedAtIndex: index("story_cards_updated_at_idx").on(table.updatedAt),
     searchVectorIndex: index("story_cards_search_vector_idx").using('gin', sql`to_tsvector('english', COALESCE(${table.content}::text, ''))`),
