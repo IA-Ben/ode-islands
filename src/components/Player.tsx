@@ -44,16 +44,40 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const BASE_BUFFER_CLEANUP_INTERVAL = 30 * 1000; // 30 seconds base interval
   const lastBufferSizeRef = useRef<number>(0);
   const STATUS_CHECK_TIMEOUT = 90000;
+  const [hasPortrait, setHasPortrait] = useState<boolean>(false);
+  const [deviceOrientation, setDeviceOrientation] = useState<'portrait' | 'landscape'>('landscape');
   
-  // Handle both full URLs and identifiers - NO URL rewriting for quality
+  // Detect device orientation on mount and orientation change
+  useEffect(() => {
+    const checkOrientation = () => {
+      if (typeof window !== 'undefined') {
+        setDeviceOrientation(window.innerHeight > window.innerWidth ? 'portrait' : 'landscape');
+      }
+    };
+    
+    checkOrientation();
+    window.addEventListener('resize', checkOrientation);
+    return () => window.removeEventListener('resize', checkOrientation);
+  }, []);
+  
+  // Handle both full URLs and identifiers
   let videoUrl: string | null = null;
   if (video?.url) {
     if (video.url.startsWith('http')) {
       // It's already a full URL, use as-is
       videoUrl = video.url;
     } else {
-      // It's an identifier, use the helper function
-      videoUrl = getVideoUrl(video.url);
+      // It's an identifier
+      // For 16:9 videos with dual orientations, use device-appropriate version
+      if (hasPortrait) {
+        // Video has both orientations - use appropriate one based on device
+        const orientation = deviceOrientation === 'portrait' ? 'portrait' : 'landscape';
+        videoUrl = getVideoUrl(video.url, orientation);
+        console.log(`Using ${orientation} version for dual-orientation video`);
+      } else {
+        // No portrait version - use legacy path (backward compatibility for non-16:9 videos)
+        videoUrl = getVideoUrl(video.url);
+      }
     }
   }
   
@@ -125,6 +149,11 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       const response = await fetch(`/api/video-status/${videoId}`);
       const data = await response.json();
       console.log(`Video status for ${videoId}:`, data);
+      
+      // Update portrait availability flag
+      if (data.has_portrait !== undefined) {
+        setHasPortrait(data.has_portrait);
+      }
       
       if (data.status === 'completed' || data.status === 'ready') {
         setTranscodingStatus('ready');
