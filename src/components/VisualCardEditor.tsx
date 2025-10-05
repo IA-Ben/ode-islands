@@ -28,7 +28,11 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
   };
   
   const addElement = (type: CardElementType) => {
-    const newElement = createDefaultElement(type, layout.elements.length);
+    const nextOrder = layout.elements.length > 0
+      ? Math.max(...layout.elements.map(el => el.order)) + 1
+      : 0;
+    
+    const newElement = createDefaultElement(type, nextOrder);
     updateLayout({
       ...layout,
       elements: [...layout.elements, newElement],
@@ -37,9 +41,16 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
   };
   
   const deleteElement = (elementId: string) => {
+    const filteredElements = layout.elements.filter((el) => el.id !== elementId);
+    
+    const reindexedElements = filteredElements.map((el, index) => ({
+      ...el,
+      order: index,
+    }));
+    
     updateLayout({
       ...layout,
-      elements: layout.elements.filter((el) => el.id !== elementId),
+      elements: reindexedElements,
     });
     setSelectedElementId(null);
   };
