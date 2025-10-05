@@ -10,6 +10,7 @@ import odeIslandsData from '../../data/ode-islands.json';
 import AddChapterModal from '@/components/cms/AddChapterModal';
 import { ChapterReorderList } from '@/components/cms/ChapterReorderList';
 import AdvancedSearch from '@/components/cms/AdvancedSearch';
+import { MediaLibrary } from '@/components/cms/MediaLibrary';
 
 type ChapterData = {
   [key: string]: CardData[];
@@ -297,6 +298,7 @@ export default function CMSPage() {
       case 'before': return 'Before Phase Management';
       case 'event': return 'Event Phase Management';
       case 'after': return 'After Phase Management';
+      case 'media': return 'Media Library';
       default: return 'Content Management System';
     }
   };
@@ -306,6 +308,7 @@ export default function CMSPage() {
       case 'before': return `Manage storytelling chapters, educational content, and user preparation materials. ${chapterKeys.length} chapters with ${Object.values(chapters).flat().length} total cards configured.`;
       case 'event': return 'Configure real-time features, live polling, AR experiences, and interactive elements that enhance your live event experience.';
       case 'after': return 'Design post-event experiences including memories, sharing tools, community features, and continued engagement opportunities.';
+      case 'media': return 'Upload, organize, and manage all media assets including images, videos, audio files, and documents used throughout your application.';
       default: return 'Professional content management for your three-phase event companion application.';
     }
   };
@@ -430,6 +433,24 @@ export default function CMSPage() {
                 <div className="text-left">
                   <div className="font-bold">After Phase</div>
                   <div className="text-xs opacity-80">Post-Event</div>
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => setSelectedPhase('media')}
+              className={`group flex-1 px-6 py-4 text-sm font-semibold rounded-lg transition-all duration-200 ${
+                selectedPhase === 'media'
+                  ? 'bg-white text-gray-900 shadow-sm border border-gray-300'
+                  : 'text-gray-700 hover:text-gray-900 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-center justify-center space-x-3">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <div className="text-left">
+                  <div className="font-bold">Media Library</div>
+                  <div className="text-xs opacity-80">Assets & Files</div>
                 </div>
               </div>
             </button>
@@ -770,6 +791,11 @@ export default function CMSPage() {
               <p className="text-sm text-gray-500">Coming soon...</p>
             </CardContent>
           </Card>
+        )}
+
+        {/* Media Library */}
+        {selectedPhase === 'media' && csrfToken && (
+          <MediaLibrary csrfToken={csrfToken} />
         )}
       </div>
 
