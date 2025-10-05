@@ -513,13 +513,30 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   useEffect(() => {
     const currentVideoUrl = video?.url || '';
     
+    if (!currentVideoUrl) {
+      setTranscodingStatus('ready');
+      return;
+    }
+    
     if (hasCheckedStatusRef.current === currentVideoUrl) {
       return;
     }
     
     hasCheckedStatusRef.current = currentVideoUrl;
     
-    setTranscodingStatus('ready');
+    // If it's already a full URL, don't check status (assume ready)
+    if (currentVideoUrl.startsWith('http')) {
+      setTranscodingStatus('ready');
+      return;
+    }
+    
+    // Check status for video identifiers
+    statusCheckStartTimeRef.current = Date.now();
+    setTranscodingStatus('checking');
+    
+    if (checkTranscodingStatusRef.current) {
+      checkTranscodingStatusRef.current(currentVideoUrl, 0);
+    }
   }, [video?.url]);
 
   useEffect(() => {
