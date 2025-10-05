@@ -12,6 +12,9 @@ import {
   adminRoles,
   userRoles,
   auditLogs,
+  memoryTemplates,
+  userMemoryWallet,
+  rewardRules,
   type User,
   type UpsertUser,
   type MediaAsset,
@@ -24,6 +27,8 @@ import { eq, sql, and, desc, asc, or, gte, lte, inArray } from "drizzle-orm";
 
 type AdminRole = typeof adminRoles.$inferSelect;
 type UserRole = typeof userRoles.$inferSelect;
+type MemoryTemplate = typeof memoryTemplates.$inferSelect;
+type RewardRule = typeof rewardRules.$inferSelect;
 
 // Interface for storage operations
 export interface IStorage {
@@ -129,6 +134,20 @@ export interface IStorage {
   getMediaUsage(mediaId: string): Promise<MediaUsage[]>;
   removeMediaUsage(mediaId: string, entityType: string, entityId: string, fieldName: string): Promise<void>;
   
+  // Memory Templates operations
+  getAllMemoryTemplates(filters?: MemoryTemplateFilters): Promise<MemoryTemplate[]>;
+  getMemoryTemplate(id: string): Promise<MemoryTemplate | undefined>;
+  createMemoryTemplate(data: Omit<typeof memoryTemplates.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<MemoryTemplate>;
+  updateMemoryTemplate(id: string, updates: Partial<MemoryTemplate>): Promise<MemoryTemplate>;
+  deleteMemoryTemplate(id: string): Promise<{ success: boolean; inUse?: boolean; count?: number }>;
+  
+  // Reward Rules operations
+  getAllRewardRules(filters?: RewardRuleFilters): Promise<RewardRule[]>;
+  getRewardRule(id: string): Promise<RewardRule | undefined>;
+  createRewardRule(data: Omit<typeof rewardRules.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<RewardRule>;
+  updateRewardRule(id: string, updates: Partial<RewardRule>): Promise<RewardRule>;
+  deleteRewardRule(id: string): Promise<void>;
+  
   // Audit log operations
   createAuditLog(entry: AuditLogEntry): Promise<void>;
   getAuditLogs(filters: AuditLogFilters): Promise<AuditLog[]>;
@@ -217,6 +236,22 @@ export interface MediaMetadataUpdate {
 export interface BulkDeleteResult {
   deleted: string[];
   failed: Array<{ id: string; reason: string }>;
+}
+
+// Memory Template interfaces
+export interface MemoryTemplateFilters {
+  eventId?: string;
+  mediaType?: string;
+  rarity?: string;
+  isActive?: boolean;
+}
+
+// Reward Rules interfaces
+export interface RewardRuleFilters {
+  eventId?: string;
+  type?: string;
+  memoryTemplateId?: string;
+  isActive?: boolean;
 }
 
 // Audit Log interfaces
@@ -2089,6 +2124,170 @@ export class DatabaseStorage implements IStorage {
       ))
       .orderBy(desc(auditLogs.createdAt));
   }
+
+  async getAllMemoryTemplates(filters?: MemoryTemplateFilters): Promise<MemoryTemplate[]> {
+    let query = db.select().from(memoryTemplates);
+    const conditions = [];
+
+    if (filters?.eventId) {
+      conditions.push(eq(memoryTemplates.eventId, filters.eventId));
+    }
+    if (filters?.mediaType) {
+      conditions.push(eq(memoryTemplates.mediaType, filters.mediaType));
+    }
+    if (filters?.rarity) {
+      conditions.push(eq(memoryTemplates.rarity, filters.rarity));
+    }
+    if (filters?.isActive !== undefined) {
+      conditions.push(eq(memoryTemplates.isActive, filters.isActive));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return query.orderBy(desc(memoryTemplates.createdAt));
+  }
+
+  async getMemoryTemplate(id: string): Promise<MemoryTemplate | undefined> {
+    const result = await db
+      .select()
+      .from(memoryTemplates)
+      .where(eq(memoryTemplates.id, id))
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async createMemoryTemplate(data: Omit<typeof memoryTemplates.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<MemoryTemplate> {
+    const result = await db
+      .insert(memoryTemplates)
+      .values({
+        ...data,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    
+    return result[0];
+  }
+
+  async updateMemoryTemplate(id: string, updates: Partial<MemoryTemplate>): Promise<MemoryTemplate> {
+    const result = await db
+      .update(memoryTemplates)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(memoryTemplates.id, id))
+      .returning();
+    
+    if (!result[0]) {
+      throw new Error('Memory template not found');
+    }
+    
+    return result[0];
+  }
+
+  async deleteMemoryTemplate(id: string): Promise<{ success: boolean; inUse?: boolean; count?: number; rewardRulesCount?: number }> {
+    // Check if template is used in user memories
+    const memoryUsageCount = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(userMemoryWallet)
+      .where(eq(userMemoryWallet.templateId, id));
+    
+    const memoryCount = Number(memoryUsageCount[0]?.count || 0);
+    
+    // Check if template is referenced by reward rules
+    const ruleUsageCount = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(rewardRules)
+      .where(eq(rewardRules.memoryTemplateId, id));
+    
+    const ruleCount = Number(ruleUsageCount[0]?.count || 0);
+    
+    if (memoryCount > 0 || ruleCount > 0) {
+      return {
+        success: false,
+        inUse: true,
+        count: memoryCount,
+        rewardRulesCount: ruleCount
+      };
+    }
+    
+    await db.delete(memoryTemplates).where(eq(memoryTemplates.id, id));
+    
+    return { success: true };
+  }
+
+  async getAllRewardRules(filters?: RewardRuleFilters): Promise<RewardRule[]> {
+    let query = db.select().from(rewardRules);
+    const conditions = [];
+
+    if (filters?.eventId) {
+      conditions.push(eq(rewardRules.eventId, filters.eventId));
+    }
+    if (filters?.type) {
+      conditions.push(eq(rewardRules.type, filters.type));
+    }
+    if (filters?.memoryTemplateId) {
+      conditions.push(eq(rewardRules.memoryTemplateId, filters.memoryTemplateId));
+    }
+    if (filters?.isActive !== undefined) {
+      conditions.push(eq(rewardRules.isActive, filters.isActive));
+    }
+
+    if (conditions.length > 0) {
+      query = query.where(and(...conditions)) as any;
+    }
+
+    return await query;
+  }
+
+  async getRewardRule(id: string): Promise<RewardRule | undefined> {
+    const result = await db
+      .select()
+      .from(rewardRules)
+      .where(eq(rewardRules.id, id))
+      .limit(1);
+    
+    return result[0];
+  }
+
+  async createRewardRule(data: Omit<typeof rewardRules.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<RewardRule> {
+    const result = await db
+      .insert(rewardRules)
+      .values({
+        ...data,
+        currentRedemptions: 0,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .returning();
+    
+    return result[0];
+  }
+
+  async updateRewardRule(id: string, updates: Partial<RewardRule>): Promise<RewardRule> {
+    const result = await db
+      .update(rewardRules)
+      .set({
+        ...updates,
+        updatedAt: new Date(),
+      })
+      .where(eq(rewardRules.id, id))
+      .returning();
+    
+    if (!result[0]) {
+      throw new Error('Reward rule not found');
+    }
+    
+    return result[0];
+  }
+
+  async deleteRewardRule(id: string): Promise<void> {
+    await db.delete(rewardRules).where(eq(rewardRules.id, id));
+  }
 }
 
 // Type definitions for compatibility
@@ -2099,5 +2298,7 @@ export type SubChapter = typeof subChapters.$inferSelect;
 export type StoryCard = typeof storyCards.$inferSelect;
 export type CustomButton = typeof customButtons.$inferSelect;
 export type UserProgress = typeof userProgress.$inferSelect;
+export type MemoryTemplate = typeof memoryTemplates.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
 
 export const storage = new DatabaseStorage();
