@@ -1,0 +1,405 @@
+# Fix Video Upload Integration with Adaptive Streaming Pipeline
+
+Based on the analysis, the video upload in StoryCardModal is bypassing the transcoding pipeline entirely. Here’s how to fix it:
+
+## Problem Summary
+
+- **Current**: StoryCardModal → `/api/memories/upload` → Raw video → Playback fails
+- **Needed**: StoryCardModal → Transcoding pipeline → HLS output → Adaptive playback works
+
+## Solution Implementation
+
+### 1. Update StoryCardModal to Use Transcoding Pipeline
+
+```typescript
+// src/components/cms/StoryCardModal.tsx - UPDATE the video upload handler
+
+const handleVideoUpload = async (file: File) => {
+  try {
+    setUploading(true);
+    setUploadProgress(0);
+    
+    // CHANGE: Use the transcoding-enabled endpoint
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('metadata', JSON.stringify({
+      type: 'story_video',
+      cardId: cardData.id,
+      title: file.name
+    }));
+    
+    // Upload to transcoding pipeline
+    const uploadResponse = await fetch('/api/cms/media/upload', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    
+    if (!uploadResponse.ok) {
+      throw new Error('Upload failed');
+    }
+    
+    const { videoId, statusUrl } = await uploadResponse.json();
+    
+    // Poll for transcoding completion
+    setUploadProgress(50);
+    setUploadStatus('Processing video...');
+    
+    const transcodedUrl = await pollTranscodingStatus(videoId, statusUrl);
+    
+    // Update card data with HLS URL
+    setCardData(prev => ({
+      ...prev,
+      media: {
+        ...prev.media,
+        type: 'video',
+        url: transcodedUrl, // This will be the master.m3u8 URL
+        videoId: videoId,
+        thumbnailUrl: `https://storage.googleapis.com/ode-islands-video-cdn/videos/${videoId}/thumbnails/poster.jpg`
+      }
+    }));
+    
+    setUploadProgress(100);
+    setUploading(false);
+    
+  } catch (error) {
+    console.error('Video upload error:', error);
+    setUploading(false);
+    // Show error to user
+  }
+};
+
+// Add polling function
+async function pollTranscodingStatus(videoId: string, statusUrl: string): Promise<string> {
+  const maxAttempts = 60; // 5 minutes max
+  let attempts = 0;
+  
+  while (attempts < maxAttempts) {
+    const response = await fetch(statusUrl, {
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('token')}`
+      }
+    });
+    
+    const data = await response.json();
+    
+    if (data.status === 'completed') {
+      // Return HLS manifest URL
+      return `https://storage.googleapis.com/ode-islands-video-cdn/videos/${videoId}/manifest/master.m3u8`;
+    }
+    
+    if (data.status === 'error' || data.status === 'failed') {
+      throw new Error('Video processing failed');
+    }
+    
+    // Update progress based on transcoding progress
+    if (data.profilesComplete && data.totalProfiles) {
+      const progress = 50 + (data.profilesComplete / data.totalProfiles) * 50;
+      setUploadProgress(progress);
+    }
+    
+    // Wait 5 seconds before next check
+    await new Promise(resolve => setTimeout(resolve, 5000));
+    attempts++;
+  }
+  
+  throw new Error('Transcoding timeout');
+}
+```
+
+### 2. Create a Wrapper API Route for Story Videos
+
+```typescript
+// src/app/api/stories/video-upload/route.ts
+// Wrapper that handles story-specific video uploads with transcoding
+
+export async function POST(request: Request) {
+  try {
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    const metadata = JSON.parse(formData.get('metadata') as string || '{}');
+    
+    // Validate file
+    if (!file || !file.type.startsWith('video/')) {
+      return Response.json({ error: 'Invalid video file' }, { status: 400 });
+    }
+    
+    // Size limit (2GB)
+    if (file.size > 2 * 1024 * 1024 * 1024) {
+      return Response.json({ error: 'File too large (max 2GB)' }, { status: 400 });
+    }
+    
+    // Generate video ID
+    const videoId = `story_video_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Upload to GCS input bucket for transcoding
+    const storage = new Storage();
+    const bucket = storage.bucket('ode-islands-video-input');
+    const blob = bucket.file(`pending/${videoId}_${file.name}`);
+    
+    const stream = blob.createWriteStream({
+      metadata: {
+        contentType: file.type,
+        metadata: {
+          ...metadata,
+          videoId,
+          source: 'story_card',
+          uploadedAt: new Date().toISOString()
+        }
+      }
+    });
+    
+    const buffer = Buffer.from(await file.arrayBuffer());
+    
+    await new Promise((resolve, reject) => {
+      stream.on('error', reject);
+      stream.on('finish', resolve);
+      stream.end(buffer);
+    });
+    
+    // Trigger Cloud Run transcoding
+    const transcodingResponse = await fetch(process.env.CLOUD_RUN_TRANSCODER_URL!, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${await getServiceAccountToken()}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        videoId,
+        inputBucket: 'ode-islands-video-input',
+        inputPath: `pending/${videoId}_${file.name}`,
+        outputBucket: 'ode-islands-video-cdn',
+        profiles: ['144p', '240p', '360p', '480p', '720p', '1080p'] // Story-optimized profiles
+      })
+    });
+    
+    if (!transcodingResponse.ok) {
+      throw new Error('Failed to start transcoding');
+    }
+    
+    return Response.json({
+      success: true,
+      videoId,
+      statusUrl: `/api/stories/video-status/${videoId}`,
+      estimatedTime: Math.ceil(file.size / (5 * 1024 * 1024)), // Rough estimate
+      cdnUrl: `https://storage.googleapis.com/ode-islands-video-cdn/videos/${videoId}/manifest/master.m3u8`
+    });
+    
+  } catch (error) {
+    console.error('Video upload error:', error);
+    return Response.json(
+      { error: 'Video upload failed' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 3. Add Status Checking Endpoint
+
+```typescript
+// src/app/api/stories/video-status/[videoId]/route.ts
+
+export async function GET(
+  request: Request,
+  { params }: { params: { videoId: string } }
+) {
+  try {
+    const storage = new Storage();
+    const cdnBucket = storage.bucket('ode-islands-video-cdn');
+    
+    // Check if master manifest exists
+    const manifestFile = cdnBucket.file(`videos/${params.videoId}/manifest/master.m3u8`);
+    const [exists] = await manifestFile.exists();
+    
+    if (exists) {
+      // Check for at least one quality level
+      const [files] = await cdnBucket.getFiles({
+        prefix: `videos/${params.videoId}/`,
+        maxResults: 20
+      });
+      
+      const profiles = ['144p', '240p', '360p', '480p', '720p', '1080p'];
+      const completedProfiles = profiles.filter(profile => 
+        files.some(f => f.name.includes(`/${profile}/`))
+      );
+      
+      return Response.json({
+        status: 'completed',
+        videoId: params.videoId,
+        profilesComplete: completedProfiles.length,
+        totalProfiles: profiles.length,
+        manifestUrl: `https://storage.googleapis.com/ode-islands-video-cdn/videos/${params.videoId}/manifest/master.m3u8`,
+        thumbnailUrl: `https://storage.googleapis.com/ode-islands-video-cdn/videos/${params.videoId}/thumbnails/poster.jpg`
+      });
+    }
+    
+    // Check if still processing
+    const inputBucket = storage.bucket('ode-islands-video-input');
+    const processingFile = inputBucket.file(`processing/${params.videoId}_*`);
+    const [processing] = await processingFile.exists();
+    
+    if (processing) {
+      return Response.json({
+        status: 'processing',
+        videoId: params.videoId,
+        message: 'Video is being transcoded...'
+      });
+    }
+    
+    // Check if failed
+    const failedFile = inputBucket.file(`failed/${params.videoId}_*`);
+    const [failed] = await failedFile.exists();
+    
+    if (failed) {
+      return Response.json({
+        status: 'failed',
+        videoId: params.videoId,
+        error: 'Transcoding failed'
+      });
+    }
+    
+    // Not found or pending
+    return Response.json({
+      status: 'pending',
+      videoId: params.videoId,
+      message: 'Video upload received, transcoding will start soon'
+    });
+    
+  } catch (error) {
+    console.error('Status check error:', error);
+    return Response.json(
+      { error: 'Failed to check status' },
+      { status: 500 }
+    );
+  }
+}
+```
+
+### 4. Update the Video Player Component
+
+```typescript
+// src/components/ImmersiveView/MediaPlayer.tsx - Ensure it handles HLS properly
+
+const MediaPlayer = ({ media }) => {
+  if (media?.type === 'video' && media?.url) {
+    // Check if it's an HLS manifest or raw video
+    const isHLS = media.url.includes('.m3u8') || media.url.includes('master.m3u8');
+    
+    if (isHLS) {
+      // Use the existing HLS player component
+      return (
+        <Player
+          videoUrl={media.url}
+          poster={media.thumbnailUrl}
+          onError={(error) => {
+            console.error('HLS playback error:', error);
+            // Fallback to direct video URL if available
+            if (media.fallbackUrl) {
+              return <video src={media.fallbackUrl} controls />;
+            }
+          }}
+        />
+      );
+    } else {
+      // Fallback for non-transcoded videos (legacy content)
+      console.warn('Non-HLS video detected, playback may not be optimal:', media.url);
+      return (
+        <video 
+          src={media.url} 
+          controls 
+          className="w-full h-full object-cover"
+        />
+      );
+    }
+  }
+  
+  // Handle other media types...
+};
+```
+
+### 5. Migration Script for Existing Videos
+
+```typescript
+// scripts/migrate-videos-to-hls.ts
+// One-time script to transcode existing videos
+
+async function migrateExistingVideos() {
+  // Get all story cards with video media
+  const cards = await db.query.storyCards.findMany({
+    where: (cards, { eq }) => eq(cards.mediaType, 'video')
+  });
+  
+  console.log(`Found ${cards.length} cards with videos to migrate`);
+  
+  for (const card of cards) {
+    if (card.media?.url && !card.media.url.includes('.m3u8')) {
+      console.log(`Migrating video for card ${card.id}`);
+      
+      try {
+        // Download existing video
+        const response = await fetch(card.media.url);
+        const blob = await response.blob();
+        
+        // Upload to transcoding pipeline
+        const formData = new FormData();
+        formData.append('file', blob, 'video.mp4');
+        formData.append('metadata', JSON.stringify({
+          cardId: card.id,
+          migration: true
+        }));
+        
+        const uploadResponse = await fetch('/api/cms/media/upload', {
+          method: 'POST',
+          body: formData
+        });
+        
+        const { videoId } = await uploadResponse.json();
+        
+        // Wait for transcoding
+        await waitForTranscoding(videoId);
+        
+        // Update card with HLS URL
+        await db.update(storyCards)
+          .set({
+            media: {
+              ...card.media,
+              url: `https://storage.googleapis.com/ode-islands-video-cdn/videos/${videoId}/manifest/master.m3u8`,
+              videoId,
+              legacyUrl: card.media.url // Keep old URL as fallback
+            }
+          })
+          .where(eq(storyCards.id, card.id));
+          
+        console.log(`✅ Migrated card ${card.id}`);
+        
+      } catch (error) {
+        console.error(`❌ Failed to migrate card ${card.id}:`, error);
+      }
+    }
+  }
+}
+```
+
+## Testing Checklist
+
+1. **Upload Test**
+
+- [ ] Upload video through StoryCardModal
+- [ ] Verify transcoding status shows
+- [ ] Check all quality levels created in GCS
+
+1. **Playback Test**
+
+- [ ] Video plays in ImmersiveView
+- [ ] Quality switching works
+- [ ] No manifest loading errors
+
+1. **Legacy Support**
+
+- [ ] Old videos still play (fallback)
+- [ ] Migration script works
+
+This integration ensures videos uploaded through the story card editor will be properly transcoded and work with the adaptive streaming pipeline.​​​​​​​​​​​​​​​​

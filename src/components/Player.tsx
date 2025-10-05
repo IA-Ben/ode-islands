@@ -19,6 +19,10 @@ interface PlayerProps extends React.VideoHTMLAttributes<HTMLVideoElement> {
   onEnd?: () => void;
 }
 
+const isHLSUrl = (url: string): boolean => {
+  return url.includes('.m3u8') || url.includes('/manifest/');
+};
+
 const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoUrlRef = useRef<string>("");
@@ -319,7 +323,9 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       videoEl.removeEventListener('error', handleError);
     };
     
-    if (Hls.isSupported()) {
+    const isHLS = isHLSUrl(url);
+    
+    if (isHLS && Hls.isSupported()) {
       // Adjust HLS configuration based on mobile and data saver settings
       const hlsConfig: any = {
         enableWorker: true,
@@ -444,7 +450,7 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
       
       hls.loadSource(url);
       hls.attachMedia(videoEl);
-    } else if (videoEl.canPlayType("application/vnd.apple.mpegurl")) {
+    } else if (isHLS && videoEl.canPlayType("application/vnd.apple.mpegurl")) {
       videoEl.src = url;
       
       // Safari native HLS - simpler periodic cleanup
@@ -460,6 +466,11 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
           }
         }
       }, BASE_BUFFER_CLEANUP_INTERVAL);
+    } else if (!isHLS) {
+      // Native HTML5 video playback for raw video files (.mp4, .webm, etc.)
+      videoEl.src = url;
+      videoEl.load();
+      console.log('Using native HTML5 video playback for:', url);
     } else {
       console.error("HLS not supported in this browser");
       setHasError(true);

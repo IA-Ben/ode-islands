@@ -52,6 +52,10 @@ export default function StoryCardModal({
   const [showPreview, setShowPreview] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
   const [uploadStatus, setUploadStatus] = useState<string>('');
+  const [videoUploadProgress, setVideoUploadProgress] = useState<number>(0);
+  const [videoTranscodingStatus, setVideoTranscodingStatus] = useState<'idle' | 'uploading' | 'processing' | 'completed' | 'error'>('idle');
+  const [transcodingDetails, setTranscodingDetails] = useState<{ percentage?: number; profiles?: string; message?: string }>({});
+  const [videoProcessing, setVideoProcessing] = useState(false);
 
   useEffect(() => {
     if (initialData) {
@@ -96,17 +100,7 @@ export default function StoryCardModal({
       
       setUploadStatus(`✓ Uploaded: ${file.name}`);
       
-      if (mediaType === 'video') {
-        setTraditionalContent(prev => ({
-          ...prev,
-          video: { 
-            url: mediaUrl, 
-            width: prev.video?.width || 1920, 
-            height: prev.video?.height || 1080, 
-            audio: prev.video?.audio ?? true 
-          }
-        }));
-      } else if (mediaType === 'image') {
+      if (mediaType === 'image') {
         setTraditionalContent(prev => ({
           ...prev,
           image: { 
@@ -124,6 +118,139 @@ export default function StoryCardModal({
       
       setTimeout(() => setUploadStatus(''), 3000);
     }
+  };
+
+  const pollTranscodingStatus = async (videoId: string, attemptCount = 0): Promise<void> => {
+    const MAX_ATTEMPTS = 60;
+    const POLL_INTERVAL = 5000;
+    
+    if (attemptCount >= MAX_ATTEMPTS) {
+      setVideoTranscodingStatus('error');
+      setTranscodingDetails({ message: 'Transcoding timeout - please check video status later' });
+      setVideoProcessing(false);
+      return;
+    }
+    
+    try {
+      const response = await fetch(`/api/video-status/${videoId}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to check transcoding status');
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 'completed' || data.status === 'ready') {
+        setVideoTranscodingStatus('completed');
+        setTranscodingDetails({ message: 'Video ready for playback' });
+        setVideoProcessing(false);
+        setTraditionalContent(prev => ({
+          ...prev,
+          video: { 
+            url: videoId,
+            width: prev.video?.width || 1920, 
+            height: prev.video?.height || 1080, 
+            audio: prev.video?.audio ?? true 
+          }
+        }));
+      } else if (data.status === 'processing') {
+        const percentage = data.percentage || 0;
+        const profiles = data.profiles ? `${data.profiles}` : '';
+        setVideoTranscodingStatus('processing');
+        setTranscodingDetails({ 
+          percentage, 
+          profiles,
+          message: profiles ? `Processing: ${profiles}` : `Processing: ${percentage}%`
+        });
+        setTimeout(() => pollTranscodingStatus(videoId, attemptCount + 1), POLL_INTERVAL);
+      } else if (data.status === 'error') {
+        setVideoTranscodingStatus('error');
+        setTranscodingDetails({ message: data.error || 'Transcoding failed' });
+        setVideoProcessing(false);
+      } else {
+        setTimeout(() => pollTranscodingStatus(videoId, attemptCount + 1), POLL_INTERVAL);
+      }
+    } catch (err: any) {
+      console.error('Polling error:', err);
+      setTimeout(() => pollTranscodingStatus(videoId, attemptCount + 1), POLL_INTERVAL);
+    }
+  };
+
+  const handleVideoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    
+    const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024;
+    const ALLOWED_TYPES = ['video/mp4', 'video/quicktime', 'video/x-msvideo', 'video/webm'];
+    
+    if (file.size > MAX_FILE_SIZE) {
+      setVideoTranscodingStatus('error');
+      setTranscodingDetails({ message: 'File too large. Maximum size is 2GB.' });
+      return;
+    }
+    
+    if (!ALLOWED_TYPES.includes(file.type)) {
+      setVideoTranscodingStatus('error');
+      setTranscodingDetails({ message: 'Invalid file type. Allowed: MP4, MOV, AVI, WebM' });
+      return;
+    }
+    
+    setVideoTranscodingStatus('uploading');
+    setVideoProcessing(true);
+    setVideoUploadProgress(0);
+    
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const xhr = new XMLHttpRequest();
+      
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentComplete = Math.round((e.loaded / e.total) * 100);
+          setVideoUploadProgress(percentComplete);
+        }
+      });
+      
+      xhr.addEventListener('load', async () => {
+        if (xhr.status === 200) {
+          const data = JSON.parse(xhr.responseText);
+          
+          if (data.success && data.videoId) {
+            setVideoTranscodingStatus('processing');
+            setTranscodingDetails({ message: 'Upload complete. Starting transcoding...' });
+            setVideoUploadProgress(100);
+            await pollTranscodingStatus(data.videoId);
+          } else {
+            setVideoTranscodingStatus('error');
+            setTranscodingDetails({ message: data.error || 'Upload failed' });
+            setVideoProcessing(false);
+          }
+        } else {
+          setVideoTranscodingStatus('error');
+          setTranscodingDetails({ message: `Upload failed: ${xhr.statusText}` });
+          setVideoProcessing(false);
+        }
+      });
+      
+      xhr.addEventListener('error', () => {
+        setVideoTranscodingStatus('error');
+        setTranscodingDetails({ message: 'Network error during upload' });
+        setVideoProcessing(false);
+      });
+      
+      xhr.open('POST', '/api/cms/media/upload');
+      xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+      xhr.send(formData);
+      
+    } catch (err: any) {
+      console.error('Video upload error:', err);
+      setVideoTranscodingStatus('error');
+      setTranscodingDetails({ message: err.message || 'Upload failed' });
+      setVideoProcessing(false);
+    }
+    
+    event.target.value = '';
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -393,16 +520,29 @@ export default function StoryCardModal({
                         <div className="bg-blue-50 border border-blue-200 rounded p-4 space-y-3">
                           <h4 className="text-sm font-semibold text-blue-900">Upload Files</h4>
                           <div className="flex gap-2 flex-wrap">
-                            <ObjectUploader
-                              maxNumberOfFiles={1}
-                              maxFileSize={104857600}
-                              allowedFileTypes={['video/*']}
-                              onGetUploadParameters={getUploadParameters}
-                              onComplete={handleUploadComplete}
-                              buttonClassName="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
-                            >
-                              📹 Upload Video
-                            </ObjectUploader>
+                            {/* Custom Video Upload */}
+                            <div className="relative">
+                              <input
+                                type="file"
+                                id="video-upload-input"
+                                className="hidden"
+                                accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+                                onChange={handleVideoUpload}
+                                disabled={videoProcessing}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => document.getElementById('video-upload-input')?.click()}
+                                disabled={videoProcessing}
+                                className={`px-4 py-2 text-white rounded text-sm transition-colors ${
+                                  videoProcessing 
+                                    ? 'bg-gray-400 cursor-not-allowed' 
+                                    : 'bg-blue-600 hover:bg-blue-700'
+                                }`}
+                              >
+                                📹 {videoProcessing ? 'Processing...' : 'Upload Video'}
+                              </button>
+                            </div>
                             
                             <ObjectUploader
                               maxNumberOfFiles={1}
@@ -426,6 +566,51 @@ export default function StoryCardModal({
                               🎵 Upload Audio
                             </ObjectUploader>
                           </div>
+                          
+                          {/* Video Upload Progress */}
+                          {videoTranscodingStatus === 'uploading' && (
+                            <div className="text-sm space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-blue-700 font-medium">Uploading video...</span>
+                                <span className="text-blue-600">{videoUploadProgress}%</span>
+                              </div>
+                              <div className="w-full bg-blue-200 rounded-full h-2">
+                                <div 
+                                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                  style={{ width: `${videoUploadProgress}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Video Processing Status */}
+                          {videoTranscodingStatus === 'processing' && (
+                            <div className="text-sm bg-yellow-100 border border-yellow-200 px-3 py-2 rounded">
+                              <div className="flex items-center gap-2">
+                                <div className="animate-spin rounded-full h-4 w-4 border-2 border-yellow-600 border-t-transparent"></div>
+                                <span className="text-yellow-800 font-medium">Processing video...</span>
+                              </div>
+                              {transcodingDetails.message && (
+                                <p className="text-yellow-700 mt-1">{transcodingDetails.message}</p>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Video Completed Status */}
+                          {videoTranscodingStatus === 'completed' && (
+                            <div className="text-sm text-green-700 bg-green-100 border border-green-200 px-3 py-2 rounded">
+                              ✓ {transcodingDetails.message || 'Video ready for playback'}
+                            </div>
+                          )}
+                          
+                          {/* Video Error Status */}
+                          {videoTranscodingStatus === 'error' && (
+                            <div className="text-sm text-red-700 bg-red-100 border border-red-200 px-3 py-2 rounded">
+                              ✗ {transcodingDetails.message || 'Video upload failed'}
+                            </div>
+                          )}
+                          
+                          {/* Image/Audio Upload Status */}
                           {uploadStatus && (
                             <div className="text-sm text-green-700 bg-green-100 px-3 py-2 rounded">
                               {uploadStatus}
@@ -450,6 +635,41 @@ export default function StoryCardModal({
                             }))}
                             placeholder="1-crawling, 1-poem1, or full URL..."
                           />
+                        </div>
+
+                        <div className="border-t pt-3">
+                          <label className="block text-sm font-medium mb-2">Or Upload Video File</label>
+                          <div className="flex items-center gap-3">
+                            <label className={`flex-1 px-4 py-2 rounded cursor-pointer text-center transition-colors ${
+                              videoProcessing 
+                                ? 'bg-gray-400 cursor-not-allowed' 
+                                : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            }`}>
+                              <input
+                                type="file"
+                                accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+                                onChange={handleVideoUpload}
+                                disabled={videoProcessing}
+                                className="hidden"
+                              />
+                              {videoProcessing ? 'Processing...' : '📹 Choose Video File'}
+                            </label>
+                            {traditionalContent.video?.url && (
+                              <button
+                                type="button"
+                                onClick={() => setTraditionalContent(prev => ({
+                                  ...prev,
+                                  video: undefined
+                                }))}
+                                className="px-3 py-2 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Max 2GB • Supported: MP4, MOV, AVI, WebM • Auto-transcodes to adaptive HLS
+                          </p>
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">

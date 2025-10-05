@@ -96,9 +96,21 @@ Production-ready content management system with enterprise-grade security and wo
 - **Theme & Styling**: ColorPicker components for background, title, subtitle, description colors; mix blend mode selector; text shadow and invert CTA toggles
 - **AR Configuration**: Mode selector (auto, object, marker, location) with conditional configuration panels for markers and locations
 - **PlayCanvas Integration**: Type selector (iframe, engine, self-hosted), project ID, build path, fill mode, dimensions, transparency, auto-play settings
-- **Component Integration**: ColorPicker for color selection, ObjectUploader for media uploads (100MB max), CardEditorButtons for custom button management, CMSCardPreview for live preview
+- **Component Integration**: ColorPicker for color selection, ObjectUploader for image/audio uploads (100MB max), CardEditorButtons for custom button management, CMSCardPreview for live preview
 - **JSON Toggle**: Advanced users can switch to raw JSON editing mode for complex configurations
 - **Complete Parity**: All fields from legacy file-based editor fully restored in modal system
+
+### Video Transcoding & Adaptive Streaming Integration (Latest)
+- **Automated Transcoding Pipeline**: Video uploads trigger Cloud Run transcoder that processes videos into adaptive HLS format with 11 quality profiles (144p-4K)
+- **Smart Upload Handler**: Separate video upload flow using `/api/cms/media/upload` endpoint that uploads to GCS input bucket and triggers transcoding service
+- **Real-Time Status Polling**: Transcoding status checked every 5 seconds via `/api/video-status/[videoId]` with 5-minute timeout and progress feedback
+- **HLS Manifest Storage**: Stores only videoId in card data; Player component constructs full HLS URL via `getVideoUrl()` helper function
+- **User Feedback**: Comprehensive UI states (uploading progress bar, processing status with quality profiles, completion/error messages)
+- **Backward Compatibility**: Player component detects URL type and branches between HLS.js (for manifests) and native HTML5 playback (for raw videos)
+- **File Validation**: Client-side validation for file size (max 2GB) and supported types (MP4, MOV, AVI, WebM)
+- **Separated Pipelines**: Videos use transcoding pipeline; images and audio use object storage (different upload paths)
+- **GCS Architecture**: Input bucket → Cloud Function trigger → Cloud Run transcoder → CDN output bucket with CORS configured
+- **Legacy Support**: Existing cards with raw video URLs continue playing via native HTML5 fallback
 
 ### Visual Mode - 100% Feature Complete
 - **Element Types**: All 6 types fully functional (Text, Image, Video, Button, Divider, Spacer)
