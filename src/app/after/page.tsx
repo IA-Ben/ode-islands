@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense, lazy } from "react";
-import PhaseNavigation from "@/components/PhaseNavigation";
+import TopNav from "@/components/TopNav";
 import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageLayout';
 import AnimateText from '@/components/AnimateText';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -681,7 +681,7 @@ export default function AfterPage() {
 
   return (
     <>
-      <PhaseNavigation currentPhase="after" />
+      <TopNav currentPhase="after" />
       
       <ImmersivePageLayout
         title={getTabTitle(activeTab)}

@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { LazyClientCardWrapper } from '@/components/LazyComponentWrapper';
 import Footer from "@/components/Footer";
-import PhaseNavigation from "@/components/PhaseNavigation";
+import TopNav from "@/components/TopNav";
 import type { CardData } from '@/@typings';
 import data from "../../data/ode-islands.json";
 
@@ -107,7 +107,7 @@ export default function BeforeChapterPage() {
   if (cards.length === 0) {
     return (
       <div className="w-full h-screen bg-black flex items-center justify-center">
-        <PhaseNavigation currentPhase="before" />
+        <TopNav currentPhase="before" />
         <div className="text-white">Loading...</div>
       </div>
     );
@@ -115,7 +115,7 @@ export default function BeforeChapterPage() {
 
   return (
     <div className="w-full h-screen relative overflow-hidden">
-      <PhaseNavigation currentPhase="before" />
+      <TopNav currentPhase="before" />
       
       <div
         ref={containerRef}

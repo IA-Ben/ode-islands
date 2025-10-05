@@ -1,0 +1,222 @@
+IA (desktop → collapses on mobile)
+
+Left: brand/logo
+
+Centre (primary timeline tabs): Before | Event | After
+
+Right (global controls): Wallet (badge) • Progress (tier ring) • Quick QR • Demo • Admin (role-gated) • Profile/Sign out
+
+Key improvements
+
+Wallet is a prominent button with badge (always accessible).
+
+Progress shows tier ring + points tooltip.
+
+Quick QR is a floating action in the bar (faster scans).
+
+Clear role-gated Admin and compact Profile menu.
+
+Better spacing, contrast, and keyboard focus states; dark-mode friendly.
+
+React + Tailwind (drop-in component)
+import { useState } from "react";
+import { QrCode, Crown, WalletCards, Shield, LogOut, Gift, ScanLine, ChevronDown } from "lucide-react";
+
+type Tier = "Bronze" | "Silver" | "Gold";
+
+interface TopNavProps {
+  active: "before" | "event" | "after";
+  onChange: (v: "before" | "event" | "after") => void;
+  walletNewCount?: number;
+  points: number;            // e.g., 340
+  tier: Tier;                // e.g., "Silver"
+  onOpenWallet: () => void;
+  onOpenQR: () => void;
+  onToggleDemo?: () => void;
+  demoEnabled?: boolean;
+  isAdmin?: boolean;
+  onOpenAdmin?: () => void;
+  userName?: string;         // "Dev User"
+  onSignOut?: () => void;
+}
+
+export default function TopNav({
+  active, onChange,
+  walletNewCount = 0,
+  points, tier,
+  onOpenWallet, onOpenQR,
+  onToggleDemo, demoEnabled = false,
+  isAdmin = false, onOpenAdmin,
+  userName = "User",
+  onSignOut
+}: TopNavProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const tabBase =
+    "px-4 py-2 rounded-full text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400";
+  const tabActive =
+    "bg-fuchsia-600 text-white shadow";
+  const tabIdle =
+    "text-slate-700 hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800";
+
+  return (
+    <header className="w-full sticky top-0 z-40 bg-white/85 dark:bg-slate-900/85 backdrop-blur border-b border-slate-200 dark:border-slate-800">
+      <div className="max-w-6xl mx-auto px-3 sm:px-4">
+        <div className="h-14 flex items-center gap-2">
+          {/* LEFT: Brand */}
+          <div className="flex items-center gap-2 min-w-[110px]">
+            <div className="w-7 h-7 rounded-xl bg-gradient-to-br from-fuchsia-500 to-rose-500" />
+            <span className="hidden sm:block text-sm font-semibold tracking-wide">
+              Ode Islands
+            </span>
+          </div>
+
+          {/* CENTER: Timeline Tabs */}
+          <nav
+            aria-label="Experience timeline"
+            className="mx-auto flex items-center gap-1 bg-slate-100/70 dark:bg-slate-800/60 rounded-full p-1"
+          >
+            <button
+              onClick={() => onChange("before")}
+              className={`${tabBase} ${active === "before" ? tabActive : tabIdle}`}
+              aria-current={active === "before" ? "page" : undefined}
+            >
+              Before
+            </button>
+            <button
+              onClick={() => onChange("event")}
+              className={`${tabBase} ${active === "event" ? tabActive : tabIdle}`}
+              aria-current={active === "event" ? "page" : undefined}
+            >
+              Event
+            </button>
+            <button
+              onClick={() => onChange("after")}
+              className={`${tabBase} ${active === "after" ? tabActive : tabIdle}`}
+              aria-current={active === "after" ? "page" : undefined}
+            >
+              After
+            </button>
+          </nav>
+
+          {/* RIGHT: Global Controls */}
+          <div className="flex items-center gap-2 ml-auto">
+            {/* Wallet */}
+            <button
+              onClick={onOpenWallet}
+              className="relative inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:shadow-sm transition"
+              aria-label="Open Memory Wallet"
+            >
+              <WalletCards className="w-5 h-5" />
+              <span className="hidden sm:inline text-sm font-medium">Wallet</span>
+              {walletNewCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[11px] flex items-center justify-center"
+                  aria-label={`${walletNewCount} new items`}
+                >
+                  {walletNewCount}
+                </span>
+              )}
+            </button>
+
+            {/* Progress (tier ring + points) */}
+            <div
+              className="relative group flex items-center gap-2 px-3 py-2 rounded-xl bg-fuchsia-600 text-white shadow"
+              role="button"
+              aria-label="Progress and tier"
+              title={`${tier} • ${points} pts`}
+            >
+              <div className="grid place-items-center w-6 h-6 rounded-full bg-white/15">
+                <Crown className="w-4 h-4" />
+              </div>
+              <span className="hidden md:inline text-sm font-semibold">{tier}</span>
+              <span className="hidden md:inline text-xs opacity-90">• {points} pts</span>
+            </div>
+
+            {/* Quick QR */}
+            <button
+              onClick={onOpenQR}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600"
+            >
+              <ScanLine className="w-5 h-5" />
+              <span className="hidden sm:inline text-sm">Scan</span>
+            </button>
+
+            {/* Demo toggle (optional) */}
+            {onToggleDemo && (
+              <button
+                onClick={onToggleDemo}
+                className={`px-3 py-2 rounded-xl text-sm border transition ${
+                  demoEnabled
+                    ? "bg-emerald-600 text-white border-emerald-600"
+                    : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700"
+                }`}
+                aria-pressed={demoEnabled}
+              >
+                Demo
+              </button>
+            )}
+
+            {/* Admin (role-gated) */}
+            {isAdmin && (
+              <button
+                onClick={onOpenAdmin}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700"
+                aria-label="Open Admin"
+              >
+                <Shield className="w-5 h-5" />
+                <span className="hidden sm:inline text-sm">Admin</span>
+              </button>
+            )}
+
+            {/* Profile menu */}
+            <div className="relative">
+              <button
+                onClick={() => setMenuOpen(v => !v)}
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
+                aria-haspopup="menu"
+                aria-expanded={menuOpen}
+              >
+                <div className="w-6 h-6 rounded-full bg-slate-300 dark:bg-slate-600 grid place-items-center">
+                  <Gift className="w-4 h-4 opacity-80" />
+                </div>
+                <span className="hidden sm:inline text-sm">{userName}</span>
+                <ChevronDown className="w-4 h-4 opacity-70" />
+              </button>
+
+              {menuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden"
+                >
+                  <button
+                    onClick={onSignOut}
+                    role="menuitem"
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Sign out
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+Notes
+
+Accessible: ARIA on tabs/menu; visible focus rings.
+
+Responsive: tabs stay centred; right controls collapse labels at small widths.
+
+Role-gated Admin: only renders when isAdmin is true.
+
+Wallet animation: trigger your existing “fly-to-wallet” and badge increment.
+
+Dark mode ready.
+
+Want me to supply a minimal CSS-only version or wire it into your current layout component?

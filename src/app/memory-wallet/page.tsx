@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import MemoryWalletModern from '@/components/MemoryWalletModern';
-import PhaseNavigation from '@/components/PhaseNavigation';
+import TopNav from '@/components/TopNav';
 import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageLayout';
 import { Button } from '@/components/ui/button';
 
@@ -54,7 +54,7 @@ export default function MemoryWalletPage() {
 
   return (
     <>
-      <PhaseNavigation currentPhase="before" />
+      <TopNav currentPhase="before" />
       <div className="min-h-screen bg-black pt-20 px-4 pb-8">
         <div className="max-w-7xl mx-auto">
           <div className="mb-8">

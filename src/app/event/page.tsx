@@ -1,6 +1,6 @@
 import { Suspense } from 'react';
 import { headers } from 'next/headers';
-import PhaseNavigation from "@/components/PhaseNavigation";
+import TopNav from "@/components/TopNav";
 import EventPageClient from './EventPageClient';
 import EventLoadingSkeleton from './EventLoadingSkeleton';
 import { getSessionFromHeaders } from '../../../server/auth';
@@ -81,7 +81,7 @@ export default async function EventPage() {
   
   return (
     <div className="w-full min-h-screen bg-black relative">
-      <PhaseNavigation currentPhase="event" />
+      <TopNav currentPhase="event" />
       
       <Suspense fallback={<EventLoadingSkeleton />}>
         <EventPageClient initialData={initialData} />

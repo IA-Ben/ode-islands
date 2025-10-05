@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
-import PhaseNavigation from '@/components/PhaseNavigation';
+import TopNav from '@/components/TopNav';
 import { 
   getMemory, 
   shareMemory, 
@@ -81,7 +81,7 @@ export default function MemoryDetailPage() {
   if (authLoading || loading) {
     return (
       <>
-        <PhaseNavigation currentPhase="before" />
+        <TopNav currentPhase="before" />
         <div className="min-h-screen bg-black pt-20 px-4">
           <div className="max-w-4xl mx-auto">
             {/* Loading Skeleton */}
@@ -104,7 +104,7 @@ export default function MemoryDetailPage() {
   if (error) {
     return (
       <>
-        <PhaseNavigation currentPhase="before" />
+        <TopNav currentPhase="before" />
         <div className="min-h-screen bg-black pt-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-red-400 mb-4">{error}</p>
@@ -123,7 +123,7 @@ export default function MemoryDetailPage() {
   if (!memory) {
     return (
       <>
-        <PhaseNavigation currentPhase="before" />
+        <TopNav currentPhase="before" />
         <div className="min-h-screen bg-black pt-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-white/60 mb-4">Memory not found</p>
@@ -141,7 +141,7 @@ export default function MemoryDetailPage() {
 
   return (
     <>
-      <PhaseNavigation currentPhase="before" />
+      <TopNav currentPhase="before" />
       <div className="min-h-screen bg-black pt-20 px-4 pb-8">
         <div className="max-w-4xl mx-auto">
           {/* Back Button */}
