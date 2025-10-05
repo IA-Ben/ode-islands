@@ -17,6 +17,19 @@ interface User {
   profileImageUrl?: string;
 }
 
+interface Role {
+  id: string;
+  name: string;
+  description: string;
+  level: number;
+  permissions: string[];
+  isSystemRole: boolean;
+}
+
+interface UserRole extends Role {
+  assignedAt?: string;
+}
+
 export default function AdminUsersPage() {
   const { user: currentUser, isLoading: authLoading, isAdmin } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -25,6 +38,9 @@ export default function AdminUsersPage() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [csrfToken, setCsrfToken] = useState<string>('');
+  const [availableRoles, setAvailableRoles] = useState<Role[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
+  const [showRoleModal, setShowRoleModal] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !isAdmin) {
@@ -35,6 +51,7 @@ export default function AdminUsersPage() {
   useEffect(() => {
     if (isAdmin) {
       loadUsers();
+      loadRoles();
       // Fetch CSRF token on page load
       fetch('/api/csrf-token', { credentials: 'same-origin' })
         .then(res => res.json())
@@ -49,6 +66,12 @@ export default function AdminUsersPage() {
     }
   }, [isAdmin]);
 
+  useEffect(() => {
+    if (selectedUser) {
+      loadUserRoles(selectedUser.id);
+    }
+  }, [selectedUser]);
+
   const loadUsers = async () => {
     try {
       const response = await fetch('/api/admin/users');
@@ -60,6 +83,78 @@ export default function AdminUsersPage() {
       console.error('Failed to load users:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadRoles = async () => {
+    try {
+      const response = await fetch('/api/admin/roles');
+      if (response.ok) {
+        const rolesData = await response.json();
+        setAvailableRoles(rolesData);
+      }
+    } catch (error) {
+      console.error('Failed to load roles:', error);
+    }
+  };
+
+  const loadUserRoles = async (userId: string) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/roles`);
+      if (response.ok) {
+        const rolesData = await response.json();
+        setUserRoles(rolesData);
+      }
+    } catch (error) {
+      console.error('Failed to load user roles:', error);
+    }
+  };
+
+  const assignRole = async (userId: string, roleId: string) => {
+    setActionLoading(userId);
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/roles`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ roleId, reason: 'Assigned via Admin UI' }),
+      });
+
+      if (response.ok) {
+        await loadUserRoles(userId);
+        setShowRoleModal(false);
+      } else {
+        const error = await response.json();
+        alert(error.message || 'Failed to assign role');
+      }
+    } catch (error) {
+      console.error('Failed to assign role:', error);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const revokeRole = async (userId: string, roleId: string) => {
+    setActionLoading(userId);
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/roles/${roleId}`, {
+        method: 'DELETE',
+        headers: {
+          'X-CSRF-Token': csrfToken,
+        },
+        credentials: 'same-origin',
+      });
+
+      if (response.ok) {
+        await loadUserRoles(userId);
+      }
+    } catch (error) {
+      console.error('Failed to revoke role:', error);
+    } finally {
+      setActionLoading(null);
     }
   };
 
@@ -298,7 +393,34 @@ export default function AdminUsersPage() {
 
                     <div className="space-y-3">
                       <div>
-                        <label className="text-sm text-gray-400">Role</label>
+                        <label className="text-sm text-gray-400">Assigned Roles</label>
+                        <div className="mt-2 space-y-2">
+                          {userRoles.length > 0 ? (
+                            userRoles.map((role) => (
+                              <div key={role.id} className="flex items-center justify-between bg-gray-800 rounded px-3 py-2">
+                                <div>
+                                  <p className="text-white font-medium">{role.name.replace(/_/g, ' ').toUpperCase()}</p>
+                                  <p className="text-xs text-gray-400">{role.description}</p>
+                                </div>
+                                {selectedUser.id !== currentUser?.id && (
+                                  <button
+                                    onClick={() => revokeRole(selectedUser.id, role.id)}
+                                    disabled={actionLoading === selectedUser.id}
+                                    className="text-red-400 hover:text-red-300 text-xs"
+                                  >
+                                    Remove
+                                  </button>
+                                )}
+                              </div>
+                            ))
+                          ) : (
+                            <p className="text-gray-400 text-sm">No roles assigned</p>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <label className="text-sm text-gray-400">Legacy Role</label>
                         <p className="text-white">
                           {selectedUser.isAdmin ? 'Administrator' : 'User'}
                         </p>
@@ -334,6 +456,14 @@ export default function AdminUsersPage() {
                       {selectedUser.id !== currentUser?.id && (
                         <>
                           <Button
+                            onClick={() => setShowRoleModal(true)}
+                            disabled={actionLoading === selectedUser.id}
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                          >
+                            Assign Role
+                          </Button>
+                          
+                          <Button
                             onClick={() => toggleAdminRole(selectedUser.id, !selectedUser.isAdmin)}
                             disabled={actionLoading === selectedUser.id}
                             className={`w-full ${
@@ -345,8 +475,8 @@ export default function AdminUsersPage() {
                             {actionLoading === selectedUser.id 
                               ? 'Updating...' 
                               : selectedUser.isAdmin 
-                                ? 'Remove Admin' 
-                                : 'Make Admin'
+                                ? 'Remove Legacy Admin' 
+                                : 'Make Legacy Admin'
                             }
                           </Button>
                           
@@ -378,6 +508,56 @@ export default function AdminUsersPage() {
           </div>
         </div>
       </div>
+
+      {/* Role Assignment Modal */}
+      {showRoleModal && selectedUser && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50" onClick={() => setShowRoleModal(false)}>
+          <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-md w-full mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-xl font-bold text-white mb-4">Assign Role to {selectedUser.firstName}</h3>
+            
+            <div className="space-y-3 mb-6">
+              {availableRoles
+                .filter(role => !userRoles.find(ur => ur.id === role.id))
+                .map((role) => (
+                  <div
+                    key={role.id}
+                    className="bg-gray-800 border border-gray-700 rounded-lg p-4 hover:border-blue-500 cursor-pointer transition-colors"
+                    onClick={() => assignRole(selectedUser.id, role.id)}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-white font-medium">{role.name.replace(/_/g, ' ').toUpperCase()}</p>
+                        <p className="text-sm text-gray-400">{role.description}</p>
+                        <p className="text-xs text-gray-500 mt-1">Level: {role.level}</p>
+                      </div>
+                      <Button
+                        size="sm"
+                        className="bg-blue-600 hover:bg-blue-700"
+                        disabled={actionLoading === selectedUser.id}
+                      >
+                        {actionLoading === selectedUser.id ? 'Assigning...' : 'Assign'}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                
+              {availableRoles.filter(role => !userRoles.find(ur => ur.id === role.id)).length === 0 && (
+                <p className="text-center text-gray-400 py-4">
+                  All available roles have been assigned to this user
+                </p>
+              )}
+            </div>
+            
+            <Button
+              onClick={() => setShowRoleModal(false)}
+              variant="outline"
+              className="w-full border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

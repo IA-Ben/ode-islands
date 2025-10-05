@@ -189,13 +189,7 @@ export async function setupAuth(app: Express) {
   });
 }
 
-// TEMP: Authentication disabled for development
-// TODO: Re-enable before production deployment
 export const isAuthenticated: RequestHandler = async (req, res, next) => {
-  // TEMP: Bypass auth during development
-  return next();
-  
-  /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
   const user = req.user as any;
 
   if (!req.isAuthenticated() || !user.expires_at) {
@@ -222,5 +216,4 @@ export const isAuthenticated: RequestHandler = async (req, res, next) => {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
-  */
 };

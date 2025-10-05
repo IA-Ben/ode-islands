@@ -11,10 +11,17 @@ import { rollbackService } from './rollbackService';
 import { enterpriseConfig, getEnterpriseStatus } from './enterpriseConfig';
 import adminApiRoutes from './adminApi';
 
+// Import RBAC middleware
+import { requireRole, requirePermission, requireAnyPermission, combineMiddleware } from './rbac';
+import { seedRoles } from './seedRoles';
+
 // Re-export unified auth middleware
 export { isAuthenticated };
 
-// Database-backed admin middleware that works with Replit Auth
+// Export RBAC middleware for use in routes
+export { requireRole, requirePermission, requireAnyPermission, combineMiddleware };
+
+// Database-backed admin middleware with RBAC fallback
 export async function isAdmin(req: any, res: any, next: any) {
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Authentication required' });
@@ -28,7 +35,18 @@ export async function isAdmin(req: any, res: any, next: any) {
   }
 
   try {
-    // Check admin status from database
+    const userRoles = await storage.getUserRoles(userId);
+    
+    if (userRoles && userRoles.length > 0) {
+      const hasAdminRole = userRoles.some(role => 
+        role.level && role.level >= 8
+      );
+      
+      if (hasAdminRole) {
+        return next();
+      }
+    }
+    
     const dbUser = await storage.getUser(userId);
     
     if (!dbUser) {
@@ -48,7 +66,6 @@ export async function isAdmin(req: any, res: any, next: any) {
 
 // CSRF-protected admin middleware
 export function isAdminWithCSRF(req: any, res: any, next: any) {
-  // For mutating operations, check CSRF token
   const protectedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
   
   if (protectedMethods.includes(req.method)) {
@@ -58,15 +75,12 @@ export function isAdminWithCSRF(req: any, res: any, next: any) {
       return res.status(403).json({ error: 'CSRF token required for this operation' });
     }
     
-    // Validate CSRF token against session
-    // CRITICAL FIX: Use req.sessionID (Express standard) to match token generation
     const sessionId = req.sessionID;
     if (!sessionId || !validateCSRFToken(csrfToken, sessionId)) {
       return res.status(403).json({ error: 'Invalid or expired CSRF token' });
     }
   }
   
-  // Then check admin privileges
   return isAdmin(req, res, next);
 }
 
@@ -80,6 +94,13 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
 
   // Setup Replit Auth (this includes session management)
   await setupAuth(app);
+
+  // Seed system roles on server startup
+  try {
+    await seedRoles();
+  } catch (error) {
+    console.error('Failed to seed roles:', error);
+  }
 
   // Add JSON parsing middleware for enterprise APIs
   app.use('/api/enterprise', (req: any, res: any, next: any) => {
@@ -1010,6 +1031,58 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting user:", error);
       res.status(500).json({ message: "Failed to delete user" });
+    }
+  });
+
+  // Admin Role Management API Routes - RBAC system
+  app.get("/api/admin/roles", requirePermission('users:view'), async (req, res) => {
+    try {
+      const roles = await storage.getAllRoles();
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      res.status(500).json({ message: "Failed to fetch roles" });
+    }
+  });
+
+  app.get("/api/admin/users/:id/roles", requirePermission('users:view'), async (req, res) => {
+    try {
+      const userId = req.params.id;
+      const roles = await storage.getUserRoles(userId);
+      res.json(roles);
+    } catch (error) {
+      console.error("Error fetching user roles:", error);
+      res.status(500).json({ message: "Failed to fetch user roles" });
+    }
+  });
+
+  app.post("/api/admin/users/:id/roles", combineMiddleware(requirePermission('users:edit'), isAdminWithCSRF), async (req: any, res) => {
+    try {
+      const userId = req.params.id;
+      const { roleId, reason } = req.body;
+      const assignedBy = req.user!.claims.sub;
+      
+      await storage.assignRole(userId, roleId, assignedBy, reason);
+      res.json({ message: "Role assigned successfully" });
+    } catch (error) {
+      console.error("Error assigning role:", error);
+      res.status(500).json({ 
+        message: "Failed to assign role",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.delete("/api/admin/users/:id/roles/:roleId", combineMiddleware(requirePermission('users:edit'), isAdminWithCSRF), async (req: any, res) => {
+    try {
+      const { id: userId, roleId } = req.params;
+      const revokedBy = req.user!.claims.sub;
+      
+      await storage.revokeRole(userId, roleId, revokedBy);
+      res.json({ message: "Role revoked successfully" });
+    } catch (error) {
+      console.error("Error revoking role:", error);
+      res.status(500).json({ message: "Failed to revoke role" });
     }
   });
 

@@ -9,6 +9,8 @@ import {
   customButtons,
   userProgress,
   liveEvents,
+  adminRoles,
+  userRoles,
   type User,
   type UpsertUser,
   type MediaAsset,
@@ -18,6 +20,9 @@ import {
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, sql, and, desc, asc, or, gte, lte, inArray } from "drizzle-orm";
+
+type AdminRole = typeof adminRoles.$inferSelect;
+type UserRole = typeof userRoles.$inferSelect;
 
 // Interface for storage operations
 export interface IStorage {
@@ -31,6 +36,15 @@ export interface IStorage {
   getAllUsers(): Promise<User[]>;
   updateUser(id: string, updates: Partial<User>): Promise<User>;
   deleteUser(id: string): Promise<void>;
+  
+  // RBAC operations
+  getUserRoles(userId: string): Promise<AdminRole[]>;
+  getUserPermissions(userId: string): Promise<string[]>;
+  assignRole(userId: string, roleId: string, assignedBy: string, reason?: string): Promise<void>;
+  revokeRole(userId: string, roleId: string, revokedBy: string): Promise<void>;
+  hasPermission(userId: string, permission: string): Promise<boolean>;
+  getAllRoles(): Promise<AdminRole[]>;
+  getUsersWithRole(roleId: string): Promise<User[]>;
   
   // CMS-specific operations
   createContentBackup(filename: string, content: string, userId: string): Promise<ContentBackup>;
@@ -470,6 +484,137 @@ export class DatabaseStorage implements IStorage {
     });
     
     console.log(`Successfully deleted user ${id} and cleaned up FK references`);
+  }
+
+  // RBAC operations
+  async getUserRoles(userId: string): Promise<AdminRole[]> {
+    const roles = await db
+      .select({
+        id: adminRoles.id,
+        name: adminRoles.name,
+        description: adminRoles.description,
+        level: adminRoles.level,
+        permissions: adminRoles.permissions,
+        isSystemRole: adminRoles.isSystemRole,
+        maxUsers: adminRoles.maxUsers,
+        createdBy: adminRoles.createdBy,
+        createdAt: adminRoles.createdAt,
+        updatedAt: adminRoles.updatedAt,
+      })
+      .from(userRoles)
+      .innerJoin(adminRoles, eq(userRoles.roleId, adminRoles.id))
+      .where(
+        and(
+          eq(userRoles.userId, userId),
+          eq(userRoles.isActive, true)
+        )
+      );
+    
+    return roles;
+  }
+
+  async getUserPermissions(userId: string): Promise<string[]> {
+    const roles = await this.getUserRoles(userId);
+    
+    const allPermissions = new Set<string>();
+    for (const role of roles) {
+      const permissions = role.permissions as string[];
+      permissions.forEach(perm => allPermissions.add(perm));
+    }
+    
+    return Array.from(allPermissions);
+  }
+
+  async assignRole(userId: string, roleId: string, assignedBy: string, reason?: string): Promise<void> {
+    const [existingAssignment] = await db
+      .select()
+      .from(userRoles)
+      .where(
+        and(
+          eq(userRoles.userId, userId),
+          eq(userRoles.roleId, roleId),
+          eq(userRoles.isActive, true)
+        )
+      );
+
+    if (existingAssignment) {
+      throw new Error('User already has this role');
+    }
+
+    await db.insert(userRoles).values({
+      userId,
+      roleId,
+      assignedBy,
+      assignedReason: reason,
+      isActive: true,
+    });
+  }
+
+  async revokeRole(userId: string, roleId: string, revokedBy: string): Promise<void> {
+    await db
+      .update(userRoles)
+      .set({
+        isActive: false,
+        revokedAt: new Date(),
+        revokedBy,
+      })
+      .where(
+        and(
+          eq(userRoles.userId, userId),
+          eq(userRoles.roleId, roleId),
+          eq(userRoles.isActive, true)
+        )
+      );
+  }
+
+  async hasPermission(userId: string, permission: string): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    
+    if (permissions.includes('system:admin')) {
+      return true;
+    }
+    
+    for (const perm of permissions) {
+      if (perm === permission) return true;
+      
+      if (perm.endsWith('*')) {
+        const prefix = perm.slice(0, -1);
+        if (permission.startsWith(prefix)) return true;
+      }
+    }
+    
+    return false;
+  }
+
+  async getAllRoles(): Promise<AdminRole[]> {
+    return await db.select().from(adminRoles).orderBy(desc(adminRoles.level));
+  }
+
+  async getUsersWithRole(roleId: string): Promise<User[]> {
+    const usersWithRole = await db
+      .select({
+        id: users.id,
+        email: users.email,
+        firstName: users.firstName,
+        lastName: users.lastName,
+        profileImageUrl: users.profileImageUrl,
+        passwordHash: users.passwordHash,
+        isAdmin: users.isAdmin,
+        emailVerified: users.emailVerified,
+        lastLoginAt: users.lastLoginAt,
+        createdAt: users.createdAt,
+        updatedAt: users.updatedAt,
+      })
+      .from(userRoles)
+      .innerJoin(users, eq(userRoles.userId, users.id))
+      .where(
+        and(
+          eq(userRoles.roleId, roleId),
+          eq(userRoles.isActive, true)
+        )
+      );
+    
+    return usersWithRole;
   }
 
   // CMS-specific operations
