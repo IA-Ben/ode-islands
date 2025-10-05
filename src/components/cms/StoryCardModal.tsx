@@ -34,7 +34,9 @@ export default function StoryCardModal({
 }: StoryCardModalProps) {
   const [editingMode, setEditingMode] = useState<'traditional' | 'visual'>('visual');
   const [visualLayout, setVisualLayout] = useState<VisualCardLayout>(
-    initialData?.visualLayout || createEmptyLayout()
+    initialData?.visualLayout || 
+    initialData?.content?.visualLayout || 
+    createEmptyLayout()
   );
   const [traditionalContent, setTraditionalContent] = useState(initialData?.content || {});
   const [order, setOrder] = useState(initialData?.order || 0);
@@ -46,6 +48,9 @@ export default function StoryCardModal({
     if (initialData) {
       if (initialData.visualLayout) {
         setVisualLayout(initialData.visualLayout);
+        setEditingMode('visual');
+      } else if (initialData.content?.visualLayout) {
+        setVisualLayout(initialData.content.visualLayout);
         setEditingMode('visual');
       }
       setTraditionalContent(initialData.content || {});
@@ -61,14 +66,14 @@ export default function StoryCardModal({
 
     try {
       const url = editMode && cardId 
-        ? `/api/cms/story-cards/${cardId}` 
-        : '/api/cms/story-cards';
+        ? `/api/story-cards/${cardId}` 
+        : '/api/story-cards';
       const method = editMode ? 'PUT' : 'POST';
 
       const data = editingMode === 'visual' 
         ? {
             chapterId,
-            visualLayout,
+            content: { visualLayout },
             order,
             hasAR,
           }

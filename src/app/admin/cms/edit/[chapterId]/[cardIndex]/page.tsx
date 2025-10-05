@@ -1,3 +1,11 @@
+/**
+ * DEPRECATED: This file-based card editor is deprecated.
+ * Use the database-driven StoryCardModal in the main CMS instead.
+ * This file is kept for reference only.
+ * 
+ * Migration path: /admin/cms (use the "+ Add Card" and "Edit Card" buttons)
+ */
+
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
@@ -39,11 +47,13 @@ export default function CardEditorPage() {
     objectId: string;
   } | null>(null);
   const [csrfToken, setCsrfToken] = useState<string>('');
+  const [redirectCountdown, setRedirectCountdown] = useState<number>(10);
   
   const isNewCard = cardIndex === 'new';
   const cardIndexNum = isNewCard ? -1 : parseInt(cardIndex);
 
   useEffect(() => {
+    console.warn('DEPRECATION WARNING: This file-based editor is deprecated. Use the database-driven CMS at /admin/cms instead.');
     checkAuth();
   }, []);
 
@@ -53,6 +63,17 @@ export default function CardEditorPage() {
       fetchChapters();
     }
   }, [user]);
+
+  useEffect(() => {
+    if (user?.isAdmin && redirectCountdown > 0) {
+      const timer = setTimeout(() => {
+        setRedirectCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (user?.isAdmin && redirectCountdown === 0) {
+      router.push('/admin/cms');
+    }
+  }, [user, redirectCountdown, router]);
 
   useEffect(() => {
     if (chapters[chapterId]) {
@@ -349,6 +370,39 @@ export default function CardEditorPage() {
   return (
     <div className="scroll-container bg-black text-white">
       <div className="container mx-auto px-4 py-8">
+        {/* Deprecation Banner */}
+        <div className="mb-6 bg-gradient-to-r from-yellow-600 to-orange-600 border-2 border-yellow-500 rounded-lg p-6 shadow-lg">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 text-4xl">⚠️</div>
+            <div className="flex-1">
+              <h2 className="text-2xl font-bold text-white mb-2">
+                This Editor is Deprecated
+              </h2>
+              <p className="text-white text-lg mb-4">
+                This file-based editor is no longer maintained. Please use the new database-driven editor in the main CMS for better performance, reliability, and features.
+              </p>
+              <div className="flex flex-wrap gap-3 items-center">
+                <Button 
+                  onClick={() => router.push('/admin/cms')}
+                  className="bg-white text-orange-600 hover:bg-gray-100 font-semibold px-6 py-2"
+                >
+                  Go to New CMS Editor →
+                </Button>
+                <Button 
+                  onClick={() => setRedirectCountdown(10)}
+                  variant="outline"
+                  className="border-white text-white hover:bg-white/10"
+                >
+                  Reset Timer
+                </Button>
+                <span className="text-white font-medium">
+                  Auto-redirecting in {redirectCountdown} seconds...
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Header */}
         <div className="mb-6 flex justify-between items-center">
           <div>

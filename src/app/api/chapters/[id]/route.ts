@@ -4,10 +4,11 @@ import { storage } from '../../../../../server/storage';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const chapter = await storage.getChapter(params.id);
+    const { id } = await params;
+    const chapter = await storage.getChapter(id);
     if (!chapter) {
       return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
     }
@@ -42,16 +43,17 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getSessionFromHeaders(request);
     if (!session.isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
     const data = await request.json();
-    const updated = await storage.updateChapter(params.id, data);
+    const updated = await storage.updateChapter(id, data);
     
     return NextResponse.json(updated);
   } catch (error) {
@@ -63,22 +65,23 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const session = await getSessionFromHeaders(request);
     if (!session.isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     
-    const children = await storage.getChapterChildren(params.id);
+    const children = await storage.getChapterChildren(id);
     if (children.length > 0) {
       return NextResponse.json({ 
         error: `Cannot delete chapter with ${children.length} child chapter(s). Please delete or move the children first.` 
       }, { status: 400 });
     }
     
-    await storage.deleteChapter(params.id);
+    await storage.deleteChapter(id);
     
     return NextResponse.json({ success: true });
   } catch (error) {

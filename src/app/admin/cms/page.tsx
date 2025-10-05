@@ -11,6 +11,7 @@ import AddChapterModal from '@/components/cms/AddChapterModal';
 import { ChapterReorderList } from '@/components/cms/ChapterReorderList';
 import AdvancedSearch from '@/components/cms/AdvancedSearch';
 import { MediaLibrary } from '@/components/cms/MediaLibrary';
+import StoryCardModal from '@/components/cms/StoryCardModal';
 
 type ChapterData = {
   [key: string]: CardData[];
@@ -30,6 +31,7 @@ export default function CMSPage() {
   const [loginError, setLoginError] = useState<string>('');
   const [animateIn, setAnimateIn] = useState(false);
   const [chapters, setChapters] = useState<any[]>([]);
+  const [chapterCards, setChapterCards] = useState<Record<string, any[]>>({});
   const [csrfToken, setCsrfToken] = useState('');
   const [selectedPhase, setSelectedPhase] = useState('before');
   const [selectedChapter, setSelectedChapter] = useState('chapter-1');
@@ -39,6 +41,9 @@ export default function CMSPage() {
   const [chapterSubChapters, setChapterSubChapters] = useState<Record<string, any[]>>({});
   const [loadingSubChapters, setLoadingSubChapters] = useState(false);
   const [editingChapter, setEditingChapter] = useState<any>(null);
+  const [showStoryCardModal, setShowStoryCardModal] = useState(false);
+  const [editingCard, setEditingCard] = useState<any>(null);
+  const [editingCardChapterId, setEditingCardChapterId] = useState<string>('');
 
   console.log('CMS Page component loaded - debugging active');
 
@@ -106,9 +111,41 @@ export default function CMSPage() {
         const data = await response.json();
         setChapters(data);
         console.log('Chapters loaded successfully:', data.length, 'chapters');
+        
+        const cardsData: Record<string, any[]> = {};
+        for (const chapter of data) {
+          try {
+            const chapterResponse = await fetch(`/api/chapters/${chapter.id}`);
+            if (chapterResponse.ok) {
+              const chapterDetail = await chapterResponse.json();
+              cardsData[chapter.id] = chapterDetail.storyCards || [];
+            }
+          } catch (error) {
+            console.error(`Failed to fetch cards for chapter ${chapter.id}:`, error);
+            cardsData[chapter.id] = [];
+          }
+        }
+        setChapterCards(cardsData);
+        console.log('Chapter cards loaded successfully');
       }
     } catch (error) {
       console.error('Failed to fetch chapters:', error);
+    }
+  };
+
+  const fetchChapterCards = async (chapterId: string) => {
+    try {
+      const response = await fetch(`/api/chapters/${chapterId}`);
+      if (response.ok) {
+        const chapterDetail = await response.json();
+        setChapterCards(prev => ({
+          ...prev,
+          [chapterId]: chapterDetail.storyCards || []
+        }));
+        console.log(`Cards for chapter ${chapterId} refreshed successfully`);
+      }
+    } catch (error) {
+      console.error(`Failed to fetch cards for chapter ${chapterId}:`, error);
     }
   };
 
@@ -297,13 +334,6 @@ export default function CMSPage() {
     );
   }
 
-  // Import JSON data for card content
-  const jsonChapters = odeIslandsData as Record<string, any>;
-  
-  // Filter chapters for navigation
-  const chapterKeys = Object.keys(jsonChapters).filter(id => /^chapter-\d+$/.test(id)).sort();
-  const currentChapterCards = jsonChapters[selectedChapter] || [];
-  
   // Get API chapter data for metadata (including cardCount)
   const getApiChapterData = (chapterKey: string) => {
     const chapterOrder = parseInt(chapterKey.replace('chapter-', ''));
@@ -311,6 +341,15 @@ export default function CMSPage() {
   };
   
   const currentApiChapter = getApiChapterData(selectedChapter);
+  
+  // Get cards from database state instead of JSON
+  const currentChapterCards = currentApiChapter ? (chapterCards[currentApiChapter.id] || []) : [];
+  
+  // Filter chapters for navigation (use API chapters instead of JSON)
+  const chapterKeys = chapters
+    .filter((ch: any) => ch.order)
+    .sort((a: any, b: any) => a.order - b.order)
+    .map((ch: any) => `chapter-${ch.order}`);
 
   const getPhaseTitle = (phase: string) => {
     switch (phase) {
@@ -657,7 +696,11 @@ export default function CMSPage() {
                         (chapterSubChapters[currentApiChapter?.id || ''] ? 'Hide Sub-Chapters' : 'Show Sub-Chapters')}
                     </Button>
                     <Button 
-                      onClick={() => window.location.href = `/admin/cms/edit/${selectedChapter}/new`}
+                      onClick={() => {
+                        setEditingCard(null);
+                        setEditingCardChapterId(currentApiChapter?.id || '');
+                        setShowStoryCardModal(true);
+                      }}
                       className="bg-blue-600 hover:bg-blue-700 text-white"
                     >
                       + Add Card
@@ -667,61 +710,79 @@ export default function CMSPage() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {currentChapterCards.map((card: any, index: number) => (
-                    <div 
-                      key={index} 
-                      className="group bg-white border border-gray-200 rounded-lg p-6 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-300"
-                      onClick={() => window.location.href = `/admin/cms/edit/${selectedChapter}/${index}`}
-                    >
-                      <div className="flex items-center justify-between mb-4">
-                        <div className="text-sm text-gray-500 font-medium">Card {index + 1}</div>
-                        <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
+                  {currentChapterCards.map((card: any, index: number) => {
+                    const cardContent = card.content || {};
+                    const visualLayout = cardContent.visualLayout;
+                    const textContent = visualLayout?.text || cardContent.text || {};
+                    const videoContent = visualLayout?.video || cardContent.video;
+                    const imageContent = visualLayout?.image || cardContent.image;
+                    
+                    return (
+                      <div 
+                        key={card.id || index} 
+                        className="group bg-white border border-gray-200 rounded-lg p-6 cursor-pointer hover:border-blue-300 hover:shadow-md transition-all duration-300"
+                        onClick={() => {
+                          setEditingCard({
+                            cardId: card.id,
+                            content: card.content,
+                            visualLayout: card.content?.visualLayout,
+                            order: card.order,
+                            hasAR: card.hasAR,
+                          });
+                          setEditingCardChapterId(currentApiChapter?.id || '');
+                          setShowStoryCardModal(true);
+                        }}
+                      >
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="text-sm text-gray-500 font-medium">Card {index + 1}</div>
+                          <svg className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </div>
+                        
+                        {textContent.title && (
+                          <div className="font-bold text-lg mb-2 text-gray-900 group-hover:text-blue-900 transition-colors">
+                            {textContent.title}
+                          </div>
+                        )}
+                        
+                        {textContent.subtitle && (
+                          <div className="font-medium mb-3 text-gray-700">
+                            {textContent.subtitle}
+                          </div>
+                        )}
+                        
+                        {textContent.description && (
+                          <div className="text-sm text-gray-600 mb-4 line-clamp-3">
+                            {textContent.description}
+                          </div>
+                        )}
+                        
+                        <div className="flex flex-wrap gap-2">
+                          {videoContent?.url && (
+                            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              📺 Video
+                            </div>
+                          )}
+                          {imageContent?.url && (
+                            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              🖼️ Image
+                            </div>
+                          )}
+                          {card.customButtons && card.customButtons.length > 0 && (
+                            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              🎯 {card.customButtons.length} Button{card.customButtons.length > 1 ? 's' : ''}
+                            </div>
+                          )}
+                          {card.hasAR && (
+                            <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
+                              🌐 AR
+                            </div>
+                          )}
+                        </div>
                       </div>
-                      
-                      {card.text?.title && (
-                        <div className="font-bold text-lg mb-2 text-gray-900 group-hover:text-blue-900 transition-colors">
-                          {card.text.title}
-                        </div>
-                      )}
-                      
-                      {card.text?.subtitle && (
-                        <div className="font-medium mb-3 text-gray-700">
-                          {card.text.subtitle}
-                        </div>
-                      )}
-                      
-                      {card.text?.description && (
-                        <div className="text-sm text-gray-600 mb-4 line-clamp-3">
-                          {card.text.description}
-                        </div>
-                      )}
-                      
-                      <div className="flex flex-wrap gap-2">
-                        {card.video?.url && (
-                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            📺 Video
-                          </div>
-                        )}
-                        {card.image?.url && (
-                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                            🖼️ Image
-                          </div>
-                        )}
-                        {card.customButtons && card.customButtons.length > 0 && (
-                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            🎯 {card.customButtons.length} Button{card.customButtons.length > 1 ? 's' : ''}
-                          </div>
-                        )}
-                        {card.ar?.locations && card.ar.locations.length > 0 && (
-                          <div className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800">
-                            🌐 AR
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 
                 {/* Sub-Chapters Section */}
@@ -837,6 +898,33 @@ export default function CMSPage() {
           parentId: editingChapter.parentId,
           imageMediaId: editingChapter.imageMediaId,
           videoMediaId: editingChapter.videoMediaId,
+        } : undefined}
+      />
+
+      <StoryCardModal
+        isOpen={showStoryCardModal}
+        onClose={() => {
+          setShowStoryCardModal(false);
+          setEditingCard(null);
+          setEditingCardChapterId('');
+        }}
+        onCardSaved={() => {
+          if (editingCardChapterId) {
+            fetchChapterCards(editingCardChapterId);
+          }
+          setShowStoryCardModal(false);
+          setEditingCard(null);
+          setEditingCardChapterId('');
+        }}
+        csrfToken={csrfToken}
+        editMode={!!editingCard}
+        cardId={editingCard?.cardId}
+        chapterId={editingCardChapterId}
+        initialData={editingCard ? {
+          content: editingCard.content,
+          visualLayout: editingCard.visualLayout,
+          order: editingCard.order,
+          hasAR: editingCard.hasAR,
         } : undefined}
       />
     </div>
