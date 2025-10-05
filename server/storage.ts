@@ -380,6 +380,99 @@ export class DatabaseStorage implements IStorage {
       .limit(limit);
   }
 
+  // Versioning operations
+  async createContentVersion(
+    contentType: string,
+    contentId: string,
+    content: string,
+    userId: string,
+    changeDescription?: string
+  ): Promise<ContentBackup> {
+    // Get the latest version number for this content
+    const latestVersion = await this.getLatestVersionNumber(contentType, contentId);
+    const nextVersion = (latestVersion || 0) + 1;
+
+    const [version] = await db
+      .insert(contentBackups)
+      .values({
+        filename: `${contentType}-${contentId}-v${nextVersion}`,
+        content,
+        contentType,
+        contentId,
+        versionNumber: nextVersion,
+        changeDescription,
+        createdBy: userId,
+      })
+      .returning();
+    return version;
+  }
+
+  async getLatestVersionNumber(contentType: string, contentId: string): Promise<number | null> {
+    const [result] = await db
+      .select({ maxVersion: sql<number>`MAX(${contentBackups.versionNumber})` })
+      .from(contentBackups)
+      .where(
+        sql`${contentBackups.contentType} = ${contentType} AND ${contentBackups.contentId} = ${contentId}`
+      );
+    return result?.maxVersion || null;
+  }
+
+  async getContentHistory(contentType: string, contentId: string): Promise<ContentBackup[]> {
+    return await db
+      .select()
+      .from(contentBackups)
+      .where(
+        sql`${contentBackups.contentType} = ${contentType} AND ${contentBackups.contentId} = ${contentId}`
+      )
+      .orderBy(desc(contentBackups.versionNumber));
+  }
+
+  async getContentVersion(contentType: string, contentId: string, versionNumber: number): Promise<ContentBackup | undefined> {
+    const [version] = await db
+      .select()
+      .from(contentBackups)
+      .where(
+        sql`${contentBackups.contentType} = ${contentType} AND ${contentBackups.contentId} = ${contentId} AND ${contentBackups.versionNumber} = ${versionNumber}`
+      );
+    return version;
+  }
+
+  async compareVersions(
+    contentType: string,
+    contentId: string,
+    version1: number,
+    version2: number
+  ): Promise<{ version1: ContentBackup | undefined; version2: ContentBackup | undefined }> {
+    const v1 = await this.getContentVersion(contentType, contentId, version1);
+    const v2 = await this.getContentVersion(contentType, contentId, version2);
+    return { version1: v1, version2: v2 };
+  }
+
+  async restoreVersion(
+    contentType: string,
+    contentId: string,
+    versionNumber: number,
+    userId: string,
+    restoreDescription?: string
+  ): Promise<ContentBackup> {
+    // Get the version to restore
+    const versionToRestore = await this.getContentVersion(contentType, contentId, versionNumber);
+    
+    if (!versionToRestore) {
+      throw new Error(`Version ${versionNumber} not found for ${contentType} ${contentId}`);
+    }
+
+    // Create a new version with the restored content
+    const description = restoreDescription || `Restored from version ${versionNumber}`;
+    return await this.createContentVersion(
+      contentType,
+      contentId,
+      versionToRestore.content,
+      userId,
+      description
+    );
+  }
+
   async createMediaAsset(asset: Omit<typeof mediaAssets.$inferInsert, 'id' | 'createdAt'>): Promise<MediaAsset> {
     const [newAsset] = await db
       .insert(mediaAssets)
