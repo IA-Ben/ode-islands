@@ -1,0 +1,179 @@
+Event section — concise design spec (revised)
+IA & Navigation
+
+Top bar (global): Before | Event | After • Wallet (badge) • Tier/Points • Scan • Admin • Profile.
+
+Event home (top-level view): a hub screen with:
+
+Quick Actions: Scan, Map, Schedule, Offers.
+
+Now & Next: upcoming beats (from schedule).
+
+Featured Cards (dynamic): 1–3 cards surfaced by rules (time, location, tier, popularity).
+
+All Lanes: entry chips to Info / Interact / Rewards.
+
+Swipe lanes inside Event:
+
+Info — Schedule, Map, Venue, Safety.
+
+Interact — Live AR, QR Scan, Wearables, AI Create, User Media.
+
+Rewards — Points/Superfan, Discounts, Merch, F&B.
+
+Card rail: vertical scroll; cards snap; pull-to-refresh.
+
+Global HUD: Wallet badge (+pulse on earn), Points ring, Demo toggle (if enabled), Quick QR button.
+
+Visual language
+
+Matches Ode Islands story style (full-bleed art, soft glows, rounded corners, subtle grid, micro-motion, ambient audio).
+
+Day/Night themes; high contrast in venue lighting.
+
+Card catalogue (CMS-configurable)
+
+(Memory Wallet card removed; Wallet is global)
+Each card has title, subtitle, art, size (S/M/L), actions, time window, visibility rules, analytics tag.
+
+Live AR Card
+
+Params: mode(markerless|marker), sceneId, unlockRule(time|qr|tier), awardMemory(templateId?)
+
+Flow: Launch AR → Capture → Award Memory (optional) → Share.
+
+QR Scan Card
+
+Params: scanTypes([stamp,pickup,unlock]), successState, reward(points|memory.templateId)
+
+Flow: Open camera → Validate → Award.
+
+Venue Info Card
+
+Params: sections([houseRules,accessibility,contacts]) • Quick actions.
+
+Schedule Card
+
+Params: timeline, nowNext, notify(bool).
+
+Map/Wayfinding Card
+
+Params: zones, pins, youAreHere(mock).
+
+Merch Card
+
+Params: catalogue, bundles, discountRule(tier), onPurchase: awardMemory(templateId?).
+
+Flow: Add → Checkout (mock) → Pickup QR → Award (optional).
+
+F&B Ordering Card
+
+Params: menu, collectionPoint, prepTime, discountRule, onOrderComplete: awardMemory(templateId?).
+
+Discounts/Superfan Card
+
+Params: tiers, benefits, progressRules.
+
+UI: Progress ring, next-tier tasks.
+
+Wearables Card
+
+Params: pairingType(mock), scenes, status, onPair: awardMemory(templateId?).
+
+User Photos/Video Card
+
+Params: templates, stickers, hashtags, consentFlow, onShare: awardMemory(templateId?).
+
+AI Creation Card
+
+Params: captionStyles, promptSeeds, clipLength, onPublish: awardMemory(templateId?).
+
+Safety/Help Card
+
+Params: contacts, locationHint, reportForm.
+
+Memory earning (from Event cards)
+
+Any card can emit a Memory via awardMemory(templateId) on defined triggers (open/complete/share/order/pair/capture/score≥N).
+
+Triggers also available via QR, Location (geo-fence), and Action rules (CMS “Reward Rules”).
+
+On award: fly-to-Wallet animation, toast “Saved to Wallet • +{points} pts”, Wallet badge increments.
+
+Dynamic Featured cards (Event home)
+
+Selection rules (CMS): time window, user tier, proximity/zone, popularity (click-through), manual pin.
+
+Layouts: single hero (L) or 1–3 carousel (M).
+
+Failover: if no match, show Map + Schedule as defaults.
+
+Points & Superfan (MVP)
+
+Events: AR +50, QR +20, F&B +10, Merch +20, Media share +10, AI +10.
+
+Tiers: Bronze 0–199, Silver 200–499, Gold 500+.
+
+Discounts: tier → % off in Merch/F&B; tier-gated AR unlocks.
+
+Progress UI: ring + numeric; “2 actions to reach Silver”.
+
+Memory Wallet (global destination)
+
+Access: top bar Wallet.
+
+Schema (unchanged core): id,title,image,type,earnedAt,source(cardId),metadata,json,shareUrl.
+
+Acquisition: AR, QR, order, media/AI export, wearables pair, location triggers.
+
+States: Not owned (grey), Owned (vivid), Newly earned (glow).
+
+CMS controls (essentials)
+
+Card library: copy, art, size, order, lane, visibility, time windows.
+
+Reward Rules: QR/Location/Action → points + memory.templateId.
+
+Memory Templates: art/media/metadata, points, rarity, NFT flags (custodial lazy-mint), OG share presets.
+
+Featured rules: define priority, conditions, layout.
+
+Content: schedule, pins, menus, catalogues, AR scenes, templates, stickers.
+
+Demo mode: force unlocks, mock payments/pairing, seeded orders/media.
+
+Tech notes (MVP)
+
+Camera: Web-based; QR via JS lib; AR via lightweight WebXR/stub.
+
+Checkout: mock “Simulate Payment/Order”.
+
+Offline: cache CMS JSON/assets; queue actions; replay on reconnect.
+
+Analytics: event, cardId, payload; counters per card in CMS.
+
+Safety & privacy
+
+First share: consent + venue policy.
+
+Opt-out for analytics.
+
+Location only if needed (off by default).
+
+Acceptance criteria (updated)
+
+Event home renders with Quick Actions + dynamic Featured.
+
+No Memory Wallet card anywhere in Event.
+
+Cards re-order from CMS; Featured surfaces correctly by rules.
+
+Any configured card can award a Memory and points; Wallet badge updates instantly.
+
+AR/QR/Orders/Media flows work (mock where noted).
+
+Tier upgrades change Discounts/AR unlocks.
+
+Wallet (global) shows earned items with metadata and share.
+
+Demo mode works end-to-end.
