@@ -1,0 +1,46 @@
+ gcloud run deploy video-transcoder \
+  --image "gcr.io/ode-islands/video-transcoder" \
+  --platform managed \
+  --region us-central1 \
+  --cpu 4 \
+  --memory 16Gi \
+  --timeout 900 \
+  --max-instances 10 \
+  --service-account "video-transcoder-sa@ode-islands.iam.gserviceaccount.com" \
+  --set-env-vars "GCS_INPUT_BUCKET=ode-islands-video-input,GCS_OUTPUT_BUCKET=ode-islands-video-cdn" \
+  --allow-unauthenticated \
+  --project="ode-islands"
+Deploying container to Cloud Run service [video-transcoder] in project [ode-islands] region [us-central1]
+X Deploying...                                                                 
+  - Creating Revision...                                                       
+  . Routing traffic...                                                         
+  ✓ Setting IAM Policy...                                                      
+Deployment failed                                                              
+ERROR: (gcloud.run.deploy) Revision 'video-transcoder-00004-z84' is not ready and cannot serve traffic. The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+Logs URL: https://console.cloud.google.com/logs/viewer?project=ode-islands&resource=cloud_run_revision/service_name/video-transcoder/revision_name/video-transcoder-00004-z84&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22video-transcoder%22%0Aresource.labels.revision_name%3D%22video-transcoder-00004-z84%22 
+For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+benjamindawson@Benjamins-MacBook-Pro video-pipeline % gcloud logging read "resource.type=cloud_run_revision AND resource.labels.revision_name=video-transcoder-00004-z84 AND (severity>=WARNING OR textPayload:*)" --limit 100 --project=ode-islands --format="table(timestamp,textPayload)"
+
+TIMESTAMP                       TEXT_PAYLOAD
+2025-10-05T01:24:09.665954Z
+2025-10-05T01:24:09.651855Z     Default STARTUP TCP probe failed 1 time consecutively for container "video-transcoder-1" on port 8080. The instance was not started.
+                                Connection failed with status CANCELLED.
+2025-10-05T01:24:09.571202074Z  Container called exit(1).
+2025-10-05T01:24:08.614844Z     /bin/sh: Invalid argument
+2025-10-05T01:24:08.614746Z     [NULL @ 0x5615c586a880] Unable to find a suitable output format for '/bin/sh'
+2025-10-05T01:24:08.614036Z     Trailing option(s) found in the command: may be ignored.
+2025-10-05T01:24:08.613993Z       libpostproc    55.  9.100 / 55.  9.100
+2025-10-05T01:24:08.613987Z       libswresample   3.  9.100 /  3.  9.100
+2025-10-05T01:24:08.613958Z       libswscale      5.  9.100 /  5.  9.100
+2025-10-05T01:24:08.613946Z       libavresample   4.  0.  0 /  4.  0.  0
+2025-10-05T01:24:08.613943Z       libavfilter     7.110.100 /  7.110.100
+2025-10-05T01:24:08.613928Z       libavdevice    58. 13.100 / 58. 13.100
+2025-10-05T01:24:08.613925Z       libavformat    58. 76.100 / 58. 76.100
+2025-10-05T01:24:08.613921Z       libavcodec     58.134.100 / 58.134.100
+2025-10-05T01:24:08.613912Z       libavutil      56. 70.100 / 56. 70.100
+2025-10-05T01:24:08.580617Z       configuration: --disable-debug --disable-doc --disable-ffplay --enable-avresample --enable-fontconfig --enable-gpl --enable-libaom --enable-libaribb24 --enable-libass --enable-libbluray --enable-libfdk_aac --enable-libfreetype --enable-libkvazaar --enable-libmp3lame --enable-libopencore-amrnb --enable-libopencore-amrwb --enable-libopenjpeg --enable-libopus --enable-libsrt --enable-libtheora --enable-libvidstab --enable-libvmaf --enable-libvorbis --enable-libvpx --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxvid --enable-libzimg --enable-libzmq --enable-nonfree --enable-openssl --enable-postproc --enable-shared --enable-small --enable-version3 --extra-cflags=-I/opt/ffmpeg/include --extra-ldflags=-L/opt/ffmpeg/lib --extra-libs=-ldl --extra-libs=-lpthread --prefix=/opt/ffmpeg
+2025-10-05T01:24:08.580610Z       built with gcc 9 (Ubuntu 9.4.0-1ubuntu1~20.04.2)
+2025-10-05T01:24:08.580587Z     ffmpeg version 4.4.5 Copyright (c) 2000-2024 the FFmpeg developers
+2025-10-05T01:24:07.151941Z     Starting new instance. Reason: DEPLOYMENT_ROLLOUT - Instance started due to traffic shifting between revisions due to deployment, traffic split adjustment, or deployment health check.
+benjamindawson@Benjamins-MacBook-Pro video-pipeline % 
