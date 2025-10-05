@@ -7,11 +7,12 @@ import {
   storyCards,
   customButtons,
   userProgress,
+  liveEvents,
   type User,
   type UpsertUser,
 } from "../shared/schema";
 import { db } from "./db";
-import { eq, sql, and, desc, asc } from "drizzle-orm";
+import { eq, sql, and, desc, asc, or, gte, lte, inArray } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -74,6 +75,57 @@ export interface IStorage {
   trackProgress(userId: string, chapterId: string, cardIndex: number): Promise<void>;
   getUserChapterProgress(userId: string, chapterId: string): Promise<UserProgress[]>;
   getSubChapterProgress(userId: string, subChapterId: string): Promise<number>;
+  
+  // Search operations
+  searchContent(params: SearchParams): Promise<SearchResults>;
+  updateSearchVector(contentType: 'chapter' | 'card', id: string, text: string): Promise<void>;
+  searchSuggestions(prefix: string, limit?: number): Promise<string[]>;
+}
+
+// Search interfaces
+export interface SearchParams {
+  query?: string;
+  eventId?: string;
+  hasAR?: boolean;
+  minDepth?: number;
+  maxDepth?: number;
+  createdFrom?: Date;
+  createdTo?: Date;
+  updatedFrom?: Date;
+  updatedTo?: Date;
+  parentId?: string;
+  contentTypes?: ('chapter' | 'card')[];
+  page?: number;
+  pageSize?: number;
+  sort?: 'relevance' | 'date' | 'title';
+}
+
+export interface SearchResult {
+  id: string;
+  type: 'chapter' | 'card';
+  title: string;
+  summary?: string;
+  content?: any;
+  highlight?: string;
+  eventId?: string;
+  hasAR: boolean;
+  depth?: number;
+  parentId?: string;
+  createdAt: Date;
+  updatedAt: Date;
+  rank?: number;
+}
+
+export interface SearchResults {
+  results: SearchResult[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  facets: {
+    events: Array<{ id: string; title: string; count: number }>;
+    contentTypes: Array<{ type: string; count: number }>;
+    hasAR: { withAR: number; withoutAR: number };
+  };
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1048,6 +1100,334 @@ export class DatabaseStorage implements IStorage {
     // This would need to be implemented based on your specific progress tracking logic
     // For now, returning 0 as a placeholder
     return 0;
+  }
+
+  // Search operations
+  async searchContent(params: SearchParams): Promise<SearchResults> {
+    const {
+      query,
+      eventId,
+      hasAR,
+      minDepth,
+      maxDepth,
+      createdFrom,
+      createdTo,
+      updatedFrom,
+      updatedTo,
+      parentId,
+      contentTypes = ['chapter', 'card'],
+      page = 1,
+      pageSize = 20,
+      sort = 'relevance'
+    } = params;
+
+    const offset = (page - 1) * pageSize;
+
+    const includeChapters = contentTypes.includes('chapter');
+    const includeCards = contentTypes.includes('card');
+
+    if (!includeChapters && !includeCards) {
+      return {
+        results: [],
+        totalCount: 0,
+        page,
+        pageSize,
+        facets: await this.calculateFacets(eventId)
+      };
+    }
+
+    let chapterIdsForCards: string[] | null = null;
+    if (includeCards && (eventId || parentId)) {
+      const chapterIds = await db
+        .select({ id: chapters.id })
+        .from(chapters)
+        .where(
+          and(
+            eventId ? eq(chapters.eventId, eventId) : undefined,
+            parentId ? eq(chapters.parentId, parentId) : undefined
+          )
+        );
+      
+      if (chapterIds.length === 0) {
+        chapterIdsForCards = [];
+      } else {
+        chapterIdsForCards = chapterIds.map(c => c.id);
+      }
+    }
+
+    if (includeCards && chapterIdsForCards !== null && chapterIdsForCards.length === 0) {
+      if (!includeChapters) {
+        return {
+          results: [],
+          totalCount: 0,
+          page,
+          pageSize,
+          facets: await this.calculateFacets(eventId)
+        };
+      }
+    }
+
+    const queryParts: any[] = [];
+    
+    if (includeChapters) {
+      const chapterConditions = [];
+      
+      if (query) {
+        chapterConditions.push(sql`to_tsvector('english', COALESCE(c.title, '') || ' ' || COALESCE(c.summary, '')) @@ plainto_tsquery('english', ${query})`);
+      }
+      if (eventId) chapterConditions.push(sql`c.event_id = ${eventId}`);
+      if (hasAR !== undefined) chapterConditions.push(sql`c.has_ar = ${hasAR}`);
+      if (minDepth !== undefined) chapterConditions.push(sql`c.depth >= ${minDepth}`);
+      if (maxDepth !== undefined) chapterConditions.push(sql`c.depth <= ${maxDepth}`);
+      if (createdFrom) chapterConditions.push(sql`c.created_at >= ${createdFrom.toISOString()}`);
+      if (createdTo) chapterConditions.push(sql`c.created_at <= ${createdTo.toISOString()}`);
+      if (updatedFrom) chapterConditions.push(sql`c.updated_at >= ${updatedFrom.toISOString()}`);
+      if (updatedTo) chapterConditions.push(sql`c.updated_at <= ${updatedTo.toISOString()}`);
+      if (parentId) chapterConditions.push(sql`c.parent_id = ${parentId}`);
+
+      const chapterWhere = chapterConditions.length > 0 
+        ? sql`WHERE ${sql.join(chapterConditions, sql` AND `)}`
+        : sql``;
+
+      const chapterRank = query 
+        ? sql`ts_rank_cd(to_tsvector('english', COALESCE(c.title, '') || ' ' || COALESCE(c.summary, '')), plainto_tsquery('english', ${query}))`
+        : sql`1`;
+
+      const chapterHighlight = query
+        ? sql`ts_headline('english', COALESCE(c.title, '') || ' ' || COALESCE(c.summary, ''), plainto_tsquery('english', ${query}), 'MaxWords=30, MinWords=15')`
+        : sql`COALESCE(c.summary, '')`;
+
+      queryParts.push(sql`
+        SELECT 
+          c.id,
+          'chapter' as content_type,
+          c.title,
+          c.summary as snippet,
+          c.event_id,
+          c.has_ar,
+          c.depth,
+          c.parent_id,
+          c.created_at,
+          c.updated_at,
+          ${chapterRank} as rank,
+          ${chapterHighlight} as highlight,
+          NULL::jsonb as content
+        FROM chapters c
+        ${chapterWhere}
+      `);
+    }
+
+    if (includeCards && !(chapterIdsForCards !== null && chapterIdsForCards.length === 0)) {
+      const cardConditions = [];
+      
+      if (query) {
+        cardConditions.push(sql`to_tsvector('english', COALESCE(sc.content::text, '')) @@ plainto_tsquery('english', ${query})`);
+      }
+      if (hasAR !== undefined) cardConditions.push(sql`sc.has_ar = ${hasAR}`);
+      if (createdFrom) cardConditions.push(sql`sc.created_at >= ${createdFrom.toISOString()}`);
+      if (createdTo) cardConditions.push(sql`sc.created_at <= ${createdTo.toISOString()}`);
+      if (updatedFrom) cardConditions.push(sql`sc.updated_at >= ${updatedFrom.toISOString()}`);
+      if (updatedTo) cardConditions.push(sql`sc.updated_at <= ${updatedTo.toISOString()}`);
+
+      if (chapterIdsForCards !== null && chapterIdsForCards.length > 0) {
+        cardConditions.push(sql`sc.chapter_id IN ${chapterIdsForCards}`);
+      }
+
+      const cardWhere = cardConditions.length > 0
+        ? sql`WHERE ${sql.join(cardConditions, sql` AND `)}`
+        : sql``;
+
+      const cardRank = query
+        ? sql`ts_rank_cd(to_tsvector('english', COALESCE(sc.content::text, '')), plainto_tsquery('english', ${query}))`
+        : sql`1`;
+
+      const cardHighlight = query
+        ? sql`ts_headline('english', COALESCE(sc.content::text, ''), plainto_tsquery('english', ${query}), 'MaxWords=30, MinWords=15')`
+        : sql`COALESCE(sc.content::text, '')`;
+
+      queryParts.push(sql`
+        SELECT 
+          sc.id,
+          'card' as content_type,
+          'Story Card' as title,
+          NULL as snippet,
+          NULL as event_id,
+          sc.has_ar,
+          NULL::integer as depth,
+          sc.chapter_id as parent_id,
+          sc.created_at,
+          sc.updated_at,
+          ${cardRank} as rank,
+          ${cardHighlight} as highlight,
+          sc.content
+        FROM story_cards sc
+        ${cardWhere}
+      `);
+    }
+
+    if (queryParts.length === 0) {
+      return {
+        results: [],
+        totalCount: 0,
+        page,
+        pageSize,
+        facets: await this.calculateFacets(eventId)
+      };
+    }
+
+    const combinedQuery = queryParts.length > 1 
+      ? sql.join(queryParts, sql` UNION ALL `)
+      : queryParts[0];
+
+    let orderByClause;
+    if (sort === 'relevance' && query) {
+      orderByClause = sql`ORDER BY rank DESC, updated_at DESC`;
+    } else if (sort === 'date') {
+      orderByClause = sql`ORDER BY updated_at DESC, created_at DESC`;
+    } else if (sort === 'title') {
+      orderByClause = sql`ORDER BY title ASC`;
+    } else {
+      orderByClause = sql`ORDER BY updated_at DESC`;
+    }
+
+    const finalQuery = sql`
+      WITH combined_results AS (
+        ${combinedQuery}
+      ),
+      counted_results AS (
+        SELECT COUNT(*) as total_count FROM combined_results
+      )
+      SELECT 
+        cr.*,
+        cr_count.total_count
+      FROM combined_results cr
+      CROSS JOIN counted_results cr_count
+      ${orderByClause}
+      LIMIT ${pageSize}
+      OFFSET ${offset}
+    `;
+
+    const rawResults = await db.execute(finalQuery);
+    const rows = rawResults.rows as any[];
+
+    if (rows.length === 0) {
+      return {
+        results: [],
+        totalCount: 0,
+        page,
+        pageSize,
+        facets: await this.calculateFacets(eventId)
+      };
+    }
+
+    const totalCount = Number(rows[0]?.total_count || 0);
+
+    const results: SearchResult[] = rows.map(r => ({
+      id: r.id,
+      type: r.content_type as 'chapter' | 'card',
+      title: r.title,
+      summary: r.snippet || undefined,
+      content: r.content || undefined,
+      highlight: r.highlight || undefined,
+      eventId: r.event_id || undefined,
+      hasAR: r.has_ar || false,
+      depth: r.depth || undefined,
+      parentId: r.parent_id || undefined,
+      createdAt: new Date(r.created_at),
+      updatedAt: new Date(r.updated_at),
+      rank: Number(r.rank)
+    }));
+
+    return {
+      results,
+      totalCount,
+      page,
+      pageSize,
+      facets: await this.calculateFacets(eventId)
+    };
+  }
+
+  private async calculateFacets(eventId?: string): Promise<{
+    events: Array<{ id: string; title: string; count: number }>;
+    contentTypes: Array<{ type: string; count: number }>;
+    hasAR: { withAR: number; withoutAR: number };
+  }> {
+    const events = await db
+      .select({
+        id: liveEvents.id,
+        title: liveEvents.title,
+        count: sql<number>`COUNT(DISTINCT ${chapters.id})`
+      })
+      .from(liveEvents)
+      .leftJoin(chapters, eq(chapters.eventId, liveEvents.id))
+      .groupBy(liveEvents.id, liveEvents.title);
+
+    const chapterCount = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(chapters);
+    
+    const cardCount = await db
+      .select({ count: sql<number>`COUNT(*)` })
+      .from(storyCards);
+
+    const arCounts = await db
+      .select({
+        hasAR: chapters.hasAR,
+        count: sql<number>`COUNT(*)`
+      })
+      .from(chapters)
+      .groupBy(chapters.hasAR);
+
+    const withAR = arCounts.find(a => a.hasAR)?.count || 0;
+    const withoutAR = arCounts.find(a => !a.hasAR)?.count || 0;
+
+    return {
+      events: events.map(e => ({ id: e.id, title: e.title, count: Number(e.count) })),
+      contentTypes: [
+        { type: 'chapter', count: Number(chapterCount[0]?.count || 0) },
+        { type: 'card', count: Number(cardCount[0]?.count || 0) }
+      ],
+      hasAR: { withAR: Number(withAR), withoutAR: Number(withoutAR) }
+    };
+  }
+
+  async updateSearchVector(contentType: 'chapter' | 'card', id: string, text: string): Promise<void> {
+    if (contentType === 'chapter') {
+      await db
+        .update(chapters)
+        .set({
+          searchVector: sql`to_tsvector('english', ${text})`,
+          updatedAt: new Date()
+        })
+        .where(eq(chapters.id, id));
+    } else if (contentType === 'card') {
+      await db
+        .update(storyCards)
+        .set({
+          searchVector: sql`to_tsvector('english', ${text})`,
+          updatedAt: new Date()
+        })
+        .where(eq(storyCards.id, id));
+    }
+  }
+
+  async searchSuggestions(prefix: string, limit: number = 10): Promise<string[]> {
+    if (!prefix || prefix.length < 2) {
+      return [];
+    }
+
+    const chapterSuggestions = await db
+      .select({ title: chapters.title })
+      .from(chapters)
+      .where(sql`${chapters.title} ILIKE ${prefix + '%'}`)
+      .limit(limit);
+
+    const suggestions = chapterSuggestions
+      .map(s => s.title)
+      .filter((title, index, self) => self.indexOf(title) === index)
+      .slice(0, limit);
+
+    return suggestions;
   }
 }
 

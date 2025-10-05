@@ -730,6 +730,80 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // CMS Search Routes - require admin access
+  app.get("/api/cms/search", isAdmin, async (req, res) => {
+    try {
+      const {
+        query,
+        eventId,
+        hasAR,
+        minDepth,
+        maxDepth,
+        createdFrom,
+        createdTo,
+        updatedFrom,
+        updatedTo,
+        parentId,
+        contentTypes,
+        page,
+        pageSize,
+        sort
+      } = req.query;
+
+      // Parse and validate parameters
+      const searchParams: any = {};
+      
+      if (query) searchParams.query = String(query);
+      if (eventId) searchParams.eventId = String(eventId);
+      if (hasAR !== undefined) searchParams.hasAR = hasAR === 'true';
+      if (minDepth) searchParams.minDepth = parseInt(String(minDepth));
+      if (maxDepth) searchParams.maxDepth = parseInt(String(maxDepth));
+      if (createdFrom) searchParams.createdFrom = new Date(String(createdFrom));
+      if (createdTo) searchParams.createdTo = new Date(String(createdTo));
+      if (updatedFrom) searchParams.updatedFrom = new Date(String(updatedFrom));
+      if (updatedTo) searchParams.updatedTo = new Date(String(updatedTo));
+      if (parentId) searchParams.parentId = String(parentId);
+      if (contentTypes) {
+        searchParams.contentTypes = Array.isArray(contentTypes) 
+          ? contentTypes 
+          : String(contentTypes).split(',');
+      }
+      if (page) searchParams.page = parseInt(String(page));
+      if (pageSize) searchParams.pageSize = parseInt(String(pageSize));
+      if (sort) searchParams.sort = String(sort);
+
+      const results = await storage.searchContent(searchParams);
+      res.json(results);
+    } catch (error) {
+      console.error("Error searching content:", error);
+      res.status(500).json({ 
+        message: "Failed to search content",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  app.get("/api/cms/search/suggestions", isAdmin, async (req, res) => {
+    try {
+      const { prefix, limit } = req.query;
+      
+      if (!prefix || typeof prefix !== 'string') {
+        return res.status(400).json({ message: "Prefix parameter is required" });
+      }
+
+      const limitNum = limit ? parseInt(String(limit)) : 10;
+      const suggestions = await storage.searchSuggestions(prefix, limitNum);
+      
+      res.json({ suggestions });
+    } catch (error) {
+      console.error("Error fetching search suggestions:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch suggestions",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
   // Admin User Management API Routes - all require admin access with CSRF protection
   app.get("/api/admin/users", isAdmin, async (req, res) => {
     try {
