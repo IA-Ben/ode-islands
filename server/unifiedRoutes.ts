@@ -474,8 +474,8 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     try {
       const { id, cards } = req.body;
       
-      // Get user ID, fallback to 'system' if not authenticated (temp for dev)
-      const userId = req.user?.claims?.sub || 'system';
+      // Get user ID if authenticated
+      const userId = req.user?.claims?.sub;
       
       // Read current data
       const fs = await import('fs/promises');
@@ -487,12 +487,19 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
       // Update chapter
       chapters[id] = cards;
       
-      // Create backup before saving
-      await storage.createContentBackup(
-        `ode-islands-${Date.now()}.json`,
-        data,
-        userId
-      );
+      // Create backup before saving (only if user is authenticated)
+      if (userId) {
+        try {
+          await storage.createContentBackup(
+            `ode-islands-${Date.now()}.json`,
+            data,
+            userId
+          );
+        } catch (backupError) {
+          console.warn("Failed to create backup:", backupError);
+          // Continue with save even if backup fails
+        }
+      }
       
       // Save updated data
       await fs.writeFile(dataPath, JSON.stringify(chapters, null, 2));
