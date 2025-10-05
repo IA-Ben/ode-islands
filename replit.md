@@ -35,6 +35,8 @@ A 4-State Workflow (Draft → In Review → Published → Archived) supports a r
 ### Visual Card Editor
 A drag-and-drop visual card builder offers real-time preview and editing of 6 element types (Text, Image, Video, Button, Divider, Spacer). It supports dual-mode editing (Visual/Traditional JSON), element management (add, delete, reorder), property editors, and Media Library integration. Card settings include background color/image and padding. The layout is stored as JSONB in the `storyCards` table and rendered by a `CardRenderer` component.
 
+**Video Upload Integration**: The visual editor includes direct video upload capability using a reusable `videoUpload.ts` utility. Users can upload videos (MP4/MOV/AVI/WebM, 2GB max) directly from the video element editor with real-time progress tracking and transcoding status updates. The system validates files, uploads via XHR with progress callbacks, polls the transcoding service for status, and automatically sets both the HLS playback URL and mediaAssetId when complete. Upload states (uploading, processing, completed, error) are tracked per-element with visual feedback (progress bar, status messages).
+
 ### Database-Driven Card Editor
 A modal-based `StoryCardModal` allows creating and editing cards directly within the CMS, with real-time database sync. It supports smart data hydration, handles both create and edit operations via `/api/story-cards` endpoints, and optimizes chapter-specific refreshes. The legacy file-based editor is deprecated.
 
