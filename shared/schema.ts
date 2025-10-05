@@ -116,12 +116,28 @@ export const customButtons = pgTable("custom_buttons", {
 });
 
 // CMS-specific tables for content management
+// Enhanced with versioning support for content history and rollback
 export const contentBackups = pgTable("content_backups", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   filename: varchar("filename").notNull(),
   content: text("content").notNull(),
+  
+  // Versioning fields
+  contentType: varchar("content_type").notNull(), // 'chapter', 'card', 'sub_chapter'
+  contentId: varchar("content_id").notNull(), // ID of the content being versioned
+  versionNumber: integer("version_number").notNull(), // Sequential version number
+  changeDescription: text("change_description"), // Optional description of changes
+  
+  // Audit fields
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    contentIndex: index("content_backups_content_idx").on(table.contentType, table.contentId),
+    versionIndex: index("content_backups_version_idx").on(table.contentId, table.versionNumber),
+    createdByIndex: index("content_backups_created_by_idx").on(table.createdBy),
+    createdAtIndex: index("content_backups_created_at_idx").on(table.createdAt),
+  };
 });
 
 export const mediaAssets = pgTable("media_assets", {
