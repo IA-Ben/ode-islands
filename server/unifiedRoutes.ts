@@ -577,6 +577,72 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Content Versioning Routes
+  app.get("/api/cms/versions/:contentType/:contentId", isAdmin, async (req, res) => {
+    try {
+      const { contentType, contentId } = req.params;
+      const history = await storage.getContentHistory(contentType, contentId);
+      res.json({ history });
+    } catch (error) {
+      console.error("Error fetching version history:", error);
+      res.status(500).json({ message: "Failed to fetch version history" });
+    }
+  });
+
+  app.get("/api/cms/versions/:contentType/:contentId/compare", isAdmin, async (req, res) => {
+    try {
+      const { contentType, contentId } = req.params;
+      const { v1, v2 } = req.query;
+      
+      if (!v1 || !v2) {
+        return res.status(400).json({ message: "Both v1 and v2 query parameters are required" });
+      }
+
+      const comparison = await storage.compareVersions(
+        contentType,
+        contentId,
+        parseInt(v1 as string),
+        parseInt(v2 as string)
+      );
+      res.json(comparison);
+    } catch (error) {
+      console.error("Error comparing versions:", error);
+      res.status(500).json({ message: "Failed to compare versions" });
+    }
+  });
+
+  app.post("/api/cms/versions/:contentType/:contentId/restore", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { contentType, contentId } = req.params;
+      const { versionNumber, description } = req.body;
+      const userId = req.user?.claims?.sub;
+
+      if (!userId) {
+        return res.status(401).json({ message: "User not authenticated" });
+      }
+
+      if (!versionNumber) {
+        return res.status(400).json({ message: "versionNumber is required" });
+      }
+
+      const restoredVersion = await storage.restoreVersion(
+        contentType,
+        contentId,
+        versionNumber,
+        userId,
+        description
+      );
+
+      res.json({ 
+        message: "Version restored successfully", 
+        version: restoredVersion 
+      });
+    } catch (error) {
+      console.error("Error restoring version:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to restore version" });
+    }
+  });
+
   app.get("/api/cms/media", isAdmin, async (req, res) => {
     try {
       const assets = await storage.getMediaAssets();
