@@ -710,13 +710,134 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Media Library Routes
+  app.post("/api/cms/media/upload", isAdminWithCSRF, async (req, res) => {
+    try {
+      const mediaData = req.body;
+      const userId = req.user?.claims?.sub;
+      
+      const media = await storage.uploadMedia({
+        ...mediaData,
+        uploadedBy: userId
+      });
+      
+      res.json(media);
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      res.status(500).json({ message: "Failed to upload media" });
+    }
+  });
+
   app.get("/api/cms/media", isAdmin, async (req, res) => {
     try {
-      const assets = await storage.getMediaAssets();
-      res.json(assets);
+      const { page, pageSize, type, tags, uploadedBy, createdFrom, createdTo, search } = req.query;
+      
+      if (search) {
+        const filters: any = {};
+        if (type) filters.type = String(type);
+        if (uploadedBy) filters.uploadedBy = String(uploadedBy);
+        
+        const results = await storage.searchMedia(String(search), filters);
+        res.json(results);
+      } else {
+        const filters: any = {};
+        if (type) filters.type = String(type);
+        if (uploadedBy) filters.uploadedBy = String(uploadedBy);
+        if (tags) {
+          filters.tags = Array.isArray(tags) ? tags : String(tags).split(',');
+        }
+        if (createdFrom) filters.createdFrom = new Date(String(createdFrom));
+        if (createdTo) filters.createdTo = new Date(String(createdTo));
+        
+        const pagination = {
+          page: page ? parseInt(String(page)) : 1,
+          pageSize: pageSize ? parseInt(String(pageSize)) : 20
+        };
+        
+        const results = await storage.listMedia(filters, pagination);
+        res.json(results);
+      }
     } catch (error) {
       console.error("Error fetching media:", error);
       res.status(500).json({ message: "Failed to fetch media" });
+    }
+  });
+
+  app.get("/api/cms/media/:id", isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const media = await storage.getMedia(id);
+      
+      if (!media) {
+        return res.status(404).json({ message: "Media not found" });
+      }
+      
+      res.json(media);
+    } catch (error) {
+      console.error("Error fetching media:", error);
+      res.status(500).json({ message: "Failed to fetch media" });
+    }
+  });
+
+  app.patch("/api/cms/media/:id", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+      
+      const media = await storage.updateMediaMetadata(id, updates);
+      res.json(media);
+    } catch (error) {
+      console.error("Error updating media:", error);
+      res.status(500).json({ message: "Failed to update media" });
+    }
+  });
+
+  app.delete("/api/cms/media/:id", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { force } = req.query;
+      
+      const result = await storage.deleteMedia(id, force === 'true');
+      
+      if (!result.success) {
+        return res.status(409).json({
+          message: "Media is currently in use",
+          inUse: result.inUse,
+          usage: result.usage
+        });
+      }
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error deleting media:", error);
+      res.status(500).json({ message: "Failed to delete media" });
+    }
+  });
+
+  app.post("/api/cms/media/bulk-delete", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { ids, force } = req.body;
+      
+      if (!Array.isArray(ids)) {
+        return res.status(400).json({ message: "ids must be an array" });
+      }
+      
+      const result = await storage.bulkDeleteMedia(ids, force === true);
+      res.json(result);
+    } catch (error) {
+      console.error("Error bulk deleting media:", error);
+      res.status(500).json({ message: "Failed to bulk delete media" });
+    }
+  });
+
+  app.get("/api/cms/media/:id/usage", isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const usage = await storage.getMediaUsage(id);
+      res.json(usage);
+    } catch (error) {
+      console.error("Error fetching media usage:", error);
+      res.status(500).json({ message: "Failed to fetch media usage" });
     }
   });
 

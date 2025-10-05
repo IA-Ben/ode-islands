@@ -1,6 +1,7 @@
 import {
   users,
   mediaAssets,
+  mediaUsage,
   contentBackups,
   chapters,
   subChapters,
@@ -10,6 +11,10 @@ import {
   liveEvents,
   type User,
   type UpsertUser,
+  type MediaAsset,
+  type UpsertMediaAsset,
+  type MediaUsage,
+  type UpsertMediaUsage,
 } from "../shared/schema";
 import { db } from "./db";
 import { eq, sql, and, desc, asc, or, gte, lte, inArray } from "drizzle-orm";
@@ -80,6 +85,18 @@ export interface IStorage {
   searchContent(params: SearchParams): Promise<SearchResults>;
   updateSearchVector(contentType: 'chapter' | 'card', id: string, text: string): Promise<void>;
   searchSuggestions(prefix: string, limit?: number): Promise<string[]>;
+  
+  // Media Library operations
+  uploadMedia(data: Omit<UpsertMediaAsset, 'id' | 'createdAt' | 'updatedAt'>): Promise<MediaAsset>;
+  listMedia(filters: MediaFilters, pagination: MediaPagination): Promise<MediaListResult>;
+  searchMedia(query: string, filters?: Partial<MediaFilters>): Promise<MediaListResult>;
+  getMedia(id: string): Promise<MediaAssetWithUsage | undefined>;
+  updateMediaMetadata(id: string, updates: MediaMetadataUpdate): Promise<MediaAsset>;
+  deleteMedia(id: string, force?: boolean): Promise<{ success: boolean; inUse?: boolean; usage?: MediaUsage[] }>;
+  bulkDeleteMedia(ids: string[], force?: boolean): Promise<BulkDeleteResult>;
+  trackMediaUsage(mediaId: string, entityType: string, entityId: string, fieldName: string): Promise<void>;
+  getMediaUsage(mediaId: string): Promise<MediaUsage[]>;
+  removeMediaUsage(mediaId: string, entityType: string, entityId: string, fieldName: string): Promise<void>;
 }
 
 // Search interfaces
@@ -126,6 +143,44 @@ export interface SearchResults {
     contentTypes: Array<{ type: string; count: number }>;
     hasAR: { withAR: number; withoutAR: number };
   };
+}
+
+// Media Library interfaces
+export interface MediaFilters {
+  type?: string;
+  tags?: string[];
+  uploadedBy?: string;
+  createdFrom?: Date;
+  createdTo?: Date;
+}
+
+export interface MediaPagination {
+  page: number;
+  pageSize: number;
+}
+
+export interface MediaListResult {
+  items: MediaAsset[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface MediaAssetWithUsage extends MediaAsset {
+  usageCount: number;
+  usage?: MediaUsage[];
+}
+
+export interface MediaMetadataUpdate {
+  title?: string;
+  altText?: string;
+  description?: string;
+  tags?: string[];
+}
+
+export interface BulkDeleteResult {
+  deleted: string[];
+  failed: Array<{ id: string; reason: string }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -550,6 +605,206 @@ export class DatabaseStorage implements IStorage {
     await db
       .delete(mediaAssets)
       .where(eq(mediaAssets.id, id));
+  }
+
+  // Media Library operations
+  async uploadMedia(data: Omit<UpsertMediaAsset, 'id' | 'createdAt' | 'updatedAt'>): Promise<MediaAsset> {
+    const [newAsset] = await db
+      .insert(mediaAssets)
+      .values(data)
+      .returning();
+    return newAsset;
+  }
+
+  async listMedia(filters: MediaFilters, pagination: MediaPagination): Promise<MediaListResult> {
+    const { page = 1, pageSize = 20 } = pagination;
+    const offset = (page - 1) * pageSize;
+    
+    let query = db.select().from(mediaAssets).where(sql`${mediaAssets.deletedAt} IS NULL`).$dynamic();
+    
+    if (filters.type) {
+      query = query.where(eq(mediaAssets.fileType, filters.type));
+    }
+    
+    if (filters.uploadedBy) {
+      query = query.where(eq(mediaAssets.uploadedBy, filters.uploadedBy));
+    }
+    
+    if (filters.tags && filters.tags.length > 0) {
+      query = query.where(sql`${mediaAssets.tags} ?| array[${sql.join(filters.tags.map(t => sql`${t}`), sql`, `)}]`);
+    }
+    
+    if (filters.createdFrom) {
+      query = query.where(gte(mediaAssets.createdAt, filters.createdFrom));
+    }
+    
+    if (filters.createdTo) {
+      query = query.where(lte(mediaAssets.createdAt, filters.createdTo));
+    }
+    
+    const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(query.as('filtered'));
+    
+    const items = await query
+      .orderBy(desc(mediaAssets.createdAt))
+      .limit(pageSize)
+      .offset(offset);
+    
+    return {
+      items,
+      totalCount: Number(count),
+      page,
+      pageSize
+    };
+  }
+
+  async searchMedia(query: string, filters?: Partial<MediaFilters>): Promise<MediaListResult> {
+    const page = 1;
+    const pageSize = 50;
+    
+    let dbQuery = db
+      .select()
+      .from(mediaAssets)
+      .where(
+        and(
+          sql`${mediaAssets.deletedAt} IS NULL`,
+          or(
+            sql`${mediaAssets.title} ILIKE ${`%${query}%`}`,
+            sql`${mediaAssets.description} ILIKE ${`%${query}%`}`,
+            sql`${mediaAssets.altText} ILIKE ${`%${query}%`}`
+          )
+        )
+      )
+      .$dynamic();
+    
+    if (filters?.type) {
+      dbQuery = dbQuery.where(eq(mediaAssets.fileType, filters.type));
+    }
+    
+    if (filters?.uploadedBy) {
+      dbQuery = dbQuery.where(eq(mediaAssets.uploadedBy, filters.uploadedBy));
+    }
+    
+    const items = await dbQuery.orderBy(desc(mediaAssets.createdAt)).limit(pageSize);
+    
+    return {
+      items,
+      totalCount: items.length,
+      page,
+      pageSize
+    };
+  }
+
+  async getMedia(id: string): Promise<MediaAssetWithUsage | undefined> {
+    const [asset] = await db
+      .select()
+      .from(mediaAssets)
+      .where(and(eq(mediaAssets.id, id), sql`${mediaAssets.deletedAt} IS NULL`));
+    
+    if (!asset) return undefined;
+    
+    const usage = await this.getMediaUsage(id);
+    
+    return {
+      ...asset,
+      usageCount: usage.length,
+      usage
+    };
+  }
+
+  async updateMediaMetadata(id: string, updates: MediaMetadataUpdate): Promise<MediaAsset> {
+    const [updated] = await db
+      .update(mediaAssets)
+      .set({
+        ...updates,
+        updatedAt: new Date()
+      })
+      .where(eq(mediaAssets.id, id))
+      .returning();
+    
+    return updated;
+  }
+
+  async deleteMedia(id: string, force: boolean = false): Promise<{ success: boolean; inUse?: boolean; usage?: MediaUsage[] }> {
+    const usage = await this.getMediaUsage(id);
+    
+    if (usage.length > 0 && !force) {
+      return {
+        success: false,
+        inUse: true,
+        usage
+      };
+    }
+    
+    await db
+      .update(mediaAssets)
+      .set({ deletedAt: new Date() })
+      .where(eq(mediaAssets.id, id));
+    
+    return { success: true };
+  }
+
+  async bulkDeleteMedia(ids: string[], force: boolean = false): Promise<BulkDeleteResult> {
+    const deleted: string[] = [];
+    const failed: Array<{ id: string; reason: string }> = [];
+    
+    for (const id of ids) {
+      try {
+        const result = await this.deleteMedia(id, force);
+        if (result.success) {
+          deleted.push(id);
+        } else {
+          failed.push({
+            id,
+            reason: `Media is in use in ${result.usage?.length || 0} locations`
+          });
+        }
+      } catch (error) {
+        failed.push({
+          id,
+          reason: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    }
+    
+    return { deleted, failed };
+  }
+
+  async trackMediaUsage(mediaId: string, entityType: string, entityId: string, fieldName: string): Promise<void> {
+    await db
+      .insert(mediaUsage)
+      .values({
+        mediaId,
+        entityType,
+        entityId,
+        fieldName,
+        lastReferencedAt: new Date()
+      })
+      .onConflictDoUpdate({
+        target: [mediaUsage.mediaId, mediaUsage.entityType, mediaUsage.entityId, mediaUsage.fieldName],
+        set: {
+          lastReferencedAt: new Date()
+        }
+      });
+  }
+
+  async getMediaUsage(mediaId: string): Promise<MediaUsage[]> {
+    return await db
+      .select()
+      .from(mediaUsage)
+      .where(eq(mediaUsage.mediaId, mediaId));
+  }
+
+  async removeMediaUsage(mediaId: string, entityType: string, entityId: string, fieldName: string): Promise<void> {
+    await db
+      .delete(mediaUsage)
+      .where(
+        and(
+          eq(mediaUsage.mediaId, mediaId),
+          eq(mediaUsage.entityType, entityType),
+          eq(mediaUsage.entityId, entityId),
+          eq(mediaUsage.fieldName, fieldName)
+        )
+      );
   }
   
   // Chapter operations

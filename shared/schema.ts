@@ -167,14 +167,47 @@ export const contentBackups = pgTable("content_backups", {
 
 export const mediaAssets = pgTable("media_assets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
-  filename: varchar("filename").notNull(),
-  originalName: varchar("original_name").notNull(),
+  storageKey: varchar("storage_key").notNull().unique(),
   cloudUrl: varchar("cloud_url").notNull(),
-  fileSize: varchar("file_size"),
-  dimensions: varchar("dimensions"),
-  mimeType: varchar("mime_type"),
+  checksum: varchar("checksum").notNull(),
+  fileType: varchar("file_type").notNull(),
+  mimeType: varchar("mime_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  width: integer("width"),
+  height: integer("height"),
+  duration: integer("duration"),
+  altText: varchar("alt_text"),
+  title: varchar("title"),
+  description: text("description"),
+  tags: jsonb("tags").default(sql`'[]'::jsonb`),
   uploadedBy: varchar("uploaded_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+  deletedAt: timestamp("deleted_at"),
+}, (table) => {
+  return {
+    fileTypeIndex: index("media_assets_file_type_idx").on(table.fileType),
+    createdAtIndex: index("media_assets_created_at_idx").on(table.createdAt),
+    deletedAtIndex: index("media_assets_deleted_at_idx").on(table.deletedAt),
+    uploadedByIndex: index("media_assets_uploaded_by_idx").on(table.uploadedBy),
+    storageKeyUnique: uniqueIndex("media_assets_storage_key_unique").on(table.storageKey),
+  };
+});
+
+export const mediaUsage = pgTable("media_usage", {
+  id: serial("id").primaryKey(),
+  mediaId: varchar("media_id").references(() => mediaAssets.id, { onDelete: 'cascade' }).notNull(),
+  entityType: varchar("entity_type").notNull(),
+  entityId: varchar("entity_id").notNull(),
+  fieldName: varchar("field_name").notNull(),
+  lastReferencedAt: timestamp("last_referenced_at").defaultNow(),
+}, (table) => {
+  return {
+    mediaIdIndex: index("media_usage_media_id_idx").on(table.mediaId),
+    entityTypeIndex: index("media_usage_entity_type_idx").on(table.entityType),
+    entityIdIndex: index("media_usage_entity_id_idx").on(table.entityId),
+    uniqueUsage: uniqueIndex("media_usage_unique").on(table.mediaId, table.entityType, table.entityId, table.fieldName),
+  };
 });
 
 // User Progress Tracking
@@ -1538,6 +1571,9 @@ export type UpsertUser = typeof users.$inferInsert;
 export type User = typeof users.$inferSelect;
 export type ContentBackup = typeof contentBackups.$inferSelect;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
+export type UpsertMediaAsset = typeof mediaAssets.$inferInsert;
+export type MediaUsage = typeof mediaUsage.$inferSelect;
+export type UpsertMediaUsage = typeof mediaUsage.$inferInsert;
 export type UserProgress = typeof userProgress.$inferSelect;
 export type Poll = typeof polls.$inferSelect;
 export type PollResponse = typeof pollResponses.$inferSelect;
