@@ -473,7 +473,9 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   app.post("/api/cms/chapters", isAdminWithCSRF, async (req, res) => {
     try {
       const { id, cards } = req.body;
-      const userId = req.user!.claims.sub; // Get actual user ID from Replit Auth
+      
+      // Get user ID, fallback to 'system' if not authenticated (temp for dev)
+      const userId = req.user?.claims?.sub || 'system';
       
       // Read current data
       const fs = await import('fs/promises');
