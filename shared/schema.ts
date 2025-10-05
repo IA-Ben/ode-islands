@@ -66,6 +66,15 @@ export const chapters = pgTable("chapters", {
   // Full-text search vector
   searchVector: text("search_vector"),
   
+  // Publishing workflow fields
+  publishStatus: varchar("publish_status").default('draft').notNull(),
+  publishedAt: timestamp("published_at"),
+  publishedBy: varchar("published_by").references(() => users.id),
+  scheduledPublishAt: timestamp("scheduled_publish_at"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => {
@@ -78,6 +87,7 @@ export const chapters = pgTable("chapters", {
     hasARIndex: index("chapters_has_ar_idx").on(table.hasAR),
     imageMediaIdIndex: index("chapters_image_media_id_idx").on(table.imageMediaId),
     videoMediaIdIndex: index("chapters_video_media_id_idx").on(table.videoMediaId),
+    publishStatusIndex: index("chapters_publish_status_idx").on(table.publishStatus),
     createdAtIndex: index("chapters_created_at_idx").on(table.createdAt),
     updatedAtIndex: index("chapters_updated_at_idx").on(table.updatedAt),
     searchVectorIndex: index("chapters_search_vector_idx").using('gin', sql`to_tsvector('english', COALESCE(${table.title}, '') || ' ' || COALESCE(${table.summary}, ''))`),
@@ -116,6 +126,15 @@ export const storyCards = pgTable("story_cards", {
   // Full-text search vector
   searchVector: text("search_vector"),
   
+  // Publishing workflow fields
+  publishStatus: varchar("publish_status").default('draft').notNull(),
+  publishedAt: timestamp("published_at"),
+  publishedBy: varchar("published_by").references(() => users.id),
+  scheduledPublishAt: timestamp("scheduled_publish_at"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => {
@@ -125,6 +144,7 @@ export const storyCards = pgTable("story_cards", {
     hasARIndex: index("story_cards_has_ar_idx").on(table.hasAR),
     imageMediaIdIndex: index("story_cards_image_media_id_idx").on(table.imageMediaId),
     videoMediaIdIndex: index("story_cards_video_media_id_idx").on(table.videoMediaId),
+    publishStatusIndex: index("story_cards_publish_status_idx").on(table.publishStatus),
     createdAtIndex: index("story_cards_created_at_idx").on(table.createdAt),
     updatedAtIndex: index("story_cards_updated_at_idx").on(table.updatedAt),
     searchVectorIndex: index("story_cards_search_vector_idx").using('gin', sql`to_tsvector('english', COALESCE(${table.content}::text, ''))`),

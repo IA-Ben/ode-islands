@@ -733,6 +733,157 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Publishing Routes for Chapters
+  app.post("/api/cms/chapters/:id/publish", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.claims?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+      
+      const chapter = await storage.publishChapter(id, userId);
+      
+      // Audit log
+      await AuditLogger.log({
+        userId,
+        entityType: 'chapter',
+        entityId: id,
+        action: 'publish',
+        description: `Published chapter ${id}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(chapter);
+    } catch (error) {
+      console.error('Error publishing chapter:', error);
+      res.status(500).json({ error: 'Failed to publish chapter' });
+    }
+  });
+
+  app.post("/api/cms/chapters/:id/unpublish", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.claims?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+      
+      const chapter = await storage.unpublishChapter(id);
+      
+      // Audit log
+      await AuditLogger.log({
+        userId,
+        entityType: 'chapter',
+        entityId: id,
+        action: 'unpublish',
+        description: `Unpublished chapter ${id}`,
+        severity: 'warning',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(chapter);
+    } catch (error) {
+      console.error('Error unpublishing chapter:', error);
+      res.status(500).json({ error: 'Failed to unpublish chapter' });
+    }
+  });
+
+  app.post("/api/cms/chapters/:id/submit-review", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      const userId = req.user?.claims?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+      
+      const chapter = await storage.submitChapterForReview(id, notes);
+      
+      // Audit log
+      await AuditLogger.log({
+        userId,
+        entityType: 'chapter',
+        entityId: id,
+        action: 'submit_review',
+        description: `Submitted chapter ${id} for review`,
+        metadata: { notes },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(chapter);
+    } catch (error) {
+      console.error('Error submitting for review:', error);
+      res.status(500).json({ error: 'Failed to submit for review' });
+    }
+  });
+
+  // Publishing Routes for Story Cards
+  app.post("/api/cms/story-cards/:id/publish", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.claims?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+      
+      const card = await storage.publishStoryCard(id, userId);
+      
+      // Audit log
+      await AuditLogger.log({
+        userId,
+        entityType: 'story_card',
+        entityId: id,
+        action: 'publish',
+        description: `Published story card ${id}`,
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(card);
+    } catch (error) {
+      console.error('Error publishing story card:', error);
+      res.status(500).json({ error: 'Failed to publish story card' });
+    }
+  });
+
+  app.post("/api/cms/story-cards/:id/unpublish", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user?.claims?.sub;
+      
+      if (!userId) {
+        return res.status(401).json({ error: 'User not authenticated' });
+      }
+      
+      const card = await storage.unpublishStoryCard(id);
+      
+      // Audit log
+      await AuditLogger.log({
+        userId,
+        entityType: 'story_card',
+        entityId: id,
+        action: 'unpublish',
+        description: `Unpublished story card ${id}`,
+        severity: 'warning',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(card);
+    } catch (error) {
+      console.error('Error unpublishing story card:', error);
+      res.status(500).json({ error: 'Failed to unpublish story card' });
+    }
+  });
+
   // Content Versioning Routes
   app.get("/api/cms/versions/:contentType/:contentId", isAdmin, async (req, res) => {
     try {
@@ -1465,6 +1616,87 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
         message: "Failed to check sample data status",
         sampleDataExists: false
       });
+    }
+  });
+
+  // CMS Publishing Workflow - Story Card Submit for Review
+  app.post('/api/cms/story-cards/:id/submit-review', isAdminWithCSRF, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      const userId = req.user.claims.sub;
+      
+      const card = await storage.submitStoryCardForReview(id, notes);
+      
+      await AuditLogger.log({
+        userId,
+        entityType: 'storyCard',
+        entityId: id,
+        action: 'submit_review',
+        description: `Submitted story card ${id} for review`,
+        metadata: { notes },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(card);
+    } catch (error) {
+      console.error('Error submitting story card for review:', error);
+      res.status(500).json({ error: 'Failed to submit for review' });
+    }
+  });
+
+  // CMS Publishing Workflow - Chapter Approve
+  app.post('/api/cms/chapters/:id/approve', isAdminWithCSRF, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      const userId = req.user.claims.sub;
+      
+      const chapter = await storage.approveChapterReview(id, userId, notes);
+      
+      await AuditLogger.log({
+        userId,
+        entityType: 'chapter',
+        entityId: id,
+        action: 'approve',
+        description: `Approved and published chapter ${id}`,
+        metadata: { notes },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(chapter);
+    } catch (error) {
+      console.error('Error approving chapter:', error);
+      res.status(500).json({ error: 'Failed to approve chapter' });
+    }
+  });
+
+  // CMS Publishing Workflow - Story Card Approve
+  app.post('/api/cms/story-cards/:id/approve', isAdminWithCSRF, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { notes } = req.body;
+      const userId = req.user.claims.sub;
+      
+      const card = await storage.approveStoryCardReview(id, userId, notes);
+      
+      await AuditLogger.log({
+        userId,
+        entityType: 'storyCard',
+        entityId: id,
+        action: 'approve',
+        description: `Approved and published story card ${id}`,
+        metadata: { notes },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(card);
+    } catch (error) {
+      console.error('Error approving story card:', error);
+      res.status(500).json({ error: 'Failed to approve story card' });
     }
   });
 

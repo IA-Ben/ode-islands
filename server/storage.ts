@@ -65,6 +65,14 @@ export interface IStorage {
   reorderChapters(chapterOrders: Array<{ id: string; order: number }>): Promise<void>;
   reorderHierarchy(updates: Array<{ id: string; parentId: string | null; order: number }>): Promise<void>;
   
+  // Publishing operations for chapters
+  publishChapter(id: string, userId: string): Promise<Chapter>;
+  unpublishChapter(id: string): Promise<Chapter>;
+  submitChapterForReview(id: string, notes?: string): Promise<Chapter>;
+  approveChapterReview(id: string, userId: string, notes?: string): Promise<Chapter>;
+  scheduleChapterPublish(id: string, scheduledAt: Date): Promise<Chapter>;
+  getPublishedChapters(eventId?: string): Promise<Chapter[]>;
+  
   // Hierarchy operations
   getChapterTree(eventId?: string): Promise<any[]>;
   getChapterChildren(chapterId: string): Promise<Chapter[]>;
@@ -83,6 +91,14 @@ export interface IStorage {
   getStoryCard(id: string): Promise<StoryCard | undefined>;
   updateStoryCard(id: string, updates: Partial<StoryCard>): Promise<StoryCard>;
   deleteStoryCard(id: string): Promise<void>;
+  
+  // Publishing operations for story cards
+  publishStoryCard(id: string, userId: string): Promise<StoryCard>;
+  unpublishStoryCard(id: string): Promise<StoryCard>;
+  submitStoryCardForReview(id: string, notes?: string): Promise<StoryCard>;
+  approveStoryCardReview(id: string, userId: string, notes?: string): Promise<StoryCard>;
+  scheduleStoryCardPublish(id: string, scheduledAt: Date): Promise<StoryCard>;
+  getPublishedStoryCards(chapterId: string): Promise<StoryCard[]>;
   
   // Custom button operations
   createCustomButton(button: Omit<typeof customButtons.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<CustomButton>;
@@ -1250,6 +1266,92 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async publishChapter(id: string, userId: string): Promise<Chapter> {
+    const [chapter] = await db
+      .update(chapters)
+      .set({
+        publishStatus: 'published',
+        publishedAt: new Date(),
+        publishedBy: userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(chapters.id, id))
+      .returning();
+    return chapter;
+  }
+
+  async unpublishChapter(id: string): Promise<Chapter> {
+    const [chapter] = await db
+      .update(chapters)
+      .set({
+        publishStatus: 'draft',
+        publishedAt: null,
+        publishedBy: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(chapters.id, id))
+      .returning();
+    return chapter;
+  }
+
+  async submitChapterForReview(id: string, notes?: string): Promise<Chapter> {
+    const [chapter] = await db
+      .update(chapters)
+      .set({
+        publishStatus: 'in_review',
+        reviewNotes: notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(chapters.id, id))
+      .returning();
+    return chapter;
+  }
+
+  async approveChapterReview(id: string, userId: string, notes?: string): Promise<Chapter> {
+    const [chapter] = await db
+      .update(chapters)
+      .set({
+        publishStatus: 'published',
+        publishedAt: new Date(),
+        publishedBy: userId,
+        reviewedBy: userId,
+        reviewedAt: new Date(),
+        reviewNotes: notes,
+        scheduledPublishAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(chapters.id, id))
+      .returning();
+    return chapter;
+  }
+
+  async scheduleChapterPublish(id: string, scheduledAt: Date): Promise<Chapter> {
+    const [chapter] = await db
+      .update(chapters)
+      .set({
+        scheduledPublishAt: scheduledAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(chapters.id, id))
+      .returning();
+    return chapter;
+  }
+
+  async getPublishedChapters(eventId?: string): Promise<Chapter[]> {
+    if (eventId) {
+      return await db
+        .select()
+        .from(chapters)
+        .where(and(eq(chapters.eventId, eventId), eq(chapters.publishStatus, 'published')))
+        .orderBy(asc(chapters.order));
+    }
+    return await db
+      .select()
+      .from(chapters)
+      .where(eq(chapters.publishStatus, 'published'))
+      .orderBy(asc(chapters.order));
+  }
+
   async getChapterTree(eventId?: string): Promise<any[]> {
     const allChapters = await this.getChapters(eventId);
     
@@ -1450,6 +1552,85 @@ export class DatabaseStorage implements IStorage {
       await tx.delete(storyCards)
         .where(eq(storyCards.id, id));
     });
+  }
+
+  async publishStoryCard(id: string, userId: string): Promise<StoryCard> {
+    const [card] = await db
+      .update(storyCards)
+      .set({
+        publishStatus: 'published',
+        publishedAt: new Date(),
+        publishedBy: userId,
+        updatedAt: new Date(),
+      })
+      .where(eq(storyCards.id, id))
+      .returning();
+    return card;
+  }
+
+  async unpublishStoryCard(id: string): Promise<StoryCard> {
+    const [card] = await db
+      .update(storyCards)
+      .set({
+        publishStatus: 'draft',
+        publishedAt: null,
+        publishedBy: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(storyCards.id, id))
+      .returning();
+    return card;
+  }
+
+  async submitStoryCardForReview(id: string, notes?: string): Promise<StoryCard> {
+    const [card] = await db
+      .update(storyCards)
+      .set({
+        publishStatus: 'in_review',
+        reviewNotes: notes,
+        updatedAt: new Date(),
+      })
+      .where(eq(storyCards.id, id))
+      .returning();
+    return card;
+  }
+
+  async approveStoryCardReview(id: string, userId: string, notes?: string): Promise<StoryCard> {
+    const [card] = await db
+      .update(storyCards)
+      .set({
+        publishStatus: 'published',
+        publishedAt: new Date(),
+        publishedBy: userId,
+        reviewedBy: userId,
+        reviewedAt: new Date(),
+        reviewNotes: notes,
+        scheduledPublishAt: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(storyCards.id, id))
+      .returning();
+    return card;
+  }
+
+  async scheduleStoryCardPublish(id: string, scheduledAt: Date): Promise<StoryCard> {
+    const [card] = await db
+      .update(storyCards)
+      .set({
+        scheduledPublishAt: scheduledAt,
+        updatedAt: new Date(),
+      })
+      .where(eq(storyCards.id, id))
+      .returning();
+    return card;
+  }
+
+  async getPublishedStoryCards(chapterId: string): Promise<StoryCard[]> {
+    return await db
+      .select()
+      .from(storyCards)
+      .where(and(eq(storyCards.chapterId, chapterId), eq(storyCards.publishStatus, 'published')))
+      .orderBy(asc(storyCards.order));
   }
   
   // Custom button operations
