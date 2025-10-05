@@ -3,18 +3,24 @@
 import { useState } from 'react';
 import { VisualCardLayout, CardElement, CardElementType, createDefaultElement, createEmptyLayout } from '@/../../shared/cardTypes';
 import { CardRenderer } from './CardRenderer';
+import { MediaSelectorModal } from './cms/MediaSelectorModal';
+import type { MediaItem } from '@/hooks/useMedia';
 
 interface VisualCardEditorProps {
   initialLayout?: VisualCardLayout;
   onChange: (layout: VisualCardLayout) => void;
+  csrfToken: string;
 }
 
-export function VisualCardEditor({ initialLayout, onChange }: VisualCardEditorProps) {
+export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualCardEditorProps) {
   const [layout, setLayout] = useState<VisualCardLayout>(
     initialLayout || createEmptyLayout()
   );
   const [selectedElementId, setSelectedElementId] = useState<string | null>(null);
   const [showPreview, setShowPreview] = useState(false);
+  const [mediaModalOpen, setMediaModalOpen] = useState(false);
+  const [mediaSelectType, setMediaSelectType] = useState<'image' | 'video' | null>(null);
+  const [mediaSelectElementId, setMediaSelectElementId] = useState<string | null>(null);
   
   const updateLayout = (newLayout: VisualCardLayout) => {
     setLayout(newLayout);
@@ -64,140 +70,182 @@ export function VisualCardEditor({ initialLayout, onChange }: VisualCardEditorPr
     });
   };
   
+  const openMediaSelector = (elementId: string, type: 'image' | 'video') => {
+    setMediaSelectElementId(elementId);
+    setMediaSelectType(type);
+    setMediaModalOpen(true);
+  };
+  
+  const handleMediaSelect = (media: MediaItem | MediaItem[]) => {
+    if (!mediaSelectElementId) return;
+    
+    const selectedMedia = Array.isArray(media) ? media[0] : media;
+    
+    updateElement(mediaSelectElementId, {
+      properties: {
+        ...(layout.elements.find(el => el.id === mediaSelectElementId)?.properties || {}),
+        mediaAssetId: selectedMedia.id,
+        src: selectedMedia.url,
+      }
+    });
+    
+    setMediaModalOpen(false);
+    setMediaSelectElementId(null);
+    setMediaSelectType(null);
+  };
+  
   const selectedElement = layout.elements.find((el) => el.id === selectedElementId);
   
   return (
-    <div className="visual-card-editor grid grid-cols-1 lg:grid-cols-3 gap-4">
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h3 className="text-lg font-semibold mb-4">Add Elements</h3>
-        <div className="space-y-2">
-          <button
-            onClick={() => addElement('text')}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            + Text
-          </button>
-          <button
-            onClick={() => addElement('image')}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            + Image
-          </button>
-          <button
-            onClick={() => addElement('video')}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            + Video
-          </button>
-          <button
-            onClick={() => addElement('button')}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            + Button
-          </button>
-          <button
-            onClick={() => addElement('divider')}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            + Divider
-          </button>
-          <button
-            onClick={() => addElement('spacer')}
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-          >
-            + Spacer
-          </button>
-        </div>
-        
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-4">Card Settings</h3>
-          <div className="space-y-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">Background Color</label>
-              <input
-                type="color"
-                value={layout.backgroundColor || '#ffffff'}
-                onChange={(e) => updateLayout({ ...layout, backgroundColor: e.target.value })}
-                className="w-full h-10 rounded border"
-              />
+    <>
+      <div className="visual-card-editor grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="bg-white p-4 rounded-lg shadow">
+          <h3 className="text-lg font-semibold mb-4">Add Elements</h3>
+          <div className="space-y-2">
+            <button
+              onClick={() => addElement('text')}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              + Text
+            </button>
+            <button
+              onClick={() => addElement('image')}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              + Image
+            </button>
+            <button
+              onClick={() => addElement('video')}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              + Video
+            </button>
+            <button
+              onClick={() => addElement('button')}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              + Button
+            </button>
+            <button
+              onClick={() => addElement('divider')}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              + Divider
+            </button>
+            <button
+              onClick={() => addElement('spacer')}
+              className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              + Spacer
+            </button>
+          </div>
+          
+          <div className="mt-6">
+            <h3 className="text-lg font-semibold mb-4">Card Settings</h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium mb-1">Background Color</label>
+                <input
+                  type="color"
+                  value={layout.backgroundColor || '#ffffff'}
+                  onChange={(e) => updateLayout({ ...layout, backgroundColor: e.target.value })}
+                  className="w-full h-10 rounded border"
+                />
+              </div>
             </div>
+          </div>
+          
+          <div className="mt-6">
+            <button
+              onClick={() => setShowPreview(!showPreview)}
+              className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            >
+              {showPreview ? 'Hide' : 'Show'} Preview
+            </button>
           </div>
         </div>
         
-        <div className="mt-6">
-          <button
-            onClick={() => setShowPreview(!showPreview)}
-            className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-          >
-            {showPreview ? 'Hide' : 'Show'} Preview
-          </button>
+        <div className="lg:col-span-2 space-y-4">
+          <div className="bg-white p-4 rounded-lg shadow">
+            <h3 className="text-lg font-semibold mb-4">Canvas</h3>
+            <div className="border-2 border-dashed border-gray-300 rounded p-4 min-h-[400px]">
+              {layout.elements.length === 0 ? (
+                <div className="text-center text-gray-500 py-8">
+                  Add elements from the toolbar to get started
+                </div>
+              ) : (
+                layout.elements.sort((a, b) => a.order - b.order).map((element) => (
+                  <div
+                    key={element.id}
+                    className={`
+                      border-2 rounded p-3 mb-3 cursor-pointer transition-colors
+                      ${selectedElementId === element.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-400'}
+                    `}
+                    onClick={() => setSelectedElementId(element.id)}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-medium text-gray-600">
+                        {element.type.charAt(0).toUpperCase() + element.type.slice(1)} Element
+                      </span>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); moveElement(element.id, 'up'); }}
+                          disabled={element.order === 0}
+                          className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        >
+                          ↑
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); moveElement(element.id, 'down'); }}
+                          disabled={element.order === layout.elements.length - 1}
+                          className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
+                        >
+                          ↓
+                        </button>
+                        <button
+                          onClick={(e) => { e.stopPropagation(); deleteElement(element.id); }}
+                          className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                    {renderElementEditor(element, updateElement, openMediaSelector)}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+          
+          {showPreview && (
+            <div className="bg-white p-4 rounded-lg shadow">
+              <h3 className="text-lg font-semibold mb-4">Preview</h3>
+              <CardRenderer layout={layout} className="border border-gray-300 rounded" />
+            </div>
+          )}
         </div>
       </div>
       
-      <div className="lg:col-span-2 space-y-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <h3 className="text-lg font-semibold mb-4">Canvas</h3>
-          <div className="border-2 border-dashed border-gray-300 rounded p-4 min-h-[400px]">
-            {layout.elements.length === 0 ? (
-              <div className="text-center text-gray-500 py-8">
-                Add elements from the toolbar to get started
-              </div>
-            ) : (
-              layout.elements.sort((a, b) => a.order - b.order).map((element) => (
-                <div
-                  key={element.id}
-                  className={`
-                    border-2 rounded p-3 mb-3 cursor-pointer transition-colors
-                    ${selectedElementId === element.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-400'}
-                  `}
-                  onClick={() => setSelectedElementId(element.id)}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-600">
-                      {element.type.charAt(0).toUpperCase() + element.type.slice(1)} Element
-                    </span>
-                    <div className="flex gap-2">
-                      <button
-                        onClick={(e) => { e.stopPropagation(); moveElement(element.id, 'up'); }}
-                        disabled={element.order === 0}
-                        className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); moveElement(element.id, 'down'); }}
-                        disabled={element.order === layout.elements.length - 1}
-                        className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
-                      >
-                        ↓
-                      </button>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); deleteElement(element.id); }}
-                        className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                  {renderElementEditor(element, updateElement)}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        
-        {showPreview && (
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-lg font-semibold mb-4">Preview</h3>
-            <CardRenderer layout={layout} className="border border-gray-300 rounded" />
-          </div>
-        )}
-      </div>
-    </div>
+      <MediaSelectorModal
+        isOpen={mediaModalOpen}
+        onClose={() => {
+          setMediaModalOpen(false);
+          setMediaSelectElementId(null);
+          setMediaSelectType(null);
+        }}
+        onSelect={handleMediaSelect}
+        filter={{ type: mediaSelectType === 'image' ? 'image/' : mediaSelectType === 'video' ? 'video/' : undefined }}
+        csrfToken={csrfToken}
+      />
+    </>
   );
 }
 
-function renderElementEditor(element: CardElement, updateElement: (id: string, updates: any) => void) {
+function renderElementEditor(
+  element: CardElement,
+  updateElement: (id: string, updates: any) => void,
+  openMediaSelector: (elementId: string, type: 'image' | 'video') => void
+) {
   switch (element.type) {
     case 'text':
       return (
@@ -243,6 +291,16 @@ function renderElementEditor(element: CardElement, updateElement: (id: string, u
     case 'image':
       return (
         <div className="space-y-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openMediaSelector(element.id, 'image');
+            }}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Select from Media Library
+          </button>
+          <div className="text-center text-sm text-gray-500">or</div>
           <input
             type="text"
             value={element.properties.src || ''}
@@ -250,7 +308,7 @@ function renderElementEditor(element: CardElement, updateElement: (id: string, u
               properties: { ...element.properties, src: e.target.value }
             })}
             className="w-full p-2 border rounded"
-            placeholder="Image URL"
+            placeholder="Enter image URL"
           />
           <input
             type="text"
@@ -260,6 +318,31 @@ function renderElementEditor(element: CardElement, updateElement: (id: string, u
             })}
             className="w-full p-2 border rounded"
             placeholder="Alt text"
+          />
+        </div>
+      );
+    
+    case 'video':
+      return (
+        <div className="space-y-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              openMediaSelector(element.id, 'video');
+            }}
+            className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+          >
+            Select from Media Library
+          </button>
+          <div className="text-center text-sm text-gray-500">or</div>
+          <input
+            type="text"
+            value={element.properties.src || ''}
+            onChange={(e) => updateElement(element.id, {
+              properties: { ...element.properties, src: e.target.value }
+            })}
+            className="w-full p-2 border rounded"
+            placeholder="Enter video URL"
           />
         </div>
       );

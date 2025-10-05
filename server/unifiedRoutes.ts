@@ -824,6 +824,121 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Story Card CRUD Routes
+  app.post('/api/cms/story-cards', isAdminWithCSRF, async (req: any, res) => {
+    try {
+      const { chapterId, content, visualLayout, order } = req.body;
+      const userId = req.user.claims.sub;
+      
+      if (!chapterId) {
+        return res.status(400).json({ error: 'chapterId is required' });
+      }
+      
+      const card = await storage.createStoryCard({
+        chapterId,
+        content: content || {},
+        visualLayout,
+        order: order || 0,
+        hasAR: false,
+        publishStatus: 'draft',
+      });
+      
+      // Audit log
+      await AuditLogger.log({
+        userId,
+        entityType: 'story_card',
+        entityId: card.id,
+        action: 'create',
+        description: `Created story card in chapter ${chapterId}`,
+        metadata: { hasVisualLayout: !!visualLayout },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(card);
+    } catch (error) {
+      console.error('Error creating story card:', error);
+      res.status(500).json({ error: 'Failed to create story card' });
+    }
+  });
+
+  app.get('/api/cms/story-cards/:id', isAdmin, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      const card = await storage.getStoryCard(id);
+      
+      if (!card) {
+        return res.status(404).json({ error: 'Story card not found' });
+      }
+      
+      res.json(card);
+    } catch (error) {
+      console.error('Error fetching story card:', error);
+      res.status(500).json({ error: 'Failed to fetch story card' });
+    }
+  });
+
+  app.put('/api/cms/story-cards/:id', isAdminWithCSRF, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const { content, visualLayout, order, hasAR } = req.body;
+      const userId = req.user.claims.sub;
+      
+      const updates: any = {};
+      if (content !== undefined) updates.content = content;
+      if (visualLayout !== undefined) updates.visualLayout = visualLayout;
+      if (order !== undefined) updates.order = order;
+      if (hasAR !== undefined) updates.hasAR = hasAR;
+      
+      const card = await storage.updateStoryCard(id, updates);
+      
+      // Audit log
+      await AuditLogger.log({
+        userId,
+        entityType: 'story_card',
+        entityId: id,
+        action: 'update',
+        description: `Updated story card ${id}`,
+        changes: updates,
+        metadata: { hasVisualLayout: !!visualLayout },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json(card);
+    } catch (error) {
+      console.error('Error updating story card:', error);
+      res.status(500).json({ error: 'Failed to update story card' });
+    }
+  });
+
+  app.delete('/api/cms/story-cards/:id', isAdminWithCSRF, async (req: any, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.claims.sub;
+      
+      await storage.deleteStoryCard(id);
+      
+      // Audit log
+      await AuditLogger.log({
+        userId,
+        entityType: 'story_card',
+        entityId: id,
+        action: 'delete',
+        description: `Deleted story card ${id}`,
+        severity: 'warning',
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+      
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error deleting story card:', error);
+      res.status(500).json({ error: 'Failed to delete story card' });
+    }
+  });
+
   // Publishing Routes for Story Cards
   app.post("/api/cms/story-cards/:id/publish", isAdminWithCSRF, async (req, res) => {
     try {
