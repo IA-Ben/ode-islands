@@ -5,17 +5,13 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import HelpSystem from '@/components/HelpSystem';
-import { EventHeader } from '@/components/EventHeader';
 import { SectionScaffold } from '@/components/SectionScaffold';
+import { EventHub, type FeaturedCard, type NowNextItem } from '@/components/event/EventHub';
+import { EventLane, type EventLaneCard } from '@/components/event/EventLane';
 import dynamic from 'next/dynamic';
 
-// Dynamic imports for heavy modules (loaded only when needed)
 const EventDashboard = dynamic(() => import('@/components/EventDashboard'), {
   loading: () => <div className="p-8 text-white/60">Loading dashboard...</div>
-});
-
-const EventAudienceInterface = dynamic(() => import('@/components/EventAudienceInterface'), {
-  loading: () => <div className="p-8 text-white/60">Loading event interface...</div>
 });
 
 const EventInteractiveHub = dynamic(() => import('@/components/EventInteractiveHub'), {
@@ -68,7 +64,6 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   const [session] = useState<SessionData>(initialData.session);
   const [activeEvent, setActiveEvent] = useState<LiveEvent | null>(initialData.activeEvent);
   
-  // Determine initial view based on server data
   const [activeView, setActiveView] = useState<'audience' | 'dashboard' | 'interactive'>(() => {
     if (initialData.userType === 'admin') {
       return 'dashboard';
@@ -76,8 +71,8 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     return 'audience';
   });
   
-  // Event lane state (info, interact, rewards)
-  const [lane, setLane] = useState<'info' | 'interact' | 'rewards'>('info');
+  const [view, setView] = useState<'hub' | 'lane'>('hub');
+  const [currentLane, setCurrentLane] = useState<'info' | 'interact' | 'rewards' | null>(null);
 
   // Optimized CSRF token fetching (only when needed)
   const fetchCSRFToken = async () => {
@@ -169,11 +164,175 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     }
   }, [activeView]);
 
-  // Memoized theme gradient for performance
   const backgroundGradient = useMemo(() => 
     `radial-gradient(ellipse at center, ${theme.colors.primary}40 0%, transparent 50%)`,
     [theme.colors.primary]
   );
+
+  const mockFeaturedCards: FeaturedCard[] = useMemo(() => [
+    {
+      id: 'featured-1',
+      size: 'L',
+      title: 'Welcome to Ode Islands',
+      subtitle: 'Tonight\'s Experience',
+      imageUrl: '/images/ode-islands-hero.jpg',
+      ctaLabel: 'Explore Now',
+      ctaAction: () => console.log('Featured card clicked')
+    }
+  ], []);
+
+  const mockNowNextItems: NowNextItem[] = useMemo(() => [
+    {
+      id: 'now-1',
+      title: 'Opening Ceremony',
+      time: '7:00 PM',
+      description: 'Welcome to the Ode Islands experience',
+      isLive: true
+    },
+    {
+      id: 'next-1',
+      title: 'Main Performance',
+      time: '7:30 PM',
+      description: 'Live music and immersive storytelling',
+      isNext: true
+    },
+    {
+      id: 'next-2',
+      title: 'Interactive AR Experience',
+      time: '8:15 PM',
+      description: 'Explore the islands through augmented reality'
+    }
+  ], []);
+
+  const infoLaneCards: EventLaneCard[] = useMemo(() => [
+    {
+      id: 'schedule',
+      type: 'schedule',
+      title: 'Schedule',
+      subtitle: 'Event Timeline',
+      size: 'M',
+      description: 'View tonight\'s full schedule'
+    },
+    {
+      id: 'map',
+      type: 'map',
+      title: 'Map & Wayfinding',
+      subtitle: 'Find Your Way',
+      size: 'M',
+      description: 'Navigate the venue with our interactive map'
+    },
+    {
+      id: 'venue',
+      type: 'venue',
+      title: 'Venue Info',
+      subtitle: 'Know Before You Go',
+      size: 'S',
+      description: 'Important venue information and guidelines'
+    },
+    {
+      id: 'safety',
+      type: 'safety',
+      title: 'Safety & Help',
+      subtitle: 'We\'re Here For You',
+      size: 'S',
+      description: 'Emergency contacts and assistance'
+    }
+  ], []);
+
+  const interactLaneCards: EventLaneCard[] = useMemo(() => [
+    {
+      id: 'live-ar',
+      type: 'live-ar',
+      title: 'Live AR Experience',
+      subtitle: 'Augmented Reality',
+      size: 'L',
+      description: 'Immerse yourself in the Ode Islands world'
+    },
+    {
+      id: 'qr-scan',
+      type: 'qr-scan',
+      title: 'QR Scanner',
+      subtitle: 'Unlock Content',
+      size: 'M',
+      description: 'Scan codes around the venue for exclusive content'
+    },
+    {
+      id: 'wearables',
+      type: 'wearables',
+      title: 'Wearables Sync',
+      subtitle: 'Connect Your Device',
+      size: 'S',
+      description: 'Sync with wearables for enhanced experiences'
+    },
+    {
+      id: 'ai-create',
+      type: 'ai-create',
+      title: 'AI Creation Studio',
+      subtitle: 'Create with AI',
+      size: 'M',
+      description: 'Generate personalized Ode Islands artwork'
+    },
+    {
+      id: 'user-media',
+      type: 'user-media',
+      title: 'Share Your Moment',
+      subtitle: 'Upload Media',
+      size: 'S',
+      description: 'Share your photos and videos from tonight'
+    }
+  ], []);
+
+  const rewardsLaneCards: EventLaneCard[] = useMemo(() => [
+    {
+      id: 'superfan',
+      type: 'points-superfan',
+      title: 'Superfan Status',
+      subtitle: 'Your Progress',
+      size: 'L',
+      description: 'Track your tier and unlock exclusive rewards'
+    },
+    {
+      id: 'merch',
+      type: 'merch',
+      title: 'Exclusive Merch',
+      subtitle: 'Limited Edition',
+      size: 'M',
+      description: 'Shop exclusive Ode Islands merchandise'
+    },
+    {
+      id: 'food-bev',
+      type: 'f&b',
+      title: 'Food & Beverage',
+      subtitle: 'Dining Options',
+      size: 'M',
+      description: 'Browse menu and pre-order from your seat'
+    }
+  ], []);
+
+  const handleEnterLane = (lane: 'info' | 'interact' | 'rewards') => {
+    setCurrentLane(lane);
+    setView('lane');
+  };
+
+  const handleBackToHub = () => {
+    setView('hub');
+    setCurrentLane(null);
+  };
+
+  const handleCardClick = (card: EventLaneCard) => {
+    console.log('Card clicked:', card);
+  };
+
+  const handleQuickAction = (action: 'scan' | 'map' | 'schedule' | 'offers') => {
+    console.log('Quick action:', action);
+    if (action === 'scan') {
+      handleEnterLane('interact');
+    } else if (action === 'map' || action === 'schedule') {
+      handleEnterLane('info');
+    } else if (action === 'offers') {
+      handleEnterLane('rewards');
+    }
+  };
 
   // Error state with retry functionality
   if (error) {
@@ -246,40 +405,28 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     
     return (
       <>
-        <EventHeader
-          lane={lane}
-          setLane={setLane}
-          onOpenMap={() => {/* TODO: Implement map modal */}}
-          onQuickScan={() => {/* TODO: Implement QR scanner */}}
-        />
-        
-        {lane === 'info' && (
-          <SectionScaffold>
-            <EventAudienceInterface
-              eventId={activeEvent.id}
-              userId={session?.userId || 'anonymous'}
-              theme={theme}
-            />
-          </SectionScaffold>
+        {view === 'hub' && (
+          <EventHub
+            onEnterLane={handleEnterLane}
+            featuredCards={mockFeaturedCards}
+            nowNextItems={mockNowNextItems}
+            onQuickAction={handleQuickAction}
+          />
         )}
         
-        {lane === 'interact' && (
-          <SectionScaffold>
-            <EventInteractiveHub
-              eventId={activeEvent.id}
-              userId={session?.userId || 'anonymous'}
-              theme={theme}
-            />
-          </SectionScaffold>
-        )}
-        
-        {lane === 'rewards' && (
-          <SectionScaffold>
-            <div className="p-8 text-center text-white/60">
-              <h3 className="text-2xl font-bold mb-4">Rewards</h3>
-              <p>Collect memories and earn rewards during the event</p>
-            </div>
-          </SectionScaffold>
+        {view === 'lane' && currentLane && (
+          <EventLane
+            lane={currentLane}
+            cards={
+              currentLane === 'info' 
+                ? infoLaneCards 
+                : currentLane === 'interact' 
+                ? interactLaneCards 
+                : rewardsLaneCards
+            }
+            onBack={handleBackToHub}
+            onCardClick={handleCardClick}
+          />
         )}
         
         <HelpSystem userRole="audience" />
