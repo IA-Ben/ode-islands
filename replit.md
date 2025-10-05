@@ -78,6 +78,16 @@ Production-ready content management system with enterprise-grade security and wo
 - **Type-Safe**: Comprehensive TypeScript types with discriminated union for all element types
 - **Deterministic Rendering**: Sequential order values (0, 1, 2...) ensure consistent layout rendering
 
+### Database-Driven Card Editor (Enhancement 10)
+- **Modal-Based Editing**: StoryCardModal component for creating and editing cards without leaving the main CMS page
+- **Real-Time Database Sync**: Cards rendered from live database queries; changes appear immediately after save
+- **Smart Data Hydration**: Automatically loads existing visual layouts from both direct and nested content structures
+- **Dual-Path Support**: Handles both create (POST) and edit (PUT) operations with proper API routing
+- **Chapter-Specific Refresh**: Optimized to refresh only affected chapter's cards after changes
+- **API Endpoints**: Full CRUD operations via `/api/story-cards` (POST/GET) and `/api/story-cards/:id` (PUT/DELETE)
+- **Legacy Editor Deprecated**: Old file-based editor at `/admin/cms/edit/[chapterId]/[cardIndex]` shows deprecation warning with auto-redirect
+- **Next.js 15 Compatible**: All API routes properly await params for edge runtime compatibility
+
 ### Security & Data Integrity
 - **CSRF Protection**: All mutation endpoints require CSRF token validation
 - **Admin Authentication**: isAdmin and isAdminWithCSRF middleware on sensitive routes
