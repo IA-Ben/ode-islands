@@ -512,6 +512,19 @@ export const userMemoryWallet = pgTable("user_memory_wallet", {
   emotionalTone: varchar("emotional_tone"), // 'positive', 'neutral', 'reflective', 'exciting'
   displayOrder: integer("display_order"), // For custom ordering
   
+  // Memory Wallet Upgrade - Template & Reward System
+  points: integer("points").default(0), // Points value for gamification
+  rarity: varchar("rarity"), // 'common', 'rare', 'epic', 'legendary'
+  setId: varchar("set_id"), // Set collection identifier
+  setName: varchar("set_name"), // Set collection name
+  setIndex: integer("set_index"), // Position in set
+  setTotal: integer("set_total"), // Total items in set
+  templateId: varchar("template_id").references(() => memoryTemplates.id), // Reference to template
+  ruleId: varchar("rule_id").references(() => rewardRules.id), // Reference to reward rule
+  qrId: varchar("qr_id"), // QR tracking identifier
+  geo: jsonb("geo"), // Geographic data {lat, lng, geohash, zone, floor}
+  extendedMetadata: jsonb("extended_metadata"), // Custom metadata fields from template
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => {
@@ -521,6 +534,126 @@ export const userMemoryWallet = pgTable("user_memory_wallet", {
     sourceTypeIndex: index("user_memory_wallet_source_type_idx").on(table.sourceType),
     collectedAtIndex: index("user_memory_wallet_collected_at_idx").on(table.collectedAt),
     isFavoriteIndex: index("user_memory_wallet_is_favorite_idx").on(table.isFavorite),
+    rarityIndex: index("user_memory_wallet_rarity_idx").on(table.rarity),
+    setIdIndex: index("user_memory_wallet_set_id_idx").on(table.setId),
+    templateIdIndex: index("user_memory_wallet_template_id_idx").on(table.templateId),
+    ruleIdIndex: index("user_memory_wallet_rule_id_idx").on(table.ruleId),
+  };
+});
+
+// Memory Templates - Reusable memory configurations for templated memories
+export const memoryTemplates = pgTable("memory_templates", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id), // Optional event association
+  
+  // Template identity
+  title: varchar("title").notNull(),
+  description: text("description"),
+  
+  // Media configuration
+  mediaType: varchar("media_type").notNull(), // 'image', 'video', 'ar-capture', '3d', 'audio'
+  mediaAsset: varchar("media_asset"), // URL to media file (supports GLB/USDZ for 3D)
+  
+  // Gamification properties
+  points: integer("points").default(0),
+  rarity: varchar("rarity").default('common'), // 'common', 'rare', 'epic', 'legendary'
+  
+  // Set collection properties
+  setId: varchar("set_id"), // For set collections
+  setName: varchar("set_name"),
+  setIndex: integer("set_index"), // Position in set
+  setTotal: integer("set_total"), // Total items in set
+  
+  // Schema and metadata
+  metadataSchema: jsonb("metadata_schema"), // Defines custom metadata fields
+  
+  // Open Graph sharing
+  ogShareTitle: varchar("og_share_title"),
+  ogShareDescription: text("og_share_description"),
+  ogShareImage: varchar("og_share_image"),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    eventIdIndex: index("memory_templates_event_id_idx").on(table.eventId),
+    rarityIndex: index("memory_templates_rarity_idx").on(table.rarity),
+    setIdIndex: index("memory_templates_set_id_idx").on(table.setId),
+    isActiveIndex: index("memory_templates_is_active_idx").on(table.isActive),
+  };
+});
+
+// Reward Rules - QR/Location/Action trigger configurations
+export const rewardRules = pgTable("reward_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  
+  // Rule configuration
+  type: varchar("type").notNull(), // 'qr', 'location', 'action'
+  name: varchar("name").notNull(), // Descriptive name
+  description: text("description"),
+  
+  // Template reference
+  memoryTemplateId: varchar("memory_template_id").references(() => memoryTemplates.id).notNull(),
+  
+  // Matching configuration
+  matchConfig: jsonb("match_config"), // QR payload schema, geo-fence coords, or action conditions
+  
+  // Rule constraints
+  constraints: jsonb("constraints"), // {cooldownMinutes?, oneTimeOnly?, requiresTier?, timeWindow?}
+  antiAbuse: jsonb("anti_abuse"), // {perUserLimit?, perDeviceLimit?, duplicateNonceBlock?}
+  
+  // Validity window
+  validityStart: timestamp("validity_start"),
+  validityEnd: timestamp("validity_end"),
+  
+  // Redemption limits
+  maxRedemptions: integer("max_redemptions"), // Global limit
+  currentRedemptions: integer("current_redemptions").default(0),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    eventIdIndex: index("reward_rules_event_id_idx").on(table.eventId),
+    typeIndex: index("reward_rules_type_idx").on(table.type),
+    memoryTemplateIdIndex: index("reward_rules_memory_template_id_idx").on(table.memoryTemplateId),
+    isActiveIndex: index("reward_rules_is_active_idx").on(table.isActive),
+  };
+});
+
+// QR Nonces - Track used QR nonces for anti-abuse
+export const qrNonces = pgTable("qr_nonces", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Nonce tracking
+  nonce: varchar("nonce").notNull(), // Unique per event
+  eventId: varchar("event_id").references(() => liveEvents.id).notNull(),
+  ruleId: varchar("rule_id").references(() => rewardRules.id),
+  
+  // User tracking
+  userId: varchar("user_id").references(() => users.id), // Nullable for anonymous tracking
+  deviceFingerprint: varchar("device_fingerprint"),
+  
+  // Metadata
+  scannedAt: timestamp("scanned_at").defaultNow(),
+  ipAddress: varchar("ip_address"),
+}, (table) => {
+  return {
+    nonceEventIndex: uniqueIndex("qr_nonces_nonce_event_unique").on(table.nonce, table.eventId),
+    ruleIdIndex: index("qr_nonces_rule_id_idx").on(table.ruleId),
+    userIdIndex: index("qr_nonces_user_id_idx").on(table.userId),
+    scannedAtIndex: index("qr_nonces_scanned_at_idx").on(table.scannedAt),
   };
 });
 
