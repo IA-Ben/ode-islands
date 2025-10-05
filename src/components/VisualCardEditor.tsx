@@ -76,7 +76,7 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
     updateLayout({
       ...layout,
       elements: layout.elements.map((el) =>
-        el.id === elementId ? { ...el, ...updates } as CardElement : el
+        el.id === elementId ? { ...el, ...updates } : el
       ),
     });
   };
@@ -92,13 +92,23 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
     
     const selectedMedia = Array.isArray(media) ? media[0] : media;
     
-    updateElement(mediaSelectElementId, {
-      properties: {
-        ...(layout.elements.find(el => el.id === mediaSelectElementId)?.properties || {}),
-        mediaAssetId: selectedMedia.id,
-        src: selectedMedia.url,
+    if (mediaSelectElementId === 'card-background') {
+      updateLayout({
+        ...layout,
+        backgroundImage: selectedMedia.url,
+      });
+    } else {
+      const element = layout.elements.find(el => el.id === mediaSelectElementId);
+      if (element && (element.type === 'image' || element.type === 'video')) {
+        updateElement(mediaSelectElementId, {
+          properties: {
+            ...element.properties,
+            mediaAssetId: selectedMedia.id,
+            src: selectedMedia.url,
+          }
+        } as Partial<CardElement>);
       }
-    });
+    }
     
     setMediaModalOpen(false);
     setMediaSelectElementId(null);
@@ -162,6 +172,86 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
                   onChange={(e) => updateLayout({ ...layout, backgroundColor: e.target.value })}
                   className="w-full h-10 rounded border"
                 />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Background Image</label>
+                <button
+                  onClick={() => {
+                    setMediaSelectElementId('card-background');
+                    setMediaSelectType('image');
+                    setMediaModalOpen(true);
+                  }}
+                  className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 text-sm"
+                >
+                  {layout.backgroundImage ? 'Change Image' : 'Select Image'}
+                </button>
+                {layout.backgroundImage && (
+                  <button
+                    onClick={() => updateLayout({ ...layout, backgroundImage: undefined })}
+                    className="w-full mt-1 px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
+                  >
+                    Remove Image
+                  </button>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium mb-1">Padding (px)</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="number"
+                    value={layout.padding?.top ?? ''}
+                    onChange={(e) => updateLayout({
+                      ...layout,
+                      padding: {
+                        ...layout.padding,
+                        top: e.target.value ? parseInt(e.target.value) : undefined
+                      }
+                    })}
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Top"
+                  />
+                  <input
+                    type="number"
+                    value={layout.padding?.right ?? ''}
+                    onChange={(e) => updateLayout({
+                      ...layout,
+                      padding: {
+                        ...layout.padding,
+                        right: e.target.value ? parseInt(e.target.value) : undefined
+                      }
+                    })}
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Right"
+                  />
+                  <input
+                    type="number"
+                    value={layout.padding?.bottom ?? ''}
+                    onChange={(e) => updateLayout({
+                      ...layout,
+                      padding: {
+                        ...layout.padding,
+                        bottom: e.target.value ? parseInt(e.target.value) : undefined
+                      }
+                    })}
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Bottom"
+                  />
+                  <input
+                    type="number"
+                    value={layout.padding?.left ?? ''}
+                    onChange={(e) => updateLayout({
+                      ...layout,
+                      padding: {
+                        ...layout.padding,
+                        left: e.target.value ? parseInt(e.target.value) : undefined
+                      }
+                    })}
+                    className="w-full p-2 border rounded text-sm"
+                    placeholder="Left"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -296,6 +386,44 @@ function renderElementEditor(
               <option value="right">Right</option>
             </select>
           </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium mb-1">Text Color</label>
+              <input
+                type="color"
+                value={element.properties.color || '#000000'}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, color: e.target.value }
+                })}
+                className="w-full h-8 rounded border"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Font Size (px)</label>
+              <input
+                type="number"
+                value={element.properties.fontSize || ''}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, fontSize: e.target.value ? parseInt(e.target.value) : undefined }
+                })}
+                className="w-full p-1 border rounded text-sm"
+                placeholder="Auto"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Font Weight</label>
+            <select
+              value={element.properties.fontWeight || 'normal'}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, fontWeight: e.target.value as 'normal' | 'bold' }
+              })}
+              className="w-full p-2 border rounded text-sm"
+            >
+              <option value="normal">Normal</option>
+              <option value="bold">Bold</option>
+            </select>
+          </div>
         </div>
       );
     
@@ -330,6 +458,60 @@ function renderElementEditor(
             className="w-full p-2 border rounded"
             placeholder="Alt text"
           />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium mb-1">Width</label>
+              <input
+                type="text"
+                value={element.properties.width || ''}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, width: e.target.value }
+                })}
+                className="w-full p-1 border rounded text-sm"
+                placeholder="auto"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Height</label>
+              <input
+                type="text"
+                value={element.properties.height || ''}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, height: e.target.value }
+                })}
+                className="w-full p-1 border rounded text-sm"
+                placeholder="auto"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium mb-1">Object Fit</label>
+              <select
+                value={element.properties.objectFit}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, objectFit: e.target.value as 'cover' | 'contain' | 'fill' }
+                })}
+                className="w-full p-1 border rounded text-sm"
+              >
+                <option value="cover">Cover</option>
+                <option value="contain">Contain</option>
+                <option value="fill">Fill</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Border Radius (px)</label>
+              <input
+                type="number"
+                value={element.properties.borderRadius || ''}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, borderRadius: e.target.value ? parseInt(e.target.value) : undefined }
+                })}
+                className="w-full p-1 border rounded text-sm"
+                placeholder="0"
+              />
+            </div>
+          </div>
         </div>
       );
     
@@ -355,6 +537,64 @@ function renderElementEditor(
             className="w-full p-2 border rounded"
             placeholder="Enter video URL"
           />
+          <div>
+            <label className="block text-xs font-medium mb-1">Poster Image URL</label>
+            <input
+              type="text"
+              value={element.properties.poster || ''}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, poster: e.target.value }
+              })}
+              className="w-full p-2 border rounded text-sm"
+              placeholder="Optional poster image"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <label className="flex items-center space-x-2 text-sm">
+              <input
+                type="checkbox"
+                checked={element.properties.autoplay}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, autoplay: e.target.checked }
+                })}
+                className="rounded"
+              />
+              <span>Autoplay</span>
+            </label>
+            <label className="flex items-center space-x-2 text-sm">
+              <input
+                type="checkbox"
+                checked={element.properties.loop}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, loop: e.target.checked }
+                })}
+                className="rounded"
+              />
+              <span>Loop</span>
+            </label>
+            <label className="flex items-center space-x-2 text-sm">
+              <input
+                type="checkbox"
+                checked={element.properties.muted}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, muted: e.target.checked }
+                })}
+                className="rounded"
+              />
+              <span>Muted</span>
+            </label>
+            <label className="flex items-center space-x-2 text-sm">
+              <input
+                type="checkbox"
+                checked={element.properties.controls}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, controls: e.target.checked }
+                })}
+                className="rounded"
+              />
+              <span>Controls</span>
+            </label>
+          </div>
         </div>
       );
     
@@ -370,17 +610,163 @@ function renderElementEditor(
             className="w-full p-2 border rounded"
             placeholder="Button text"
           />
-          <select
-            value={element.properties.variant}
-            onChange={(e) => updateElement(element.id, {
-              properties: { ...element.properties, variant: e.target.value }
-            })}
-            className="w-full p-2 border rounded"
-          >
-            <option value="primary">Primary</option>
-            <option value="secondary">Secondary</option>
-            <option value="outline">Outline</option>
-          </select>
+          <div>
+            <label className="block text-xs font-medium mb-1">Action Type</label>
+            <select
+              value={element.properties.action}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, action: e.target.value as 'link' | 'navigate' | 'custom' }
+              })}
+              className="w-full p-2 border rounded"
+            >
+              <option value="link">External Link</option>
+              <option value="navigate">Navigate to Chapter</option>
+              <option value="custom">Custom Action</option>
+            </select>
+          </div>
+          {element.properties.action === 'link' && (
+            <input
+              type="url"
+              value={element.properties.url || ''}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, url: e.target.value }
+              })}
+              className="w-full p-2 border rounded"
+              placeholder="https://example.com"
+            />
+          )}
+          {element.properties.action === 'navigate' && (
+            <input
+              type="text"
+              value={element.properties.navigationTarget || ''}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, navigationTarget: e.target.value }
+              })}
+              className="w-full p-2 border rounded"
+              placeholder="chapter-id or /path"
+            />
+          )}
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium mb-1">Style</label>
+              <select
+                value={element.properties.variant}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, variant: e.target.value as 'primary' | 'secondary' | 'outline' }
+                })}
+                className="w-full p-2 border rounded text-sm"
+              >
+                <option value="primary">Primary</option>
+                <option value="secondary">Secondary</option>
+                <option value="outline">Outline</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Size</label>
+              <select
+                value={element.properties.size}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, size: e.target.value as 'small' | 'medium' | 'large' }
+                })}
+                className="w-full p-2 border rounded text-sm"
+              >
+                <option value="small">Small</option>
+                <option value="medium">Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+          </div>
+          <label className="flex items-center space-x-2 text-sm">
+            <input
+              type="checkbox"
+              checked={element.properties.fullWidth}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, fullWidth: e.target.checked }
+              })}
+              className="rounded"
+            />
+            <span>Full Width</span>
+          </label>
+        </div>
+      );
+    
+    case 'divider':
+      return (
+        <div className="space-y-2">
+          <div>
+            <label className="block text-xs font-medium mb-1">Style</label>
+            <select
+              value={element.properties.style}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, style: e.target.value as 'solid' | 'dashed' | 'dotted' }
+              })}
+              className="w-full p-2 border rounded"
+            >
+              <option value="solid">Solid</option>
+              <option value="dashed">Dashed</option>
+              <option value="dotted">Dotted</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium mb-1">Color</label>
+            <input
+              type="color"
+              value={element.properties.color || '#cccccc'}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, color: e.target.value }
+              })}
+              className="w-full h-10 rounded border"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="block text-xs font-medium mb-1">Thickness (px)</label>
+              <input
+                type="number"
+                value={element.properties.thickness || 1}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, thickness: parseInt(e.target.value) || 1 }
+                })}
+                className="w-full p-2 border rounded"
+                min="1"
+                max="10"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium mb-1">Margin (px)</label>
+              <input
+                type="number"
+                value={element.properties.margin || 16}
+                onChange={(e) => updateElement(element.id, {
+                  properties: { ...element.properties, margin: parseInt(e.target.value) || 0 }
+                })}
+                className="w-full p-2 border rounded"
+                min="0"
+              />
+            </div>
+          </div>
+        </div>
+      );
+    
+    case 'spacer':
+      return (
+        <div className="space-y-2">
+          <div>
+            <label className="block text-xs font-medium mb-1">Height (px)</label>
+            <input
+              type="number"
+              value={element.properties.height}
+              onChange={(e) => updateElement(element.id, {
+                properties: { ...element.properties, height: parseInt(e.target.value) || 0 }
+              })}
+              className="w-full p-2 border rounded"
+              min="0"
+              placeholder="24"
+            />
+          </div>
+          <div className="text-xs text-gray-500 mt-1">
+            Current height: {element.properties.height}px
+          </div>
         </div>
       );
     

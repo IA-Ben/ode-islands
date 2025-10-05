@@ -130,7 +130,7 @@ export function createDefaultElement(type: CardElementType, order: number): Card
         properties: {
           autoplay: false,
           loop: false,
-          muted: false,
+          muted: true,
           controls: true,
         },
       };
@@ -156,6 +156,7 @@ export function createDefaultElement(type: CardElementType, order: number): Card
         order,
         properties: {
           style: 'solid',
+          color: '#cccccc',
           thickness: 1,
           margin: 16,
         },
@@ -167,7 +168,7 @@ export function createDefaultElement(type: CardElementType, order: number): Card
         type: 'spacer',
         order,
         properties: {
-          height: 32,
+          height: 24,
         },
       };
     

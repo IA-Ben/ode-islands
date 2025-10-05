@@ -24,7 +24,7 @@ export function CardRenderer({ layout, className = '' }: CardRendererProps) {
     backgroundColor: backgroundColor || '#ffffff',
     backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
     padding: padding ? 
-      `${padding.top}px ${padding.right}px ${padding.bottom}px ${padding.left}px` : 
+      `${padding.top ?? 16}px ${padding.right ?? 16}px ${padding.bottom ?? 16}px ${padding.left ?? 16}px` : 
       '16px',
   };
   

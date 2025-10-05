@@ -113,6 +113,11 @@ export function MediaSelectorModal({
     setPage(1); // Reset to first page when filters change
   };
 
+  const handleClearFilters = () => {
+    setFilters({ type: filter?.type || '', search: '', tags: [] });
+    setPage(1);
+  };
+
   if (!isOpen) return null;
 
   const selectedMedia = items.filter((item) => selectedIds.has(item.id));
@@ -140,7 +145,8 @@ export function MediaSelectorModal({
           {/* Filters */}
           <MediaFilters
             filters={filters}
-            onFilterChange={handleFilterChange}
+            onFiltersChange={handleFilterChange}
+            onClear={handleClearFilters}
           />
         </div>
 

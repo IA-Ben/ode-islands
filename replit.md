@@ -88,6 +88,30 @@ Production-ready content management system with enterprise-grade security and wo
 - **Legacy Editor Deprecated**: Old file-based editor at `/admin/cms/edit/[chapterId]/[cardIndex]` shows deprecation warning with auto-redirect
 - **Next.js 15 Compatible**: All API routes properly await params for edge runtime compatibility
 
+### Traditional Mode - Complete Feature Restoration
+- **Structured Editing Interface**: Full-featured form-based editor replacing simple JSON textarea
+- **Text Content**: Title, subtitle, description fields with proper inputs
+- **Call to Action**: CTA title, URL, and start CTA text configuration
+- **Media Management**: Video (URL, width, height, audio settings, type), Image (URL), Audio (URL), Background image support
+- **Theme & Styling**: ColorPicker components for background, title, subtitle, description colors; mix blend mode selector; text shadow and invert CTA toggles
+- **AR Configuration**: Mode selector (auto, object, marker, location) with conditional configuration panels for markers and locations
+- **PlayCanvas Integration**: Type selector (iframe, engine, self-hosted), project ID, build path, fill mode, dimensions, transparency, auto-play settings
+- **Component Integration**: ColorPicker for color selection, ObjectUploader for media uploads (100MB max), CardEditorButtons for custom button management, CMSCardPreview for live preview
+- **JSON Toggle**: Advanced users can switch to raw JSON editing mode for complex configurations
+- **Complete Parity**: All fields from legacy file-based editor fully restored in modal system
+
+### Visual Mode - 100% Feature Complete
+- **Element Types**: All 6 types fully functional (Text, Image, Video, Button, Divider, Spacer)
+- **Text Elements**: Content, variant (heading1-3, paragraph, caption), alignment, color picker, font size, font weight
+- **Image Elements**: Media library selection, alt text, alignment, width/height controls, objectFit selector (cover/contain/fill), borderRadius
+- **Video Elements**: Media library selection, alignment, autoplay/loop/muted/controls toggles, poster image
+- **Button Elements**: Label, variant (primary/secondary/text), URL/action configuration, size (small/medium/large), fullWidth toggle, alignment, color picker
+- **Divider Elements**: Style (solid/dashed/dotted), color picker, thickness, margin controls
+- **Spacer Elements**: Height control (px)
+- **Card Settings**: Background color, background image (via media library), padding (individual top/right/bottom/left controls)
+- **Safe Rendering**: Nullish coalescing defaults prevent crashes from partial data; padding defaults to 16px when undefined
+- **Data Preservation**: All update handlers preserve existing properties; no data loss during edits
+
 ### Security & Data Integrity
 - **CSRF Protection**: All mutation endpoints require CSRF token validation
 - **Admin Authentication**: isAdmin and isAdminWithCSRF middleware on sensitive routes

@@ -452,10 +452,9 @@ export const CardEditorButtons: React.FC<CardEditorButtonsProps> = ({
                           type="text"
                           value={button.action?.target || ''}
                           onChange={(e) => updateButton(index, {
-                            action: {
-                              ...button.action,
-                              target: e.target.value
-                            }
+                            action: button.action 
+                              ? { ...button.action, target: e.target.value }
+                              : { type: 'external-url', target: e.target.value }
                           })}
                           className={`w-full px-3 py-2 bg-gray-700 border rounded text-white text-sm ${
                             errors.some(e => e.field === 'action.target') ? 'border-red-500' : 'border-gray-600'
