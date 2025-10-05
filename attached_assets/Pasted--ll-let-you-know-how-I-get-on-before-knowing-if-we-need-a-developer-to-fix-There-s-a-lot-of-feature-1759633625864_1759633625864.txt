@@ -1,0 +1,165 @@
+’ll let you know how I get on before knowing if we need a developer to fix. There’s a lot of features in the platform that will be impressive once it’s working correctly, which it looks like it might, at least to the point of demo. A senior dev would then fix any remaining issues and implement security. I’ve switched off security as this was causing the issues that I was having problems overcoming, and now that’s disabled I’m seeing to make progress.
+
+Complete Bugs & Improvements List
+🔴 CRITICAL BUGS (Fix Immediately)
+1. WebSocket Reconnection Flooding
+Location: src/hooks/useWebSocket.ts, src/lib/webSocketService.ts
+Issue: No exponential backoff, causes excessive reconnection attempts filling logs
+Impact: Server performance degradation, log noise masks real issues
+Fix: Implement exponential backoff with jitter, connection limits
+2. HLS Video Codec Errors
+Location: src/components/Player.tsx
+Issue: bufferAddCodecError - Failed to execute 'addSourceBuffer' on 'MediaSource'
+Impact: Video playback fails on certain browsers/devices
+Fix: Add codec detection, better error recovery, fallback quality profiles
+3. Maximum Update Depth Exceeded
+Location: Multiple components (detected in browser logs)
+Issue: Infinite re-render loop in useEffect without proper dependencies
+Impact: Performance degradation, browser crashes
+Fix: Audit all useEffect hooks, fix dependency arrays
+4. WebSocket Client Memory Leak
+Location: server/websocket.ts - WebSocketManager
+Issue: Disconnected clients not removed from notificationClients/eventClients maps
+Impact: Growing memory usage over time, eventual server crash
+Fix: Properly clean up client references on disconnect
+5. DOM Element Memory Leaks
+Location: src/lib/certificateGenerator.ts
+Issue: Created DOM elements (document.createElement) not removed after rendering
+Impact: Memory growth with repeated certificate generation
+Fix: Clean up created elements after use
+🟠 HIGH PRIORITY (Fix Soon)
+6. Authentication Blocking CMS Functionality
+Locations:
+middleware.ts - Blocks all /admin/* routes
+src/app/api/chapters/route.ts - Returns 401 without auth
+src/app/api/sub-chapters/route.ts - Requires authentication
+src/app/api/cms/custom-buttons/route.ts - Requires auth
+server/routes.ts - isAuthenticated, isAdmin middleware
+/api/content/availability - Blocks without userId
+/api/content/conditions - Requires authentication
+Issue: Authentication prevents CMS testing and development
+Impact: Cannot test CMS features without logging in
+Fix: REMOVE all auth checks temporarily - Add them back at project end
+7. Inefficient Database Queries (N+1 Problem)
+Location: src/app/api/chapters/route.ts, src/app/api/sub-chapters/route.ts
+Issue: Iterating through items to fetch related data instead of using JOINs
+Impact: Slow API responses with large datasets
+Fix: Use database joins, batch queries, projections
+8. Video Quality Not Responsive to Network
+Location: src/components/Player.tsx, src/contexts/MobileContext.tsx
+Issue: HLS quality selection based on device type, not actual network conditions
+Impact: Poor experience on slow connections, wasted bandwidth on fast connections
+Fix: Implement adaptive bitrate selection based on actual throughput
+9. Missing Input Validation
+Locations: Multiple API routes
+Issue: No Zod/Yup schemas validating request bodies
+Impact: Invalid data can crash server, database corruption
+Fix: Add comprehensive input validation to all POST/PUT/PATCH endpoints
+10. No CSRF Protection
+Location: All state-changing API routes
+Issue: CSRF token system exists but not consistently enforced
+Impact: Vulnerable to cross-site request forgery attacks
+Fix: Enforce CSRF tokens on all POST/PUT/PATCH/DELETE requests
+🟡 MEDIUM PRIORITY (Improvements)
+11. Unbounded Cache Growth
+Location: EnterpriseFeatureFlagService, AnalyticsService
+Issue: In-memory maps (flagCache, cache) with no size limits or expiry
+Impact: Memory growth in long-running processes
+Fix: Implement cache eviction policy (LRU, TTL, size limits)
+12. Redundant AR Mode Detection
+Location: src/components/AROrchestrator.tsx
+Issue: detectARMode called multiple times unnecessarily
+Impact: Wasted CPU cycles
+Fix: Memoize result, call once and store in state
+13. Polling Instead of WebSockets
+Location: src/components/LivePollingInterface.tsx
+Issue: Uses setInterval to fetch poll responses instead of real-time push
+Impact: Unnecessary server load, delayed updates
+Fix: Use WebSocket push for poll updates
+14. Large JSON Loading on Client
+Location: src/app/before/[id]/page.tsx - loads ode-islands.json
+Issue: Entire JSON file loaded on client side
+Impact: Slow initial page load, high bandwidth usage
+Fix: Implement server-side filtering, paginated loading, or API endpoints
+15. Direct DOM Manipulation in React
+Locations: CardActionRouter.tsx (iframe), NotificationSoundService.ts (flash)
+Issue: Direct DOM manipulation bypasses React state management
+Impact: Harder to test, potential state synchronization issues
+Fix: Wrap in React refs or state management patterns
+16. No Rate Limiting
+Location: All API endpoints
+Issue: APIs can be spammed with unlimited requests
+Impact: DoS vulnerability, high server costs
+Fix: Add express-rate-limit middleware
+🟢 LOW PRIORITY (Nice to Have)
+17. Hardcoded Configuration Values
+Locations: resources/transcoder, various config files
+Issue: Paths, URLs hardcoded instead of environment variables
+Impact: Difficult to configure for different environments
+Fix: Move to environment variables with .env.example
+18. Inconsistent Error Messages
+Location: Throughout codebase
+Issue: Some errors silent, some generic, no standardized format
+Impact: Poor debugging experience, unclear user feedback
+Fix: Standardize error response format, add error codes
+19. Missing Loading States
+Locations: Various components
+Issue: No skeleton loaders or loading indicators
+Impact: Poor user experience, appears broken while loading
+Fix: Add skeletons and loading indicators consistently
+20. No Automated Testing
+Location: Minimal test coverage
+Issue: Only button system has comprehensive tests
+Impact: Regression risks, hard to refactor confidently
+Fix: Add Jest/Playwright tests for critical user flows
+📋 TODO Comments Found in Code
+Identified TODOs:
+server/rollbackService.ts:657 - TODO: Implement service restart logic
+server/rollbackService.ts:681 - TODO: Implement data rollback logic
+server/metricsService.ts:242 - TODO: Get environment from process.env
+server/metricsService.ts:492 - TODO: Implement notification sending (email, Slack, webhooks)
+server/metricsService.ts:500 - TODO: Integrate with rollback service
+server/enterpriseWebSocket.ts:98 - TODO: Implement proper authentication
+server/enterpriseWebSocket.ts:205 - TODO: Implement proper session validation
+src/components/HeroRecapCard.tsx:186 - TODO: Get user initials from profile
+src/components/LiveChatInterface.tsx:525 - TODO: Implement clear all messages
+src/components/LiveChatInterface.tsx:535 - TODO: Implement export chat log
+src/components/EventAudienceInterface.tsx:1034 - TODO: Show error feedback to user
+src/components/EventAudienceInterface.tsx:1266 - TODO: Implement help system
+src/app/admin/analytics/page.tsx:260 - TODO: Populate with actual events
+🚨 DISABLED/DEPRECATED ENDPOINTS
+Currently Disabled:
+/api/cms/process-media (POST) - 503 - Disabled due to security vulnerabilities
+/api/auth/register (POST/GET) - 410 Gone - Use OAuth instead
+/api/auth/user-login (POST/GET) - 410 Gone - Use OAuth instead
+/api/auth/logout - Redirects - Use OAuth logout
+🔧 AUTHENTICATION REMOVAL PLAN
+To enable development without authentication blockers:
+
+Files to Modify:
+middleware.ts - Comment out entire middleware
+server/routes.ts - Comment out isAuthenticated and isAdmin checks
+src/app/api/chapters/route.ts - Remove auth checks
+src/app/api/sub-chapters/route.ts - Remove auth requirements
+src/app/api/cms/custom-buttons/route.ts - Remove auth
+server/routes.ts (content APIs) - Remove userId checks from /api/content/availability and /api/content/conditions
+Next.js API routes - Remove all withAuth, withSessionAuth, withAdminAuth wrappers
+Quick Fix Strategy:
+// In middleware.ts - Add at top:
+export async function middleware(request: NextRequest) {
+  return NextResponse.next(); // TEMP: Auth disabled for development
+}
+// In server/routes.ts:
+function isAuthenticated(req: any, res: any, next: any) {
+  next(); // TEMP: Auth disabled
+}
+function isAdmin(req: any, res: any, next: any) {
+  next(); // TEMP: Auth disabled
+}
+📊 PRIORITIZATION MATRIX
+Priority	Category	Count	Estimated Effort
+🔴 Critical	Bugs	5	3-5 days
+🟠 High	Security/Performance	5	5-7 days
+🟡 Medium	Improvements	6	3-5 days
+🟢 Low	Nice-to-Have	4	2-3 days
+TOTAL	

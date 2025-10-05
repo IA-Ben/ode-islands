@@ -8,9 +8,10 @@ interface AddChapterModalProps {
   isOpen: boolean;
   onClose: () => void;
   onChapterAdded: () => void;
+  csrfToken?: string;
 }
 
-export default function AddChapterModal({ isOpen, onClose, onChapterAdded }: AddChapterModalProps) {
+export default function AddChapterModal({ isOpen, onClose, onChapterAdded, csrfToken }: AddChapterModalProps) {
   const [formData, setFormData] = useState({
     title: '',
     summary: '',
@@ -25,11 +26,17 @@ export default function AddChapterModal({ isOpen, onClose, onChapterAdded }: Add
     setError('');
 
     try {
-      const response = await fetch('/api/chapters/create', {
+      const headers: HeadersInit = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
+      const response = await fetch('/api/cms/chapters/create', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers,
         body: JSON.stringify(formData),
       });
 

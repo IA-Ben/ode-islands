@@ -37,8 +37,11 @@ export interface IStorage {
   createChapter(chapter: Omit<typeof chapters.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<Chapter>;
   getChapters(eventId?: string): Promise<Chapter[]>;
   getChapter(id: string): Promise<Chapter | undefined>;
+  getChapterByKey(chapterKey: string): Promise<Chapter | undefined>;
+  getChapterCards(chapterKey: string): Promise<StoryCard[]>;
   updateChapter(id: string, updates: Partial<Chapter>): Promise<Chapter>;
   deleteChapter(id: string): Promise<void>;
+  reorderChapters(chapterOrders: Array<{ id: string; order: number }>): Promise<void>;
   
   // Sub-chapter operations
   createSubChapter(subChapter: Omit<typeof subChapters.$inferInsert, 'id' | 'createdAt' | 'updatedAt'>): Promise<SubChapter>;
@@ -482,6 +485,16 @@ export class DatabaseStorage implements IStorage {
       // Delete the chapter itself
       await tx.delete(chapters)
         .where(eq(chapters.id, id));
+    });
+  }
+
+  async reorderChapters(chapterOrders: Array<{ id: string; order: number }>): Promise<void> {
+    await db.transaction(async (tx) => {
+      for (const { id, order } of chapterOrders) {
+        await tx.update(chapters)
+          .set({ order, updatedAt: new Date() })
+          .where(eq(chapters.id, id));
+      }
     });
   }
   

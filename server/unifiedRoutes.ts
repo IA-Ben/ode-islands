@@ -15,13 +15,7 @@ import adminApiRoutes from './adminApi';
 export { isAuthenticated };
 
 // Database-backed admin middleware that works with Replit Auth
-// TEMP: Authentication disabled for development
-// TODO: Re-enable before production deployment
 export async function isAdmin(req: any, res: any, next: any) {
-  // TEMP: Bypass admin check during development
-  return next();
-  
-  /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
   if (!req.isAuthenticated()) {
     return res.status(401).json({ error: 'Authentication required' });
   }
@@ -50,17 +44,10 @@ export async function isAdmin(req: any, res: any, next: any) {
     console.error('Admin check error:', error);
     return res.status(500).json({ error: 'Failed to verify admin status' });
   }
-  */
 }
 
 // CSRF-protected admin middleware
-// TEMP: CSRF check disabled for development
-// TODO: Re-enable before production deployment
 export function isAdminWithCSRF(req: any, res: any, next: any) {
-  // TEMP: Bypass CSRF and admin check during development
-  return next();
-  
-  /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
   // For mutating operations, check CSRF token
   const protectedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
   
@@ -81,7 +68,6 @@ export function isAdminWithCSRF(req: any, res: any, next: any) {
   
   // Then check admin privileges
   return isAdmin(req, res, next);
-  */
 }
 
 export async function registerUnifiedRoutes(app: Express): Promise<Server> {
@@ -524,6 +510,70 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error saving chapter:", error);
       res.status(500).json({ message: "Failed to save chapter" });
+    }
+  });
+
+  // Chapter Management Routes
+  app.post("/api/cms/chapters/create", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { title, summary, eventId, order } = req.body;
+      
+      if (!title) {
+        return res.status(400).json({ message: "Title is required" });
+      }
+
+      const newChapter = await storage.createChapter({
+        title,
+        summary: summary || null,
+        eventId: eventId || null,
+        order: order !== undefined ? order : 0,
+        hasAR: false,
+      });
+
+      res.json({ message: "Chapter created successfully", chapter: newChapter });
+    } catch (error) {
+      console.error("Error creating chapter:", error);
+      res.status(500).json({ message: "Failed to create chapter" });
+    }
+  });
+
+  app.patch("/api/cms/chapters/:id", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updates = req.body;
+
+      const updatedChapter = await storage.updateChapter(id, updates);
+      res.json({ message: "Chapter updated successfully", chapter: updatedChapter });
+    } catch (error) {
+      console.error("Error updating chapter:", error);
+      res.status(500).json({ message: "Failed to update chapter" });
+    }
+  });
+
+  app.delete("/api/cms/chapters/:id", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { id } = req.params;
+      await storage.deleteChapter(id);
+      res.json({ message: "Chapter deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting chapter:", error);
+      res.status(500).json({ message: "Failed to delete chapter" });
+    }
+  });
+
+  app.post("/api/cms/chapters/reorder", isAdminWithCSRF, async (req, res) => {
+    try {
+      const { chapterOrders } = req.body;
+      
+      if (!Array.isArray(chapterOrders)) {
+        return res.status(400).json({ message: "chapterOrders must be an array" });
+      }
+
+      await storage.reorderChapters(chapterOrders);
+      res.json({ message: "Chapters reordered successfully" });
+    } catch (error) {
+      console.error("Error reordering chapters:", error);
+      res.status(500).json({ message: "Failed to reorder chapters" });
     }
   });
 

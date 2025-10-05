@@ -114,9 +114,37 @@ export default function CMSPage() {
     fetchChapters();
   };
 
+  const handleDeleteChapter = async (chapterId: string, chapterTitle: string) => {
+    if (!confirm(`Are you sure you want to delete "${chapterTitle}"? This will also delete all cards in this chapter.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/cms/chapters/${chapterId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete chapter');
+      }
+
+      console.log('Chapter deleted successfully');
+      
+      // Refresh chapters to get updated list
+      await fetchChapters();
+    } catch (error) {
+      console.error('Error deleting chapter:', error);
+      alert('Failed to delete chapter. Please try again.');
+    }
+  };
+
   const handleChapterReorder = async (newOrder: Array<{ id: string; order: number }>) => {
     try {
-      const response = await fetch('/api/chapters/reorder', {
+      const response = await fetch('/api/cms/chapters/reorder', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -495,6 +523,7 @@ export default function CMSPage() {
                     chapters={chapters}
                     onReorderComplete={handleChapterReorder}
                     onReorderStart={() => console.log('Started reordering chapters')}
+                    onDelete={handleDeleteChapter}
                     className="mb-6"
                   />
                 ) : (
@@ -705,6 +734,7 @@ export default function CMSPage() {
         isOpen={showAddChapterModal}
         onClose={() => setShowAddChapterModal(false)}
         onChapterAdded={handleChapterAdded}
+        csrfToken={csrfToken}
       />
     </div>
   );
