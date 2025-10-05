@@ -64,6 +64,20 @@ Production-ready content management system with enterprise-grade security and wo
 - **CSRF Protection**: All state-changing operations protected against CSRF attacks
 - **Performance Indexed**: publishStatus indexed for fast filtering queries
 
+### Visual Card Editor (Enhancement 9)
+- **Drag-and-Drop Interface**: Visual card builder with real-time preview and intuitive element management
+- **6 Element Types**: Text (5 variants: heading1-3, paragraph, caption), Image, Video, Button (3 variants), Divider, Spacer
+- **Dual-Mode Editing**: Toggle between Visual mode (drag-and-drop) and Traditional mode (JSON textarea) for flexibility
+- **Element Management**: Add, delete, reorder (move up/down) elements with automatic order reindexing
+- **Property Editors**: Inline editors for text content, variants, alignment, colors, images, videos, and buttons
+- **Media Library Integration**: MediaSelectorModal integrated for selecting images and videos from the media library
+- **Card Settings**: Background color, background image, and padding customization
+- **JSONB Storage**: visualLayout field in storyCards table for flexible, versioned layout persistence
+- **CardRenderer Component**: Dynamic rendering engine that sorts elements by order and applies all styling
+- **Backward Compatible**: visualLayout is nullable; existing story cards continue working without modification
+- **Type-Safe**: Comprehensive TypeScript types with discriminated union for all element types
+- **Deterministic Rendering**: Sequential order values (0, 1, 2...) ensure consistent layout rendering
+
 ### Security & Data Integrity
 - **CSRF Protection**: All mutation endpoints require CSRF token validation
 - **Admin Authentication**: isAdmin and isAdminWithCSRF middleware on sensitive routes
