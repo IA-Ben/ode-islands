@@ -1,0 +1,601 @@
+{
+  "chapter-1": [
+    {
+      "text": {
+        "title": "THE ODE ISLANDS",
+        "subtitle": "'A Mixed Reality Voyage To Find Freedom'"
+      },
+      "ctaStart": "Begin Journey",
+      "video": {
+        "url": "1-crawling",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": {
+        "mix": "exclusion",
+        "title": "#37ffce"
+      }
+    },
+    {
+      "text": {
+        "subtitle": "ONCE...",
+        "description": "...upon a time, on a distant island, there existed a perfect balance of energies. The island was home to two magical beings, the Orns, who embodied all happy thoughts, and the Nors, who carried the negative ones. For a long time they lived in harmony, each balancing each other, ensuring the island remained a place of peace"
+      },
+      "video": {
+        "url": "1-poem1",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      },
+      "theme": {
+        "shadow": true,
+        "overlay": "rgba(0, 0, 0, 0.4)",
+        "subtitle": "#FBBAE0"
+      }
+    },
+    {
+      "text": {
+        "subtitle": "BUT...",
+        "description": "...one day, a great storm arose, fierce and unrelenting. Slowly, the Nors began to take over, turning the once joyful Orns into shadows of negativity. The island's balance tipped and hope began to fade Just when it seemed that all was lost a young girl washed ashore. She was fragile, yet radiant carrying an inner light of innocence and joy."
+      },
+      "video": {
+        "url": "1-poem2",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      },
+      "theme": {
+        "shadow": true,
+        "overlay": "rgba(0, 0, 0, 0.4)",
+        "subtitle": "#FBBAE0"
+      }
+    },
+    {
+      "text": {
+        "subtitle": "THE...",
+        "description": "...few remaining Orns felt a spark of hope and miraculously the Nors around her began to transform back into Orns. Seeing the power of her happiness and beauty the Nors and Orns worked together using the girl's presence to rebuild the island."
+      },
+      "video": {
+        "url": "1-poem3",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      },
+      "theme": {
+        "shadow": true,
+        "overlay": "rgba(0, 0, 0, 0.4)",
+        "subtitle": "#FBBAE0"
+      }
+    },
+    {
+      "text": {
+        "subtitle": "SLOWLY",
+        "description": "...balance was restored and the island returned to a place of unity and joy where both positive and negative thoughts could coexist in harmony once again."
+      },
+      "video": {
+        "url": "1-poem4",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      },
+      "theme": {
+        "shadow": true,
+        "overlay": "rgba(0, 0, 0, 0.6)",
+        "subtitle": "#FBBAE0"
+      }
+    },
+    {
+      "poll": {
+        "chapterId": "chapter-1",
+        "cardIndex": 5,
+        "question": "What do you think was the most important factor in restoring balance to the island?",
+        "options": [
+          "The girl's inner light and happiness",
+          "The cooperation between Orns and Nors",
+          "The power of positive thinking",
+          "The magic of the island itself"
+        ],
+        "pollType": "poll",
+        "showResults": true
+      },
+      "theme": {
+        "background": "#1a1a2e",
+        "title": "#37ffce",
+        "subtitle": "#FBBAE0",
+        "shadow": true
+      }
+    },
+    {
+      "quiz": {
+        "chapterId": "chapter-1",
+        "cardIndex": 6,
+        "question": "According to the story, what happened when the girl arrived on the island?",
+        "options": [
+          "She immediately fixed everything with magic",
+          "The Nors around her began transforming back into Orns",
+          "She fought against the Nors to save the Orns",
+          "She became the new ruler of the island"
+        ],
+        "correctAnswer": "The Nors around her began transforming back into Orns",
+        "explanation": "The story mentions that the girl's presence and inner light caused the Nors around her to transform back into Orns, restoring hope to the island.",
+        "showFeedback": true,
+        "points": 10
+      },
+      "theme": {
+        "background": "#2d1b69",
+        "title": "#ffffff",
+        "subtitle": "#37ffce",
+        "shadow": true
+      }
+    },
+    {
+      "text": {
+        "subtitle": "NEXT UP"
+      },
+      "cta": {
+        "title": "Continue to Chapter 2",
+        "url": "/chapter-2"
+      },
+      "theme": {
+        "background": "#FBBAE0",
+        "subtitle": "#000",
+        "cta": "#E9F3E6"
+      }
+    }
+  ],
+  "chapter-2": [
+    {
+      "text": {
+        "title": "THE ODE ISLAND",
+        "cta": "Start Chapter"
+      },
+      "image": {
+        "url": "1-womb.jpg",
+        "width": 1920,
+        "height": 1080
+      },
+      "theme": {
+        "mix": "difference",
+        "title": "#37ffce"
+      }
+    },
+    {
+      "text": {
+        "description": "I felt lucky compared to the other girls, confident, but the parts that I didn't like, I obsessed over : my hooded eyes, my breasts, my neck. Why could they not be perfect?"
+      }
+    },
+    {
+      "video": {
+        "url": "1-ornaghintro",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "video": {
+        "url": "2-ticket",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "video": {
+        "url": "1-ornaghtech",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "text": {
+        "subtitle": "NEXT UP"
+      },
+      "cta": {
+        "title": "Continue to Chapter 3",
+        "url": "/chapter-3"
+      },
+      "theme": {
+        "background": "#FBBAE0",
+        "subtitle": "#000",
+        "cta": "#E9F3E6"
+      }
+    }
+  ],
+  "chapter-3": [
+    {
+      "text": {
+        "title": "WELCOME TO THE ODE ISLANDS",
+        "cta": "Start Chapter"
+      },
+      "image": {
+        "url": "3-islands.jpg",
+        "width": 1080,
+        "height": 1920
+      },
+      "theme": {
+        "mix": "difference",
+        "title": "#37ffce"
+      }
+    },
+    {
+      "text": {
+        "description": "Who am I? What is this place? Where am I? How can it be so beautiful? Beautiful Beautiful ….Hippokiss"
+      }
+    },
+    {
+      "video": {
+        "url": "3-welcome",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "video": {
+        "url": "3-map",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "video": {
+        "url": "3-trailer",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "video": {
+        "url": "3-statue",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "video": {
+        "url": "3-running",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "poll": {
+        "chapterId": "chapter-3",
+        "cardIndex": 7,
+        "question": "Which aspect of the Ode Islands experience interests you most?",
+        "options": [
+          "The immersive storytelling",
+          "The mixed reality technology",
+          "The artistic visuals and cinematography",
+          "The interactive elements"
+        ],
+        "pollType": "survey",
+        "showResults": true
+      },
+      "theme": {
+        "background": "#0f172a",
+        "title": "#37ffce",
+        "subtitle": "#ffffff",
+        "shadow": true
+      }
+    },
+    {
+      "text": {
+        "subtitle": "Behind-the-Scenes of the Ode Islands"
+      },
+      "theme": {
+        "background": "#37ffce",
+        "subtitle": "#000",
+        "invert": true
+      }
+    },
+    {
+      "video": {
+        "url": "3-mocap",
+        "type": "immersive",
+        "width": 1080,
+        "height": 1920,
+        "audio": true
+      }
+    },
+    {
+      "quiz": {
+        "chapterId": "chapter-3",
+        "cardIndex": 9,
+        "question": "What technology is showcased in the behind-the-scenes content?",
+        "options": [
+          "Virtual Reality headsets",
+          "Motion capture (mocap) technology",
+          "3D printing",
+          "Artificial Intelligence"
+        ],
+        "correctAnswer": "Motion capture (mocap) technology",
+        "explanation": "The behind-the-scenes video shows motion capture (mocap) technology being used to create the immersive performances in the Ode Islands.",
+        "showFeedback": true,
+        "timeLimit": 30,
+        "points": 15
+      },
+      "theme": {
+        "background": "#1e293b",
+        "title": "#fbbf24",
+        "subtitle": "#37ffce",
+        "shadow": true
+      }
+    },
+    {
+      "text": {
+        "subtitle": "COMING SOON"
+      },
+      "theme": {
+        "background": "#FBBAE0",
+        "subtitle": "#000",
+        "cta": "#E9F3E6"
+      }
+    }
+  ],
+  "chapter-playcanvas": [
+    {
+      "text": {
+        "title": "PLAYCANVAS",
+        "subtitle": "Interactive 3D Experiences",
+        "description": "Explore immersive PlayCanvas scenes with different integration methods"
+      },
+      "theme": {
+        "background": "#1a1a2e",
+        "title": "#37ffce",
+        "subtitle": "#ffffff",
+        "description": "#cccccc"
+      }
+    },
+    {
+      "text": {
+        "title": "IFRAME DEMO",
+        "subtitle": "PlayCanvas via iframe",
+        "description": "A simple PlayCanvas scene embedded using iframe integration"
+      },
+      "playcanvas": {
+        "type": "iframe",
+        "projectId": "example-project-id",
+        "width": 800,
+        "height": 600,
+        "autoPlay": true,
+        "messaging": {
+          "enableApi": true,
+          "exposedMethods": [
+            "rotateObject",
+            "changeColor"
+          ],
+          "eventHandlers": [
+            {
+              "event": "objectClicked",
+              "handler": "handleObjectClick"
+            }
+          ]
+        }
+      },
+      "cta": {
+        "title": "Interact with Scene",
+        "url": "#playcanvas-interaction"
+      },
+      "theme": {
+        "background": "transparent",
+        "overlay": "rgba(0, 0, 0, 0.2)",
+        "title": "#ffffff",
+        "subtitle": "#37ffce"
+      }
+    },
+    {
+      "text": {
+        "title": "ENGINE DEMO",
+        "subtitle": "Direct PlayCanvas Engine",
+        "description": "Custom 3D scene built with PlayCanvas engine integration"
+      },
+      "playcanvas": {
+        "type": "engine",
+        "fillMode": "FILL_WINDOW",
+        "transparency": false,
+        "sceneConfig": {
+          "camera": {
+            "position": [
+              0,
+              2,
+              5
+            ],
+            "target": [
+              0,
+              0,
+              0
+            ],
+            "fov": 45
+          },
+          "lighting": {
+            "ambientColor": [
+              0.2,
+              0.2,
+              0.3
+            ],
+            "directionalLight": {
+              "color": [
+                1,
+                1,
+                0.9
+              ],
+              "direction": [
+                -0.5,
+                -1,
+                -0.5
+              ]
+            }
+          },
+          "assets": [
+            {
+              "name": "ornModel",
+              "type": "model",
+              "url": "/models/orn-character.glb"
+            },
+            {
+              "name": "islandTexture",
+              "type": "texture",
+              "url": "/textures/island-ground.jpg"
+            }
+          ]
+        },
+        "interactions": [
+          {
+            "trigger": "timer",
+            "target": "ornModel",
+            "action": "startAnimation",
+            "params": {
+              "delay": 2000,
+              "animation": "wave"
+            }
+          },
+          {
+            "trigger": "click",
+            "target": "ornModel",
+            "action": "changeColor",
+            "params": {
+              "color": "#37ffce"
+            }
+          }
+        ]
+      },
+      "theme": {
+        "background": "transparent",
+        "title": "#ffffff",
+        "subtitle": "#37ffce",
+        "shadow": true
+      }
+    },
+    {
+      "text": {
+        "title": "SELF-HOSTED",
+        "subtitle": "Custom PlayCanvas Build",
+        "description": "A self-hosted PlayCanvas application with custom features"
+      },
+      "playcanvas": {
+        "type": "self-hosted",
+        "buildPath": "/playcanvas-builds/orn-village/index.html",
+        "width": 1200,
+        "height": 800,
+        "fillMode": "KEEP_ASPECT",
+        "transparency": true,
+        "messaging": {
+          "enableApi": true,
+          "exposedMethods": [
+            "enterVillage",
+            "collectOrn",
+            "transformNor"
+          ],
+          "eventHandlers": [
+            {
+              "event": "villageEntered",
+              "handler": "onVillageEnter"
+            },
+            {
+              "event": "ornCollected",
+              "handler": "onOrnCollected"
+            }
+          ]
+        }
+      },
+      "cta": {
+        "title": "Enter Orn Village",
+        "url": "#enter-village"
+      },
+      "theme": {
+        "background": "#0f0f23",
+        "overlay": "linear-gradient(45deg, rgba(55,255,206,0.1), rgba(251,186,224,0.1))",
+        "title": "#ffffff",
+        "subtitle": "#37ffce"
+      }
+    },
+    {
+      "text": {
+        "title": "INTERACTIVE STORY",
+        "subtitle": "The Orn's Journey",
+        "description": "Experience the transformation scene in interactive 3D"
+      },
+      "playcanvas": {
+        "type": "iframe",
+        "projectId": "transformation-scene-id",
+        "autoPlay": false,
+        "interactions": [
+          {
+            "trigger": "message",
+            "target": "storyController",
+            "action": "startChapter",
+            "params": {
+              "chapter": "transformation"
+            }
+          },
+          {
+            "trigger": "timer",
+            "target": "norCharacter",
+            "action": "beginTransformation",
+            "params": {
+              "delay": 5000,
+              "duration": 3000
+            }
+          }
+        ],
+        "messaging": {
+          "enableApi": true,
+          "exposedMethods": [
+            "pauseStory",
+            "resumeStory",
+            "skipToEnd"
+          ],
+          "eventHandlers": [
+            {
+              "event": "transformationComplete",
+              "handler": "onTransformationComplete"
+            },
+            {
+              "event": "storyPaused",
+              "handler": "onStoryPaused"
+            }
+          ]
+        }
+      },
+      "cta": {
+        "title": "Watch Transformation",
+        "url": "#start-transformation"
+      },
+      "theme": {
+        "background": "transparent",
+        "overlay": "rgba(0, 0, 0, 0.3)",
+        "title": "#FBBAE0",
+        "subtitle": "#ffffff",
+        "shadow": true
+      }
+    },
+    {
+      "text": {
+        "subtitle": "PLAYCANVAS INTEGRATION",
+        "description": "Complete implementation with iframe, engine, and self-hosted methods"
+      },
+      "cta": {
+        "title": "Back to Story",
+        "url": "/chapter-1"
+      },
+      "theme": {
+        "background": "#37ffce",
+        "subtitle": "#000",
+        "description": "#333",
+        "cta": "#ffffff"
+      }
+    }
+  ]
+}
