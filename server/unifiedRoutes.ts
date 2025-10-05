@@ -457,13 +457,19 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   // CMS API Routes - all require admin access
   app.get("/api/cms/chapters", isAdmin, async (req, res) => {
     try {
-      // For now, read from the static JSON file
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      const dataPath = path.join(process.cwd(), 'src/app/data/ode-islands.json');
-      const data = await fs.readFile(dataPath, 'utf-8');
-      const chapters = JSON.parse(data);
-      res.json(chapters);
+      // Fetch all chapters from database
+      const dbChapters = await storage.getChapters();
+      
+      // Build JSON-compatible response format
+      const chaptersData: Record<string, any[]> = {};
+      
+      for (const chapter of dbChapters) {
+        const chapterKey = `chapter-${chapter.order}`;
+        const cards = await storage.getStoryCards(chapter.id);
+        chaptersData[chapterKey] = cards.map(card => card.content);
+      }
+      
+      res.json(chaptersData);
     } catch (error) {
       console.error("Error fetching chapters:", error);
       res.status(500).json({ message: "Failed to fetch chapters" });
@@ -473,36 +479,46 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   app.post("/api/cms/chapters", isAdminWithCSRF, async (req, res) => {
     try {
       const { id, cards } = req.body;
-      
-      // Get user ID if authenticated
       const userId = req.user?.claims?.sub;
       
-      // Read current data
-      const fs = await import('fs/promises');
-      const path = await import('path');
-      const dataPath = path.join(process.cwd(), 'src/app/data/ode-islands.json');
-      const data = await fs.readFile(dataPath, 'utf-8');
-      const chapters = JSON.parse(data);
+      // Get chapter by key (e.g., "chapter-1")
+      const chapter = await storage.getChapterByKey(id);
       
-      // Update chapter
-      chapters[id] = cards;
+      if (!chapter) {
+        return res.status(404).json({ message: "Chapter not found" });
+      }
       
-      // Create backup before saving (only if user is authenticated)
+      // Create backup of current content (if user is authenticated)
       if (userId) {
         try {
+          const existingCards = await storage.getStoryCards(chapter.id);
+          const backupData = existingCards.map(card => card.content);
           await storage.createContentBackup(
-            `ode-islands-${Date.now()}.json`,
-            data,
+            `chapter-${id}-${Date.now()}.json`,
+            JSON.stringify(backupData, null, 2),
             userId
           );
         } catch (backupError) {
           console.warn("Failed to create backup:", backupError);
-          // Continue with save even if backup fails
         }
       }
       
-      // Save updated data
-      await fs.writeFile(dataPath, JSON.stringify(chapters, null, 2));
+      // Delete existing cards for this chapter
+      const existingCards = await storage.getStoryCards(chapter.id);
+      for (const card of existingCards) {
+        await storage.deleteStoryCard(card.id);
+      }
+      
+      // Create new cards from the incoming data
+      for (let i = 0; i < cards.length; i++) {
+        const cardData = cards[i];
+        await storage.createStoryCard({
+          chapterId: chapter.id,
+          order: i,
+          content: cardData,
+          hasAR: !!(cardData.ar || cardData.playcanvas)
+        });
+      }
       
       res.json({ message: "Chapter saved successfully" });
     } catch (error) {

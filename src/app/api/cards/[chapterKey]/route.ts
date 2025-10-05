@@ -1,11 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  readOdeIslandsData, 
-  addCardToChapter, 
-  writeOdeIslandsData,
-  validateCardData,
-  generateCardId
-} from '@/lib/utils/jsonFileUtils';
+import { storage } from '../../../../../server/storage';
 import type { CardData } from '@/@typings';
 
 // GET /api/cards/[chapterKey] - Get all cards for a chapter
@@ -15,16 +9,21 @@ export async function GET(
 ) {
   try {
     const { chapterKey } = params;
-    const data = await readOdeIslandsData();
     
-    if (!data[chapterKey]) {
+    // Get cards from database
+    const cards = await storage.getChapterCards(chapterKey);
+    
+    if (cards.length === 0) {
       return NextResponse.json(
         { error: `Chapter ${chapterKey} not found` },
         { status: 404 }
       );
     }
 
-    return NextResponse.json(data[chapterKey]);
+    // Extract content from each card
+    const cardContents = cards.map(card => card.content);
+
+    return NextResponse.json(cardContents);
   } catch (error) {
     console.error('Error fetching cards:', error);
     return NextResponse.json(
@@ -41,26 +40,31 @@ export async function POST(
 ) {
   try {
     const { chapterKey } = params;
-    const body = await request.json();
+    const cardData = await request.json();
     
-    // Validate card data
-    if (!validateCardData(body)) {
+    // Get chapter by key
+    const chapter = await storage.getChapterByKey(chapterKey);
+    if (!chapter) {
       return NextResponse.json(
-        { error: 'Invalid card data provided' },
-        { status: 400 }
+        { error: `Chapter ${chapterKey} not found` },
+        { status: 404 }
       );
     }
 
-    // Generate unique ID for the new card
-    const newCard: CardData = {
-      ...body,
-      id: generateCardId(chapterKey)
-    };
+    // Get current cards to determine order
+    const existingCards = await storage.getStoryCards(chapter.id);
+    const nextOrder = existingCards.length;
 
-    await addCardToChapter(chapterKey, newCard);
+    // Create new card in database
+    const newCard = await storage.createStoryCard({
+      chapterId: chapter.id,
+      order: nextOrder,
+      content: cardData,
+      hasAR: !!(cardData.ar || cardData.playcanvas)
+    });
     
     return NextResponse.json(
-      { message: 'Card added successfully', card: newCard },
+      { message: 'Card added successfully', card: newCard.content },
       { status: 201 }
     );
   } catch (error) {
@@ -89,40 +93,16 @@ export async function PUT(
       );
     }
 
-    const data = await readOdeIslandsData();
+    // Update card in database
+    const updatedCard = await storage.updateStoryCard(cardId, {
+      content: cardData,
+      hasAR: !!(cardData.ar || cardData.playcanvas)
+    });
     
-    if (!data[chapterKey]) {
-      return NextResponse.json(
-        { error: `Chapter ${chapterKey} not found` },
-        { status: 404 }
-      );
-    }
-
-    const cardIndex = data[chapterKey].findIndex(card => card.id === cardId);
-    
-    if (cardIndex === -1) {
-      return NextResponse.json(
-        { error: `Card ${cardId} not found in chapter ${chapterKey}` },
-        { status: 404 }
-      );
-    }
-
-    // Update the card while preserving the ID
-    const updatedCard = { ...cardData, id: cardId };
-    
-    if (!validateCardData(updatedCard)) {
-      return NextResponse.json(
-        { error: 'Invalid card data provided' },
-        { status: 400 }
-      );
-    }
-
-    data[chapterKey][cardIndex] = updatedCard;
-    await writeOdeIslandsData(data);
-    
-    return NextResponse.json(
-      { message: 'Card updated successfully', card: updatedCard }
-    );
+    return NextResponse.json({
+      message: 'Card updated successfully',
+      card: updatedCard.content
+    });
   } catch (error) {
     console.error('Error updating card:', error);
     return NextResponse.json(
@@ -149,27 +129,8 @@ export async function DELETE(
       );
     }
 
-    const data = await readOdeIslandsData();
-    
-    if (!data[chapterKey]) {
-      return NextResponse.json(
-        { error: `Chapter ${chapterKey} not found` },
-        { status: 404 }
-      );
-    }
-
-    const cardIndex = data[chapterKey].findIndex(card => card.id === cardId);
-    
-    if (cardIndex === -1) {
-      return NextResponse.json(
-        { error: `Card ${cardId} not found in chapter ${chapterKey}` },
-        { status: 404 }
-      );
-    }
-
-    // Remove the card
-    data[chapterKey].splice(cardIndex, 1);
-    await writeOdeIslandsData(data);
+    // Delete card from database
+    await storage.deleteStoryCard(cardId);
     
     return NextResponse.json(
       { message: 'Card deleted successfully' }

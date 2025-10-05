@@ -429,6 +429,27 @@ export class DatabaseStorage implements IStorage {
     return chapter;
   }
 
+  async getChapterByKey(chapterKey: string): Promise<Chapter | undefined> {
+    // Extract chapter number from key (e.g., "chapter-1" -> 1)
+    const chapterNumber = parseInt(chapterKey.split('-')[1]) || 0;
+    const [chapter] = await db
+      .select()
+      .from(chapters)
+      .where(eq(chapters.order, chapterNumber));
+    return chapter;
+  }
+
+  async getChapterCards(chapterKey: string): Promise<StoryCard[]> {
+    const chapter = await this.getChapterByKey(chapterKey);
+    if (!chapter) return [];
+    
+    return await db
+      .select()
+      .from(storyCards)
+      .where(eq(storyCards.chapterId, chapter.id))
+      .orderBy(asc(storyCards.order));
+  }
+
   async updateChapter(id: string, updates: Partial<Chapter>): Promise<Chapter> {
     const [updated] = await db
       .update(chapters)
