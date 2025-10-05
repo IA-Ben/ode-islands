@@ -5,6 +5,7 @@ import { VisualCardLayout, CardElement, CardElementType, createDefaultElement, c
 import { CardRenderer } from './CardRenderer';
 import { MediaSelectorModal } from './cms/MediaSelectorModal';
 import type { MediaItem } from '@/hooks/useMedia';
+import { uploadVideo, VideoUploadStatus, VideoUploadProgress, VideoTranscodingStatus } from '@/utils/videoUpload';
 
 interface VisualCardEditorProps {
   initialLayout?: VisualCardLayout;
@@ -21,6 +22,10 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
   const [mediaModalOpen, setMediaModalOpen] = useState(false);
   const [mediaSelectType, setMediaSelectType] = useState<'image' | 'video' | null>(null);
   const [mediaSelectElementId, setMediaSelectElementId] = useState<string | null>(null);
+  
+  const [videoUploadProgress, setVideoUploadProgress] = useState<Record<string, number>>({});
+  const [videoUploadStatus, setVideoUploadStatus] = useState<Record<string, VideoUploadStatus>>({});
+  const [videoStatusMessage, setVideoStatusMessage] = useState<Record<string, string>>({});
   
   const updateLayout = (newLayout: VisualCardLayout) => {
     setLayout(newLayout);
@@ -113,6 +118,55 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
     setMediaModalOpen(false);
     setMediaSelectElementId(null);
     setMediaSelectType(null);
+  };
+  
+  const handleVideoUpload = async (elementId: string, file: File) => {
+    setVideoUploadProgress(prev => ({ ...prev, [elementId]: 0 }));
+    setVideoUploadStatus(prev => ({ ...prev, [elementId]: 'uploading' }));
+    setVideoStatusMessage(prev => ({ ...prev, [elementId]: 'Uploading video...' }));
+    
+    const result = await uploadVideo(
+      file,
+      csrfToken,
+      (progress: VideoUploadProgress) => {
+        setVideoUploadProgress(prev => ({ ...prev, [elementId]: progress.percentage }));
+      },
+      (status: VideoTranscodingStatus) => {
+        setVideoUploadStatus(prev => ({ ...prev, [elementId]: status.status }));
+        setVideoStatusMessage(prev => ({ ...prev, [elementId]: status.message || '' }));
+      }
+    );
+    
+    if (result.success && result.videoId) {
+      const element = layout.elements.find(el => el.id === elementId);
+      if (element && element.type === 'video') {
+        updateElement(elementId, {
+          properties: {
+            ...element.properties,
+            src: result.playbackUrl || result.videoId,
+            mediaAssetId: result.mediaAssetId,
+          }
+        } as Partial<CardElement>);
+      }
+      
+      setTimeout(() => {
+        setVideoUploadStatus(prev => {
+          const updated = { ...prev };
+          delete updated[elementId];
+          return updated;
+        });
+        setVideoStatusMessage(prev => {
+          const updated = { ...prev };
+          delete updated[elementId];
+          return updated;
+        });
+        setVideoUploadProgress(prev => {
+          const updated = { ...prev };
+          delete updated[elementId];
+          return updated;
+        });
+      }, 3000);
+    }
   };
   
   const selectedElement = layout.elements.find((el) => el.id === selectedElementId);
@@ -311,7 +365,15 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
                         </button>
                       </div>
                     </div>
-                    {renderElementEditor(element, updateElement, openMediaSelector)}
+                    {renderElementEditor(
+                      element, 
+                      updateElement, 
+                      openMediaSelector,
+                      handleVideoUpload,
+                      videoUploadStatus,
+                      videoUploadProgress,
+                      videoStatusMessage
+                    )}
                   </div>
                 ))
               )}
@@ -345,7 +407,11 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
 function renderElementEditor(
   element: CardElement,
   updateElement: (id: string, updates: any) => void,
-  openMediaSelector: (elementId: string, type: 'image' | 'video') => void
+  openMediaSelector: (elementId: string, type: 'image' | 'video') => void,
+  handleVideoUpload: (elementId: string, file: File) => Promise<void>,
+  videoUploadStatus: Record<string, VideoUploadStatus>,
+  videoUploadProgress: Record<string, number>,
+  videoStatusMessage: Record<string, string>
 ) {
   switch (element.type) {
     case 'text':
@@ -516,6 +582,10 @@ function renderElementEditor(
       );
     
     case 'video':
+      const videoStatus = videoUploadStatus[element.id];
+      const videoProgress = videoUploadProgress[element.id];
+      const videoMessage = videoStatusMessage[element.id];
+      
       return (
         <div className="space-y-2">
           <button
@@ -524,9 +594,66 @@ function renderElementEditor(
               openMediaSelector(element.id, 'video');
             }}
             className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+            disabled={videoStatus === 'uploading' || videoStatus === 'processing'}
           >
             Select from Media Library
           </button>
+          <div className="text-center text-sm text-gray-500">or</div>
+          <div className="relative">
+            <input
+              type="file"
+              accept="video/mp4,video/quicktime,video/x-msvideo,video/webm"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleVideoUpload(element.id, file);
+                }
+                e.target.value = '';
+              }}
+              className="hidden"
+              id={`video-upload-${element.id}`}
+              disabled={videoStatus === 'uploading' || videoStatus === 'processing'}
+            />
+            <label
+              htmlFor={`video-upload-${element.id}`}
+              className={`w-full px-4 py-2 rounded cursor-pointer text-center block ${
+                videoStatus === 'uploading' || videoStatus === 'processing'
+                  ? 'bg-gray-400 text-white cursor-not-allowed'
+                  : 'bg-blue-600 text-white hover:bg-blue-700'
+              }`}
+            >
+              {videoStatus === 'uploading' ? 'Uploading...' : 
+               videoStatus === 'processing' ? 'Processing...' : 
+               'Upload Video'}
+            </label>
+          </div>
+          
+          {(videoStatus === 'uploading' || videoStatus === 'processing') && (
+            <div className="space-y-1">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div
+                  className="bg-blue-600 h-2.5 rounded-full transition-all duration-300"
+                  style={{ width: `${videoProgress || 0}%` }}
+                ></div>
+              </div>
+              {videoMessage && (
+                <p className="text-xs text-gray-600 text-center">{videoMessage}</p>
+              )}
+            </div>
+          )}
+          
+          {videoStatus === 'completed' && videoMessage && (
+            <div className="bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded text-sm">
+              {videoMessage}
+            </div>
+          )}
+          
+          {videoStatus === 'error' && videoMessage && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 rounded text-sm">
+              {videoMessage}
+            </div>
+          )}
+          
           <div className="text-center text-sm text-gray-500">or</div>
           <input
             type="text"
@@ -535,7 +662,7 @@ function renderElementEditor(
               properties: { ...element.properties, src: e.target.value }
             })}
             className="w-full p-2 border rounded"
-            placeholder="Enter video URL"
+            placeholder="Enter video URL or ID"
           />
           <div>
             <label className="block text-xs font-medium mb-1">Poster Image URL</label>
