@@ -1,0 +1,25 @@
+   IMAGES                                         STATUS
+f9f5d8c1-4152-4009-bf50-15c83adc5d59  2025-10-05T00:51:32+00:00  1M28S     gs://ode-islands_cloudbuild/source/1759625491.444429-10dba02a6d2642c5911259403c6a6d5c.tgz  gcr.io/ode-islands/video-transcoder (+1 more)  SUCCESS
+benjamindawson@Benjamins-MacBook-Pro video-pipeline % gcloud run deploy video-transcoder \
+  --image "gcr.io/ode-islands/video-transcoder" \
+  --platform managed \
+  --region us-central1 \
+  --cpu 4 \
+  --memory 16Gi \
+  --timeout 900 \
+  --max-instances 10 \
+  --service-account "video-transcoder-sa@ode-islands.iam.gserviceaccount.com" \
+  --set-env-vars "GCS_INPUT_BUCKET=ode-islands-video-input,GCS_OUTPUT_BUCKET=ode-islands-video-cdn" \
+  --allow-unauthenticated \
+  --project="ode-islands"
+Deploying container to Cloud Run service [video-transcoder] in project [ode-islands] region [us-central1]
+X Deploying...                                                                 
+  - Creating Revision...                                                       
+  . Routing traffic...                                                         
+  ✓ Setting IAM Policy...                                                      
+Deployment failed                                                              
+ERROR: (gcloud.run.deploy) Revision 'video-transcoder-00002-qf4' is not ready and cannot serve traffic. The user-provided container failed to start and listen on the port defined provided by the PORT=8080 environment variable within the allocated timeout. This can happen when the container port is misconfigured or if the timeout is too short. The health check timeout can be extended. Logs for this revision might contain more information.
+
+Logs URL: https://console.cloud.google.com/logs/viewer?project=ode-islands&resource=cloud_run_revision/service_name/video-transcoder/revision_name/video-transcoder-00002-qf4&advancedFilter=resource.type%3D%22cloud_run_revision%22%0Aresource.labels.service_name%3D%22video-transcoder%22%0Aresource.labels.revision_name%3D%22video-transcoder-00002-qf4%22 
+For more troubleshooting guidance, see https://cloud.google.com/run/docs/troubleshooting#container-failed-to-start
+benjamindawson@Benjamins-MacBook-Pro video-pipeline % 
