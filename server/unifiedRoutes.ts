@@ -643,6 +643,26 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint for manual version creation (development only)
+  app.post("/api/cms/test/create-version", async (req, res) => {
+    try {
+      const { contentType, contentId, content, userId, changeDescription } = req.body;
+      
+      const version = await storage.createContentVersion(
+        contentType,
+        contentId,
+        content,
+        userId || 'test-user',
+        changeDescription
+      );
+      
+      res.json({ success: true, version });
+    } catch (error) {
+      console.error("Error creating test version:", error);
+      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to create version" });
+    }
+  });
+
   app.get("/api/cms/media", isAdmin, async (req, res) => {
     try {
       const assets = await storage.getMediaAssets();
