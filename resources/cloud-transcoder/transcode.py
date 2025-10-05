@@ -10,7 +10,7 @@ from threading import Semaphore
 from pathlib import Path
 from google.cloud import storage
 from flask import Flask, request, jsonify
-from config import QUALITY_PROFILES, GCS_INPUT_BUCKET, GCS_OUTPUT_BUCKET
+from config import QUALITY_PROFILES, LANDSCAPE_PROFILES, PORTRAIT_PROFILES, GCS_INPUT_BUCKET, GCS_OUTPUT_BUCKET
 from memory_monitor import memory_manager
 
 app = Flask(__name__)
@@ -85,18 +85,33 @@ def get_video_dimensions(input_file):
         raise Exception(f"Video validation failed: {str(e)}")
 
 
-def generate_variant_with_resource_management(input_file, output_dir, profile):
+def generate_variant_with_resource_management(input_file, output_dir, profile, source_width=None, source_height=None):
     """Wrapper to manage resources during parallel transcoding"""
     with memory_semaphore:  # Acquire semaphore before processing
-        return generate_variant(input_file, output_dir, profile)
+        return generate_variant(input_file, output_dir, profile, source_width, source_height)
 
 
-def generate_variant(input_file, output_dir, profile):
+def generate_variant(input_file, output_dir, profile, source_width=None, source_height=None):
     quality_dir = os.path.join(output_dir, profile['name'])
     os.makedirs(quality_dir, exist_ok=True)
     
     playlist_path = os.path.join(quality_dir, 'playlist.m3u8')
     segment_pattern = os.path.join(quality_dir, 'segment_%03d.ts')
+    
+    # Determine video filter based on orientation
+    if profile.get('orientation') == 'portrait' and source_width and source_height:
+        # Portrait: Crop center 9:16 from 16:9 source, then scale to target resolution
+        # Calculate crop dimensions to get 9:16 aspect ratio from source
+        target_aspect = 9.0 / 16.0  # 0.5625
+        crop_width = int(source_height * target_aspect)
+        crop_x = int((source_width - crop_width) / 2)
+        
+        # Crop to 9:16, then scale to target portrait resolution
+        vf = f"crop={crop_width}:{source_height}:{crop_x}:0,scale={profile['width']}:{profile['height']}"
+        print(f"  Portrait crop: {crop_width}x{source_height} from center of {source_width}x{source_height}")
+    else:
+        # Landscape: Standard scaling with aspect ratio preservation
+        vf = f"scale={profile['width']}:{profile['height']}:force_original_aspect_ratio=decrease,pad={profile['width']}:{profile['height']}"
     
     cmd = [
         'ffmpeg',
@@ -108,7 +123,7 @@ def generate_variant(input_file, output_dir, profile):
         '-b:v', profile['video_bitrate'],
         '-maxrate', profile['maxrate'],
         '-bufsize', profile['bufsize'],
-        '-vf', f"scale={profile['width']}:{profile['height']}:force_original_aspect_ratio=decrease,pad={profile['width']}:{profile['height']}",
+        '-vf', vf,
         '-c:a', 'aac',
         '-b:a', profile['audio_bitrate'],
         '-ar', '48000',
@@ -200,7 +215,7 @@ def generate_thumbnails(input_file, output_dir):
     print('✓ Poster thumbnail generated')
 
 
-def update_processing_status(video_id, completed, total):
+def update_processing_status(video_id, completed, total, has_portrait=False):
     """Update real-time processing status in GCS metadata"""
     try:
         bucket = storage_client.bucket(GCS_OUTPUT_BUCKET)
@@ -211,7 +226,8 @@ def update_processing_status(video_id, completed, total):
             "progress": f"{completed}/{total}",
             "percentage": round((completed / total) * 100, 1),
             "completed_variants": completed,
-            "total_variants": total
+            "total_variants": total,
+            "has_portrait": has_portrait
         }
         
         status_blob.upload_from_string(
@@ -278,8 +294,18 @@ def process_video(input_uri, video_id):
         width, height = get_video_dimensions(input_file)
         print(f"Video dimensions: {width}x{height}")
         
+        # Detect 16:9 aspect ratio (with tolerance for encoding variations)
+        aspect_ratio = width / height
+        is_16_9 = 1.76 <= aspect_ratio <= 1.79  # 16:9 ≈ 1.778
+        
+        # Determine which profiles to use
+        landscape_output_dir = os.path.join(output_dir, 'landscape') if is_16_9 else output_dir
+        if is_16_9:
+            os.makedirs(landscape_output_dir, exist_ok=True)
+            print(f"🎬 Detected 16:9 video - will generate both landscape (4K) and portrait (1080p) versions")
+        
         applicable_profiles = [
-            p for p in QUALITY_PROFILES
+            p for p in LANDSCAPE_PROFILES
             if p['width'] <= width and p['height'] <= height
         ]
         
@@ -288,8 +314,14 @@ def process_video(input_uri, video_id):
         standard_profiles = [p for p in applicable_profiles if 480 < p['height'] <= 1080]  # 540p-1080p
         premium_profiles = [p for p in applicable_profiles if p['height'] > 1080]  # 1440p-4K
         
-        print(f"Generating {len(applicable_profiles)} quality variants in parallel...")
-        print(f"  Critical: {len(critical_profiles)}, Standard: {len(standard_profiles)}, Premium: {len(premium_profiles)}")
+        total_variants = len(applicable_profiles)
+        if is_16_9:
+            total_variants += len(PORTRAIT_PROFILES)  # Add portrait variant count
+        
+        print(f"Generating {total_variants} quality variants in parallel...")
+        print(f"  Landscape - Critical: {len(critical_profiles)}, Standard: {len(standard_profiles)}, Premium: {len(premium_profiles)}")
+        if is_16_9:
+            print(f"  Portrait: {len(PORTRAIT_PROFILES)} variant(s)")
         
         # Track successful profiles for downstream processing
         successful_profiles = []
@@ -307,7 +339,7 @@ def process_video(input_uri, video_id):
                 
                 print("Processing critical profiles...")
                 critical_futures = {
-                    executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
+                    executor.submit(generate_variant_with_resource_management, input_file, landscape_output_dir, p, width, height): p
                     for p in critical_profiles
                 }
                 
@@ -322,13 +354,13 @@ def process_video(input_uri, video_id):
                         print(f"Failed to generate {profile['name']}: {e}")
                         failed_count += 1
                     
-                    update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
+                    update_processing_status(video_id, len(successful_profiles), total_variants, is_16_9)
             
             # Only process standard profiles after critical ones complete
             if standard_profiles and not memory_manager.should_skip_variant('standard'):
                 print("Processing standard profiles...")
                 standard_futures = {
-                    executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
+                    executor.submit(generate_variant_with_resource_management, input_file, landscape_output_dir, p, width, height): p
                     for p in standard_profiles
                 }
                 
@@ -343,13 +375,13 @@ def process_video(input_uri, video_id):
                         print(f"Failed to generate {profile['name']}: {e}")
                         failed_count += 1
                     
-                    update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
+                    update_processing_status(video_id, len(successful_profiles), total_variants, is_16_9)
             
             # Finally process premium profiles (skip if memory pressure)
             if premium_profiles and not memory_manager.should_skip_variant('premium'):
                 print("Processing premium profiles...")
                 premium_futures = {
-                    executor.submit(generate_variant_with_resource_management, input_file, output_dir, p): p
+                    executor.submit(generate_variant_with_resource_management, input_file, landscape_output_dir, p, width, height): p
                     for p in premium_profiles
                 }
                 
@@ -364,11 +396,43 @@ def process_video(input_uri, video_id):
                         print(f"Failed to generate {profile['name']}: {e}")
                         failed_count += 1
                     
-                    update_processing_status(video_id, len(successful_profiles), len(applicable_profiles))
+                    update_processing_status(video_id, len(successful_profiles), total_variants, is_16_9)
             elif premium_profiles:
                 print("⚠️ Skipping premium profiles due to memory pressure")
+            
+            # Generate portrait version for 16:9 videos
+            if is_16_9 and PORTRAIT_PROFILES:
+                portrait_output_dir = os.path.join(output_dir, 'portrait')
+                os.makedirs(portrait_output_dir, exist_ok=True)
+                
+                print("Processing portrait variant...")
+                portrait_futures = {
+                    executor.submit(generate_variant_with_resource_management, input_file, portrait_output_dir, p, width, height): p
+                    for p in PORTRAIT_PROFILES
+                }
+                
+                for future in concurrent.futures.as_completed(portrait_futures):
+                    profile = portrait_futures[future]
+                    try:
+                        if future.result(timeout=600):
+                            successful_profiles.append(profile)
+                            print(f"✓ Portrait variant generated successfully")
+                        else:
+                            failed_count += 1
+                            print(f"⚠️ Portrait variant generation failed")
+                    except Exception as e:
+                        print(f"Failed to generate portrait variant: {e}")
+                        failed_count += 1
+                    
+                    update_processing_status(video_id, len(successful_profiles), total_variants, is_16_9)
         
-        print(f"✅ Generated {len(successful_profiles)}/{len(applicable_profiles)} variants ({failed_count} failed)")
+        landscape_count = len([p for p in successful_profiles if p.get('orientation') != 'portrait'])
+        portrait_count = len([p for p in successful_profiles if p.get('orientation') == 'portrait'])
+        
+        if is_16_9:
+            print(f"✅ Generated {landscape_count} landscape + {portrait_count} portrait variants ({failed_count} failed)")
+        else:
+            print(f"✅ Generated {len(successful_profiles)}/{len(applicable_profiles)} variants ({failed_count} failed)")
         
         if len(successful_profiles) == 0:
             # Update status to failed
@@ -376,13 +440,26 @@ def process_video(input_uri, video_id):
             raise Exception("All transcoding variants failed")
         
         # Only verify and use successful profiles
-        if not verify_segments(output_dir, successful_profiles):
-            update_processing_status_failed(video_id, "Segment verification failed")
-            raise Exception("Segment verification failed")
+        landscape_profiles = [p for p in successful_profiles if p.get('orientation') != 'portrait']
+        portrait_profiles_success = [p for p in successful_profiles if p.get('orientation') == 'portrait']
         
-        generate_master_playlist(output_dir, successful_profiles)
+        # Verify landscape variants
+        if landscape_profiles:
+            if not verify_segments(landscape_output_dir, landscape_profiles):
+                update_processing_status_failed(video_id, "Landscape segment verification failed")
+                raise Exception("Landscape segment verification failed")
+            
+            generate_master_playlist(landscape_output_dir, landscape_profiles)
+            generate_thumbnails(input_file, landscape_output_dir)
         
-        generate_thumbnails(input_file, output_dir)
+        # Verify portrait variants (if 16:9)
+        if is_16_9 and portrait_profiles_success:
+            portrait_output_dir = os.path.join(output_dir, 'portrait')
+            if not verify_segments(portrait_output_dir, portrait_profiles_success):
+                print("⚠️ Portrait segment verification failed, but landscape succeeded")
+            else:
+                generate_master_playlist(portrait_output_dir, portrait_profiles_success)
+                generate_thumbnails(input_file, portrait_output_dir)
         
         upload_to_gcs(output_dir, video_id)
         

@@ -1,4 +1,4 @@
-QUALITY_PROFILES = [
+LANDSCAPE_PROFILES = [
     {
         'name': '144p',
         'width': 256,
@@ -123,6 +123,23 @@ QUALITY_PROFILES = [
         'level': '5.1'
     }
 ]
+
+PORTRAIT_PROFILES = [
+    {
+        'name': '1080p-portrait',
+        'width': 1080,
+        'height': 1920,
+        'video_bitrate': '5000k',
+        'audio_bitrate': '192k',
+        'maxrate': '7500k',
+        'bufsize': '10000k',
+        'profile': 'high',
+        'level': '4.0',
+        'orientation': 'portrait'
+    }
+]
+
+QUALITY_PROFILES = LANDSCAPE_PROFILES
 
 GCS_INPUT_BUCKET = 'ode-islands-video-input'
 GCS_OUTPUT_BUCKET = 'ode-islands-video-cdn'
