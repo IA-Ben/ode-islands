@@ -135,6 +135,8 @@ export const storyCards = pgTable("story_cards", {
   reviewedAt: timestamp("reviewed_at"),
   reviewNotes: text("review_notes"),
   
+  visualLayout: jsonb("visual_layout"),
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => {
