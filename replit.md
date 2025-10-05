@@ -42,7 +42,19 @@ A modal-based `StoryCardModal` allows creating and editing cards directly within
 A full-featured form-based editor provides structured editing for text content, call to action, media management (video, image, audio, background image), theme & styling (ColorPicker, mix blend mode, text shadow), AR configuration (mode selector with conditional panels), and PlayCanvas integration. It includes components like `ColorPicker`, `ObjectUploader`, `CardEditorButtons`, and `CMSCardPreview`, with an option for advanced users to switch to raw JSON editing.
 
 ### Video Transcoding & Adaptive Streaming Integration
-An automated transcoding pipeline processes uploaded videos into adaptive HLS format with 11 quality profiles (144p-4K) using a Cloud Run transcoder. It now includes dual-orientation generation for 16:9 videos (landscape and portrait versions) with aspect ratio detection, FFmpeg cropping, and separate directory structures for manifests. A smart player detects device orientation to serve the appropriate manifest. A smart upload handler uses `/api/cms/media/upload` to trigger the transcoding service, with real-time status polling. HLS manifests store only `videoId`, and the Player component constructs full HLS URLs. The UI provides comprehensive user feedback, and client-side validation checks file size and type. GCS serves as the storage backend, with a Cloud Function triggering the Cloud Run transcoder.
+An automated transcoding pipeline processes uploaded videos into adaptive HLS format with 11 quality profiles (144p-4K) using a Cloud Run transcoder. It includes complete dual-orientation generation:
+
+**Dual-Orientation System (16:9 Videos)**:
+- Automatic aspect ratio detection (ratio between 1.7-1.8 triggers dual-orientation)
+- Landscape version: Full 4K quality with all 11 profiles
+- Portrait version: Center-cropped 9:16 at 1080p (1080x1920) using FFmpeg `crop=out_w:out_h:x:y` filter
+- Separate directory structure: `videos/{id}/landscape/manifest/` and `videos/{id}/portrait/manifest/`
+- Intelligent Player with device orientation detection (window.innerWidth vs innerHeight)
+- `/api/video-status/[videoId]` endpoint returns `has_portrait` flag for client-side detection
+- Backward compatibility: Legacy videos (non-16:9) use root manifest path `videos/{id}/manifest/`
+
+**Integration Flow**:
+Smart upload handler uses `/api/cms/media/upload` to trigger the transcoding service with real-time status polling. HLS manifests store only `videoId`, and the Player component constructs full HLS URLs. The UI provides comprehensive user feedback, and client-side validation checks file size and type. GCS serves as the storage backend, with a Cloud Function triggering the Cloud Run transcoder.
 
 ### Visual Mode - 100% Feature Complete
 All 6 element types (Text, Image, Video, Button, Divider, Spacer) are fully functional with comprehensive property editors (e.g., content, variant, alignment, colors for text; media library selection, alt text, dimensions for images; autoplay/loop/muted for videos). Card settings include background color/image (via media library) and individual padding controls. Safe rendering with nullish coalescing defaults and data preservation during updates ensure robustness.
