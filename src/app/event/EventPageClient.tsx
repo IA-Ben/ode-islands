@@ -5,6 +5,8 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import HelpSystem from '@/components/HelpSystem';
+import { EventHeader } from '@/components/EventHeader';
+import { SectionScaffold } from '@/components/SectionScaffold';
 import dynamic from 'next/dynamic';
 
 // Dynamic imports for heavy modules (loaded only when needed)
@@ -73,6 +75,9 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     }
     return 'audience';
   });
+  
+  // Event lane state (info, interact, rewards)
+  const [lane, setLane] = useState<'info' | 'interact' | 'rewards'>('info');
 
   // Optimized CSRF token fetching (only when needed)
   const fetchCSRFToken = async () => {
@@ -241,47 +246,58 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     
     return (
       <>
-        <EventAudienceInterface
-          eventId={activeEvent.id}
-          userId={session?.userId || 'anonymous'}
-          theme={theme}
+        <EventHeader
+          lane={lane}
+          setLane={setLane}
+          onOpenMap={() => {/* TODO: Implement map modal */}}
+          onQuickScan={() => {/* TODO: Implement QR scanner */}}
         />
+        
+        {lane === 'info' && (
+          <SectionScaffold>
+            <EventAudienceInterface
+              eventId={activeEvent.id}
+              userId={session?.userId || 'anonymous'}
+              theme={theme}
+            />
+          </SectionScaffold>
+        )}
+        
+        {lane === 'interact' && (
+          <SectionScaffold>
+            <EventInteractiveHub
+              eventId={activeEvent.id}
+              userId={session?.userId || 'anonymous'}
+              theme={theme}
+            />
+          </SectionScaffold>
+        )}
+        
+        {lane === 'rewards' && (
+          <SectionScaffold>
+            <div className="p-8 text-center text-white/60">
+              <h3 className="text-2xl font-bold mb-4">Rewards</h3>
+              <p>Collect memories and earn rewards during the event</p>
+            </div>
+          </SectionScaffold>
+        )}
         
         <HelpSystem userRole="audience" />
         
-        {/* Navigation buttons */}
-        <div className="fixed top-20 right-4 z-50 space-y-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setActiveView('interactive')}
-            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
-          >
-            🎯 Interactive Choices
-          </Button>
-          
-          {session?.isAuthenticated && session?.isAdmin && (
+        {session?.isAuthenticated && session?.isAdmin && (
+          <div className="fixed top-20 right-4 z-50">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => {
                 fetchEvents().then(() => setActiveView('dashboard'));
               }}
-              className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+              className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs"
             >
               ⚙️ Operator Console
             </Button>
-          )}
-        </div>
-        
-        {/* Event info indicator */}
-        <div className="fixed bottom-20 left-4 z-40">
-          <div className="bg-black/70 backdrop-blur-sm border border-white/10 rounded-lg px-3 py-2">
-            <p className="text-white/60 text-xs">
-              Connected to: <span className="text-white font-medium">{activeEvent.title}</span>
-            </p>
           </div>
-        </div>
+        )}
       </>
     );
   }

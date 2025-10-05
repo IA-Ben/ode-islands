@@ -5,6 +5,8 @@ import TopNav from "@/components/TopNav";
 import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageLayout';
 import AnimateText from '@/components/AnimateText';
 import { useTheme } from '@/contexts/ThemeContext';
+import { AfterHeader } from '@/components/AfterHeader';
+import { SectionScaffold } from '@/components/SectionScaffold';
 
 // Lazy load heavy components for better performance
 const HeroRecapCard = lazy(() => import("@/components/HeroRecapCard"));
@@ -63,6 +65,7 @@ interface TabTheme {
 export default function AfterPage() {
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState<'overview' | 'message' | 'wallet' | 'gallery' | 'merch' | 'community' | 'certificates' | 'fan-score' | 'insights' | 'memories' | 'memory-wallet'>('overview');
+  const [lane, setLane] = useState<'recap' | 'create' | 'offers'>('recap');
   const [animateIn, setAnimateIn] = useState(false);
   const [cmsConfig, setCmsConfig] = useState<AfterExperienceConfig | null>(null);
   const [isLoadingCms, setIsLoadingCms] = useState(true);
@@ -679,10 +682,56 @@ export default function AfterPage() {
     }
   };
 
+  const renderLaneContent = () => {
+    switch (lane) {
+      case 'recap':
+        return (
+          <SectionScaffold>
+            <Suspense fallback={<div className="p-8 text-white/60">Loading recap...</div>}>
+              <HeroRecapCard eventId="demo-event-1" />
+              <EventMemoriesGallery />
+            </Suspense>
+          </SectionScaffold>
+        );
+      
+      case 'create':
+        return (
+          <SectionScaffold>
+            <div className="p-8 text-center text-white/60">
+              <h3 className="text-2xl font-bold mb-4">Create & Share</h3>
+              <p>AI-assisted edits and exports coming soon</p>
+            </div>
+          </SectionScaffold>
+        );
+      
+      case 'offers':
+        return (
+          <SectionScaffold>
+            <Suspense fallback={<div className="p-8 text-white/60">Loading offers...</div>}>
+              <UpcomingEventsDisplay />
+              <MerchDisplay />
+            </Suspense>
+          </SectionScaffold>
+        );
+      
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <TopNav currentPhase="after" />
+      <AfterHeader
+        lane={lane}
+        setLane={setLane}
+        openShareComposer={() => {/* TODO: Implement share composer */}}
+      />
       
+      {renderLaneContent()}
+      
+      {/* Legacy tab content - keeping for backward compatibility */}
+      {activeTab !== 'overview' && (
       <ImmersivePageLayout
         title={getTabTitle(activeTab)}
         subtitle={getTabSubtitle(activeTab)}
@@ -700,17 +749,15 @@ export default function AfterPage() {
                 Your adventure legacy awaits
               </div>
             </div>
-            {activeTab !== 'overview' && (
-              <button
-                onClick={() => setActiveTab('overview')}
-                className="group flex items-center space-x-2 text-white/90 hover:text-white transition-all duration-200 text-sm font-medium bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20 hover:bg-white/15"
-              >
-                <svg className="w-4 h-4 transform group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                </svg>
-                <span>Back to Overview</span>
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab('overview')}
+              className="group flex items-center space-x-2 text-white/90 hover:text-white transition-all duration-200 text-sm font-medium bg-white/10 backdrop-blur-sm px-4 py-2 rounded-lg border border-white/20 hover:bg-white/15"
+            >
+              <svg className="w-4 h-4 transform group-hover:-translate-x-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              <span>Back to Overview</span>
+            </button>
           </div>
         }
       >
@@ -810,6 +857,7 @@ export default function AfterPage() {
         {/* Tab Content */}
         {renderContent()}
       </ImmersivePageLayout>
+      )}
     </>
   );
 }

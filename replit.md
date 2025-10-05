@@ -9,7 +9,20 @@ Preferred communication style: Simple, everyday language.
 # System Architecture
 
 ## Frontend Architecture
-The application uses Next.js 15 with the App Router, implementing a three-phase event companion system with client-side rendering. It features a modern TopNav navigation system with centered timeline tabs (Before/Event/After), wallet access with badge notifications, tier/points display, quick QR scanner, role-gated admin access, and profile menu. The UI includes a modular component structure (Player, AnimateText, Card/ClientCard), and a three-tier routing strategy with legacy support. State management uses local React hooks, and styling is managed with Tailwind CSS 4, custom CSS variables, and a theming system. A custom hook (`useViewportHeight`) addresses iOS Safari's dynamic viewport behavior, and scroll-based navigation is optimized for mobile touch interactions.
+The application uses Next.js 15 with the App Router, implementing a three-phase event companion system with client-side rendering. It features a **two-tier navigation architecture**:
+
+### Navigation System
+**TopNav (Global)**: Persistent across all phases with brand logo, centered timeline tabs (Before/Event/After), wallet access with badge notifications, tier/points display (Bronze/Silver/Gold), quick QR scanner, role-gated admin access, and profile menu.
+
+**Section Sub-Navigation**: Phase-specific sticky headers using reusable components:
+- `SectionSubNav`: Base component with rounded pills, dark glass background (bg-slate-900/70), focus rings, horizontal scroll support
+- `EventHeader`: Info | Interact | Rewards lanes + Map/Scan action buttons
+- `AfterHeader`: Recap | Create | Offers lanes + Share action button
+- `SectionScaffold`: Consistent content layout wrapper (max-w-6xl, responsive padding)
+
+Visual consistency maintained across all sub-navs: same pill buttons, motion (200ms transitions), focus states (fuchsia-400), and mobile-responsive design.
+
+The UI includes a modular component structure (Player, AnimateText, Card/ClientCard), and a three-tier routing strategy with legacy support. State management uses local React hooks, and styling is managed with Tailwind CSS 4, custom CSS variables, and a theming system. A custom hook (`useViewportHeight`) addresses iOS Safari's dynamic viewport behavior, and scroll-based navigation is optimized for mobile touch interactions.
 
 ## Video Streaming Architecture
 HLS.js is used for cross-browser HLS video streaming, with a fallback to native HLS for Safari. Videos are served from Google Cloud Storage in HLS format via a configurable CDN URL. A custom Player component handles auto-play, muted playback, and event handling for chapter progression, supporting both background and immersive video modes.
