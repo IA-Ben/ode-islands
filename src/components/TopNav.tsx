@@ -134,12 +134,17 @@ export default function TopNav({ currentPhase }: TopNavProps) {
                     <span className="hidden sm:inline text-sm font-medium text-slate-900 dark:text-white">Wallet</span>
                   </button>
 
-                  {/* Progress (tier ring + points) */}
+                  {/* Progress (tier ring + points) - Click to view User Score */}
                   <button
-                    onClick={() => setUserScoreOpen(true)}
-                    className="relative group flex items-center gap-2 px-3 py-2 rounded-xl bg-fuchsia-600 text-white shadow hover:bg-fuchsia-700 transition"
-                    aria-label="Progress and tier"
-                    title={`${tier} • ${points} pts`}
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setUserScoreOpen(true);
+                    }}
+                    className="relative group flex items-center gap-2 px-3 py-2 rounded-xl bg-fuchsia-600 text-white shadow hover:bg-fuchsia-700 hover:shadow-lg active:scale-95 transition-all cursor-pointer"
+                    aria-label="View your score and progress"
+                    title={`Click to view your score • ${tier} • ${points} pts`}
                   >
                     <div className="grid place-items-center w-6 h-6 rounded-full bg-white/15">
                       <Crown className="w-4 h-4" />
