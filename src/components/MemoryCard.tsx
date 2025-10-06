@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Memory } from './EventMemoriesGallery';
+import { surfaces, components } from '@/lib/admin/designTokens';
 
 interface MemoryCardProps {
   memory: Memory;
@@ -136,7 +137,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
   if (viewMode === 'list') {
     return (
       <div 
-        className="flex items-center p-4 bg-white/5 rounded-lg border border-white/10 hover:bg-white/10 transition-colors cursor-pointer"
+        className={`flex items-center p-4 ${surfaces.subtleGlass} rounded-lg border border-slate-700/50 hover:bg-slate-800/60 hover:border-fuchsia-500/30 transition-all cursor-pointer`}
         onClick={onClick}
       >
         {/* Media preview - smaller for list view */}
@@ -189,11 +190,11 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="text-red-400 hover:text-red-300 p-1"
+                className="text-red-400 hover:text-red-300 p-1 rounded transition-colors hover:bg-red-400/10"
                 title="Delete memory"
               >
                 {isDeleting ? (
-                  <div className="w-4 h-4 border border-red-400 border-t-transparent rounded-full animate-spin"></div>
+                  <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
                 ) : (
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -210,7 +211,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
   // Grid view
   return (
     <div 
-      className="bg-white/5 rounded-lg border border-white/10 overflow-hidden hover:bg-white/10 transition-colors cursor-pointer group"
+      className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 overflow-hidden hover:bg-slate-800/60 hover:border-fuchsia-500/30 transition-all cursor-pointer group`}
       onClick={onClick}
     >
       {/* Media preview */}
@@ -230,11 +231,11 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
         <button
           onClick={handleDelete}
           disabled={isDeleting}
-          className="absolute top-3 right-3 p-1 bg-black/50 rounded text-red-400 hover:text-red-300 opacity-0 group-hover:opacity-100 transition-opacity"
+          className="absolute top-3 right-3 p-2 bg-slate-900/80 backdrop-blur rounded-lg text-red-400 hover:text-red-300 hover:bg-red-400/20 opacity-0 group-hover:opacity-100 transition-all"
           title="Delete memory"
         >
           {isDeleting ? (
-            <div className="w-4 h-4 border border-red-400 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
           ) : (
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -257,7 +258,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
             {memory.tags.slice(0, 3).map((tag, index) => (
               <span 
                 key={index} 
-                className="px-2 py-1 bg-white/10 rounded text-xs text-white/70"
+                className="px-2 py-1 bg-fuchsia-500/20 text-fuchsia-200 rounded text-xs border border-fuchsia-500/30"
               >
                 {tag}
               </span>
