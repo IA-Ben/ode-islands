@@ -171,9 +171,27 @@ export async function setupAuth(app: Express) {
     
     console.log(`Authentication callback for hostname: ${hostname}`);
     
-    passport.authenticate(`replitauth:${hostname}`, {
-      successReturnToOrRedirect: "/",
-      failureRedirect: "/api/login",
+    passport.authenticate(`replitauth:${hostname}`, (err: any, user: any) => {
+      if (err || !user) {
+        console.error('Authentication failed:', err);
+        return res.redirect('/api/login');
+      }
+
+      req.logIn(user, (loginErr) => {
+        if (loginErr) {
+          console.error('Login error:', loginErr);
+          return res.redirect('/api/login');
+        }
+
+        // Get returnTo URL from session (if saved during login)
+        const returnTo = (req.session as any).returnTo || '/event';
+        delete (req.session as any).returnTo;
+
+        // Redirect to post-login page with returnTo parameter
+        const postLoginUrl = `/auth/post-login${returnTo !== '/event' ? `?returnTo=${encodeURIComponent(returnTo)}` : ''}`;
+        console.log(`Authentication successful, redirecting to: ${postLoginUrl}`);
+        return res.redirect(postLoginUrl);
+      });
     })(req, res, next);
   });
 
