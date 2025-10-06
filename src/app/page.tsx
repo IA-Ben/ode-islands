@@ -17,7 +17,7 @@ export default function Home() {
   }, []);
 
   const handleFadeComplete = () => {
-    router.push("/before");
+    router.push("/before/chapter-1");
   };
 
   return (
