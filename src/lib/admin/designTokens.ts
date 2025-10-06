@@ -168,6 +168,44 @@ export const colors = {
     draft: 'bg-yellow-500/90',
     scheduled: 'bg-blue-500/90',
     archived: 'bg-slate-500/90',
+    purple: 'bg-purple-500/90',
+    orange: 'bg-orange-500/90',
+  },
+  
+  /**
+   * Error and warning colors
+   */
+  error: 'text-rose-400',
+  warning: 'text-amber-400',
+  success: 'text-emerald-400',
+  info: 'text-sky-400',
+  
+  /**
+   * Page background
+   */
+  pageBg: 'bg-slate-950',
+  
+  /**
+   * Modal/overlay backgrounds
+   */
+  modalOverlay: 'bg-slate-950/80 backdrop-blur-md',
+  
+  /**
+   * Gradients
+   */
+  gradients: {
+    primary: 'bg-gradient-to-br from-fuchsia-500 to-purple-500',
+    dark: 'bg-gradient-to-t from-black/90 via-black/50 to-transparent',
+    darker: 'bg-gradient-to-t from-black/80 via-transparent to-transparent',
+  },
+  
+  /**
+   * Icon and badge colors
+   */
+  icon: {
+    muted: 'text-slate-400',
+    active: 'text-white',
+    accent: 'text-fuchsia-400',
   },
 } as const;
 
