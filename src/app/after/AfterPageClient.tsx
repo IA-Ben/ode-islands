@@ -296,6 +296,19 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
           </div>
         );
       
+      case 'memories':
+        return (
+          <div className="w-full">
+            <Suspense fallback={<ComponentSkeleton height="500px" />}>
+              <EventMemoriesGallery 
+                showUploadButton={true}
+                showPrivateMemories={false}
+                className="w-full"
+              />
+            </Suspense>
+          </div>
+        );
+
       case 'wallet':
         return (
           <div 
