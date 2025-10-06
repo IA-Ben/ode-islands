@@ -1,0 +1,214 @@
+Hi Ben — here’s a tight, actionable update to bring the **Admin CMS** in line with the new design and **card views**. It’s paste-ready for design/dev and keeps everything consistent with the top UI.
+
+---
+
+# Admin CMS — New Design & Card Views (Update Spec)
+
+## 0) Objectives
+
+* Match the new **top bar** (dark glass, rounded pills, strong focus states).
+* Unify **card views** (grid & table), a single **Card Editor Drawer**, and a **Featured Rules** builder.
+* Reuse one **Card base model** for Story + Event; Wallet remains **global** (no Wallet card).
+
+---
+
+## 1) Layout & Navigation
+
+### AdminLayout
+
+* **Top bar:** Logo • Dashboard • Story Builder • Events • Cards • Rewards • Wallet • Users • Orders • Analytics • Settings • Env pill • Profile.
+* **Auth gate:** wrap layout with `withAuthGuard(AdminLayout, ["owner","admin","producer","support","analyst","operator"])`.
+* **Body:** left content column (max-w-6xl), sticky **SectionSubNav** below the top bar.
+
+```tsx
+// SectionSubNav (shared)
+<SectionSubNav
+  items={[{id:"list",label:"List"},{id:"create",label:"Create"},{id:"drafts",label:"Drafts"},{id:"rules",label:"Rules"},{id:"audit",label:"Audit"},{id:"preview",label:"Preview"}]}
+  activeId={activeTab}
+  onChange={setActiveTab}
+/>
+```
+
+Design tokens:
+
+* Surfaces: `bg-slate-900/70` (dark), `bg-white/85` (light), **backdrop-blur**, **rounded-full** pills.
+* Focus: `focus-visible:ring-2 ring-fuchsia-400`.
+* Mobile: sub-nav becomes horizontal scroll.
+
+---
+
+## 2) Cards — List/Grid + Editor Drawer
+
+### 2.1 Card List/Grid Toggle
+
+* **Toolbar:** Search, Filters (scope: Story/Event; type; lane; status; tier gate), **View toggle** (Grid/Table), “Create Card”.
+* **Grid view:** 3–4 columns; **CardTile** with: type icon, title, scope badge (Story/Event), lane (if Event), status pill, quick actions (Edit, Duplicate, Archive).
+* **Table view:** sticky headers; columns: Title • Type • Scope • Lane • Status • Visibility • Updated • Actions.
+
+```tsx
+// CardTile (grid)
+<CardTile
+  title="Live AR: Red Storm"
+  type="ar"
+  scope="event"
+  lane="interact"
+  status="live"
+  badges={[{label:"Tier ≥ Silver"}]}
+  onEdit={()=>openEditor(id)}
+/>
+```
+
+### 2.2 Card Editor Drawer (single editor for all)
+
+* Opens from right; wide drawer; **tabs**: *Basics* | *Reward* | *Visibility* | *Params* | *Preview* | *Audit*.
+* **Basics:** title, subtitle, art (image/video), size S/M/L, scope (story/event), lane (if event), order (sortable in lane view).
+* **Reward:** toggle `Award Memory` → choose `templateId`; trigger `onOpen|onComplete|onShare|onOrderComplete|onPair|onScore`; optional `minScore`, `cooldownSec`, `oneTime`.
+* **Visibility:** `minTier`, time window, geo zones.
+* **Params:** type-specific JSON form (AR scene, QR scanTypes, menus, bundles etc.).
+* **Preview:** renders card with design system, faking data if needed.
+* **Audit:** immutable change list for the card.
+
+Microcopy:
+
+* Save button: **Save & Publish** (or **Save Draft** if not live).
+* Reward toast: “This card will award *{template}* on *{trigger}*.”
+
+---
+
+## 3) Events — Lanes & Featured Rules
+
+### 3.1 Lanes Editor
+
+* Board layout: columns **Info / Interact / Rewards**; each column is a sortable list of **CardChips**.
+* **Controls per card:** drag handle, visibility eye (time/tier), quick edit (opens drawer), schedule badge.
+* **Top actions:** Add Card to lane, Reorder, Set default lane.
+
+### 3.2 Event Home (Top-level view)
+
+* **Quick Actions** toggles (Scan, Map, Schedule, Offers).
+* **Featured Rules** panel:
+
+  * Rule list (sortable by priority).
+  * Rule editor: *conditions* (time window, tier ≥, zones\[], popularity ≥), *layout* (Hero | Carousel), *cardIds* (1–3).
+  * Live preview area (simulated user tier/time).
+
+---
+
+## 4) Story Builder — Chapters, Sub-chapters, Cards
+
+### 4.1 Chapter Timeline
+
+* Horizontal stepper of sub-chapters; add/reorder; set status (Draft/Scheduled/Live/Archived); chapter art + audio.
+
+### 4.2 Sub-chapter Canvas
+
+* Vertical **CardList** (story scope), add/reorder cards; open **Card Editor Drawer** (same as Events).
+* **Branching Builder**: condition chips (points≥N, tier≥X, choice==Y, qrSeen(ruleId), geoInZone) → target sub-chapter picker.
+* **Suggested feed flag:** per card `highlightForFeed` toggle.
+
+---
+
+## 5) Rewards — Templates & Rules (UI)
+
+### 5.1 Memory Templates (NFT-ready)
+
+* Grid/Table; template editor with: title, image, media (image/video/3D), points, rarity, set mapping, OG share, privacy flags, NFT block (`enabled, chain preset, mintMode lazy|instant, custodial, royaltyBps`).
+
+### 5.2 Reward Rules
+
+* List + “Create Rule”.
+* Rule editor by **type**: QR | Geo | Action.
+
+  * **QR:** prefix + optional HMAC; generate QR batch (PNG/CSV).
+  * **Geo:** geohash + precision + dwell sec.
+  * **Action:** event name + conditions JSON.
+  * Outputs: points + `templateId`; constraints (tier gate, cooldown, one-time, window, max redemptions).
+* Test harness: simulate scan/geo/action to see award.
+
+---
+
+## 6) Users — List/Detail
+
+* **List:** search, filters (role, tier, points range, hasWallet, bans).
+* **Detail tabs:** *Profile* • *Progress* (points ledger) • *Wallet* (items with NFT state) • *Actions* (Adjust points, Manual award, Re-mint/Export NFT, Lock/Unlock, Reset demo) • *Audit*.
+
+---
+
+## 7) Analytics — Dashboards
+
+* **Story progression** (chapter/sub-chapter), **drop-off**, **card CTR**, **Featured performance**, **AR launches**, **QR scans**, **Memory awards**, **points & tiers**, **checkout funnel** (mock).
+* Export CSV/JSON.
+
+---
+
+## 8) Settings
+
+* Env (Demo/Prod), **Feature Flags** (`nft`, `demoMode`), chains/contracts, AR scenes registry (IDs + safety copy), map zones, consent/privacy text, staff devices.
+* **Disabled** unless `owner|admin`.
+
+---
+
+## 9) Components (ready to build)
+
+* `AdminLayout` (auth-guarded, top bar)
+* `SectionSubNav` (sticky pills)
+* `CardGrid` / `CardTable` / `CardTile` / `CardChip`
+* `CardEditorDrawer` (tabs: Basics/Reward/Visibility/Params/Preview/Audit)
+* `EventLanesBoard` (Info/Interact/Rewards columns)
+* `FeaturedRulesBuilder` (priority list + rule editor + preview)
+* `ChapterTimeline` / `SubchapterCanvas` / `BranchingBuilder`
+* `TemplatesGrid` / `TemplateEditor`
+* `RewardRulesList` / `RewardRuleEditor` (+ QR generator)
+* `UsersList` / `UserDetail` (tabs)
+* `AuditDrawer`
+* `AnalyticsDashboard`
+* `SettingsPanel`
+
+All styled with Tailwind; use lucide-react icons; keep focus rings consistent.
+
+---
+
+## 10) Routing (Next.js example)
+
+```
+/admin
+/admin/story
+/admin/story/[storyId]
+/admin/events
+/admin/events/[eventId]
+/admin/cards
+/admin/rewards/templates
+/admin/rewards/rules
+/admin/users
+/admin/users/[userId]
+/admin/orders
+/admin/analytics
+/admin/settings
+```
+
+Each route wrapped by `withAuthGuard`. Mutations pass through server RBAC + audit logging.
+
+---
+
+## 11) QA & Acceptance (for this UI update)
+
+1. **Admin look & feel** matches the top UI; sub-nav is sticky and accessible.
+2. **Cards** support Grid/Table, open a **single Drawer** for edit; Reward hook visible on all card types.
+3. **Event Lanes** reorder works; **Featured Rules** select 1–3 cards with priority; preview renders.
+4. **Story Builder** uses the same Card Drawer; branching builder saves and previews pathing.
+5. **No Memory Wallet card** anywhere; Wallet remains global.
+6. RBAC: unauthorised users cannot see Admin menu; Settings disabled unless owner|admin.
+7. **Audit drawer** shows mutations per record.
+8. All screens responsive; keyboard focus visible; dark mode OK.
+
+---
+
+## 12) Small tasks to ship now
+
+* Implement **CardGrid/Table + Drawer**.
+* Build **EventLanesBoard** and **FeaturedRulesBuilder**.
+* Wire **SubchapterCanvas** to reuse Card Drawer; add **BranchingBuilder**.
+* Add **RewardRuleEditor** with QR generator stub.
+* Gate **Settings** by role and connect **Audit** write/read.
+
+If you want, I can output minimal **React/Tailwind stubs** for `CardTile`, `CardEditorDrawer`, and `FeaturedRulesBuilder` so Claude can drop them straight in.
