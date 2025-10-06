@@ -57,28 +57,50 @@ export async function GET(request: NextRequest) {
     }
     
     const tokens = await tokenResponse.json();
+    console.log('Token response received, id_token:', tokens.id_token ? 'present' : 'missing');
     
-    // Fetch user info
-    const userInfoUrl = process.env.AUTH_USERINFO_URL || 'https://replit.com/oidc/userinfo';
-    console.log('Fetching user info from:', userInfoUrl);
-    console.log('Using access token:', tokens.access_token ? 'present' : 'missing');
+    let userInfo: any = null;
     
-    const userInfoResponse = await fetch(userInfoUrl, {
-      headers: {
-        'Authorization': `Bearer ${tokens.access_token}`,
-      },
-    });
-    
-    if (!userInfoResponse.ok) {
-      const errorText = await userInfoResponse.text();
-      console.error('User info fetch failed:', userInfoResponse.status, errorText);
-      return NextResponse.json(
-        { error: 'Failed to fetch user info' },
-        { status: 400 }
-      );
+    // Try to decode the ID token first if available
+    if (tokens.id_token) {
+      try {
+        // Decode the ID token without verification (since we just got it from the token endpoint)
+        const parts = tokens.id_token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+          console.log('Decoded ID token payload:', JSON.stringify(payload, null, 2));
+          userInfo = payload;
+        }
+      } catch (e) {
+        console.error('Failed to decode ID token:', e);
+      }
     }
     
-    const userInfo = await userInfoResponse.json();
+    // If we couldn't get user info from ID token, try the userinfo endpoint
+    if (!userInfo) {
+      const userInfoUrl = process.env.AUTH_USERINFO_URL || 'https://replit.com/oidc/userinfo';
+      console.log('Fetching user info from:', userInfoUrl);
+      console.log('Using access token:', tokens.access_token ? 'present' : 'missing');
+      
+      const userInfoResponse = await fetch(userInfoUrl, {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+        },
+      });
+      
+      if (!userInfoResponse.ok) {
+        const errorText = await userInfoResponse.text();
+        console.error('User info fetch failed:', userInfoResponse.status, errorText);
+        return NextResponse.json(
+          { error: 'Failed to fetch user info' },
+          { status: 400 }
+        );
+      }
+      
+      userInfo = await userInfoResponse.json();
+    }
+    
+    console.log('User info obtained:', JSON.stringify(userInfo, null, 2));
     
     // Upsert user in database
     await storage.upsertUser({
