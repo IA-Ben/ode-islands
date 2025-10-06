@@ -12,7 +12,6 @@ import { surfaces, colors, components } from '@/lib/admin/designTokens';
 const HeroRecapCard = lazy(() => import("@/components/HeroRecapCard"));
 const EventMemoriesGallery = lazy(() => import("@/components/EventMemoriesGallery"));
 const CertificateManager = lazy(() => import("@/components/CertificateManager"));
-const MemoryWalletModern = lazy(() => import("@/components/MemoryWalletModern"));
 const CollectionGrid = lazy(() => import("@/components/CollectionGrid"));
 const ScoreProgressPanel = lazy(() => import("@/components/ScoreProgressPanel"));
 const Leaderboard = lazy(() => import("@/components/Leaderboard"));
@@ -305,41 +304,6 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
           </div>
         );
 
-      case 'wallet':
-        return (
-          <div 
-            className={`${surfaces.cardGlass} rounded-2xl border border-slate-700/50 p-8`}
-            style={{
-              opacity: 0,
-              animation: animateIn ? 'animButtonIn 0.8s 1.5s ease forwards' : 'none'
-            }}
-          >
-            <div className="text-center mb-8">
-              <h3 className="text-3xl font-bold text-white mb-4">
-                <svg className="w-6 h-6 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-                </svg>
-                <AnimateText active={animateIn} delay={1800}>
-                  Memory Wallet
-                </AnimateText>
-              </h3>
-              <p className="text-white/80 text-lg mb-6">Your collected memories from The Ode Islands journey</p>
-              <button
-                onClick={() => window.location.href = '/memory-wallet'}
-                className={`${surfaces.subtleGlass} hover:bg-white/20 text-white border border-slate-700/50 px-4 py-2 rounded-lg font-medium transition-colors`}
-              >
-                View Full Memory Wallet →
-              </button>
-            </div>
-            <Suspense fallback={<ComponentSkeleton height="500px" />}>
-              <MemoryWalletModern 
-                showHeader={false}
-                className="w-full" 
-              />
-            </Suspense>
-          </div>
-        );
-      
       case 'certificates':
         return (
           <div 
@@ -522,7 +486,7 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
               }}
             >
               <button
-                onClick={() => setActiveTab('memory-wallet')}
+                onClick={() => window.location.href = '/memory-wallet'}
                 className={`group ${surfaces.cardGlass} rounded-2xl border border-slate-700/50 p-8 text-left transform transition-all duration-300 hover:scale-105 hover:bg-slate-800/60 hover:border-fuchsia-500/50 hover:shadow-2xl`}
                 style={{
                   opacity: 0,
