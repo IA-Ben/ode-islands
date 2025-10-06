@@ -187,10 +187,26 @@ export async function setupAuth(app: Express) {
       
       console.log(`Attempting authentication with strategy: ${strategyName}`);
       
-      // Use specific options for passport-openidconnect
+      // Use custom callback to debug
       passport.authenticate(strategyName, {
         prompt: 'login consent',
         scope: 'openid email profile offline_access',
+      }, (err: any, user: any, info: any) => {
+        console.log('Auth callback - err:', err, 'user:', user, 'info:', info);
+        
+        if (err) {
+          console.error('Authentication error:', err);
+          return res.status(500).json({ error: 'Authentication failed', details: err.message });
+        }
+        
+        // If no user, it means redirect should have happened
+        if (!user && !res.headersSent) {
+          console.log('No user returned, redirect may have failed');
+          return res.status(500).json({ error: 'Authentication initialization failed' });
+        }
+        
+        // Continue with normal flow
+        next();
       })(req, res, next);
     });
 
