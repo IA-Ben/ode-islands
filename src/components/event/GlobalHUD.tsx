@@ -132,12 +132,6 @@ function PointsRing({ currentPoints, currentTier, nextTierThreshold }: PointsRin
           </div>
         </div>
       </button>
-      
-      <div className="absolute -bottom-6 left-1/2 -translate-x-1/2 whitespace-nowrap">
-        <span className="text-xs font-medium text-white/70">
-          {currentTier}
-        </span>
-      </div>
     </div>
   );
 }

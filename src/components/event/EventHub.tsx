@@ -1,6 +1,6 @@
 "use client";
 
-import { QrCode, MapPin, Calendar, Tag, Info, Sparkles, Gift, ArrowRight, Clock } from "lucide-react";
+import { QrCode, MapPin, Calendar, Tag, Info, Sparkles, Gift, ArrowRight, Clock, WalletCards } from "lucide-react";
 
 export interface FeaturedCard {
   id: string;
@@ -24,7 +24,7 @@ interface EventHubProps {
   onEnterLane: (lane: "info" | "interact" | "rewards") => void;
   featuredCards?: FeaturedCard[];
   nowNextItems?: NowNextItem[];
-  onQuickAction?: (action: "scan" | "map" | "schedule" | "offers") => void;
+  onQuickAction?: (action: "scan" | "map" | "schedule" | "offers" | "wallet") => void;
 }
 
 export function EventHub({
@@ -33,7 +33,7 @@ export function EventHub({
   nowNextItems = [],
   onQuickAction,
 }: EventHubProps) {
-  const handleQuickAction = (action: "scan" | "map" | "schedule" | "offers") => {
+  const handleQuickAction = (action: "scan" | "map" | "schedule" | "offers" | "wallet") => {
     if (onQuickAction) {
       onQuickAction(action);
     }
@@ -79,6 +79,15 @@ export function EventHub({
             >
               <Tag className="w-5 h-5" />
               <span className="text-sm">Offers</span>
+            </button>
+            
+            <button
+              onClick={() => handleQuickAction("wallet")}
+              className="flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/10 text-white hover:bg-white/15 transition-all duration-200 font-medium border border-white/10"
+              aria-label="Open Wallet"
+            >
+              <WalletCards className="w-5 h-5" />
+              <span className="text-sm">Wallet</span>
             </button>
           </div>
         </section>

@@ -585,7 +585,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     setIsQRScannerOpen(false);
   }, []);
 
-  const handleQuickAction = (action: 'scan' | 'map' | 'schedule' | 'offers') => {
+  const handleQuickAction = (action: 'scan' | 'map' | 'schedule' | 'offers' | 'wallet') => {
     console.log('Quick action:', action);
     if (action === 'scan') {
       handleEnterLane('interact');
@@ -593,6 +593,8 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
       handleEnterLane('info');
     } else if (action === 'offers') {
       handleEnterLane('rewards');
+    } else if (action === 'wallet') {
+      router.push('/memory-wallet');
     }
   };
 
