@@ -1,316 +1,349 @@
-import express from 'express';
+import { Issuer } from 'openid-client';
 import passport from 'passport';
 import { Strategy as OpenIDConnectStrategy } from 'passport-openidconnect';
-import { Issuer } from 'openid-client';
 import expressSession from 'express-session';
+import type { Express, RequestHandler } from 'express';
 import connectPgSimple from 'connect-pg-simple';
 import memoize from 'memoizee';
 import { storage } from './storage';
-import { db } from './db';
-import { sessions } from '../shared/schema';
-import { eq } from 'drizzle-orm';
 
-const PgStore = connectPgSimple(expressSession);
+// Check for required environment variables
+if (!process.env.REPLIT_DOMAINS && process.env.NODE_ENV === 'production') {
+  console.warn('Environment variable REPLIT_DOMAINS not provided, using localhost');
+}
 
-// Memoize the discovery function to avoid repeated calls
-const getOpenIDIssuer = memoize(
+if (!process.env.REPL_ID && process.env.NODE_ENV === 'production') {
+  console.warn('Environment variable REPL_ID not provided, authentication may not work correctly');
+}
+
+// Memoize the OIDC configuration discovery
+const getOidcConfig = memoize(
   async () => {
-    const issuer = await Issuer.discover(
-      process.env.AUTH_ISSUER_URL || 'https://replit.com/oidc'
-    );
-    return issuer;
+    const issuerUrl = process.env.ISSUER_URL ?? 'https://replit.com/oidc';
+    
+    try {
+      // Use Issuer.discover but we'll extract metadata manually to avoid issues
+      const issuer = await Issuer.discover(issuerUrl);
+      return issuer;
+    } catch (error) {
+      console.error('Failed to discover OIDC configuration:', error);
+      throw error;
+    }
   },
-  { promise: true, maxAge: 1000 * 60 * 60 } // Cache for 1 hour
+  { maxAge: 3600 * 1000, promise: true } // Cache for 1 hour
 );
 
-// User serialization for passport sessions
-passport.serializeUser((user: any, done) => {
-  // Serialize the entire user object for simpler retrieval
-  done(null, {
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    profileImageUrl: user.profileImageUrl,
-    isAdmin: user.isAdmin,
+// Get session configuration
+export function getSession() {
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
+  const PgStore = connectPgSimple(expressSession);
+  const sessionStore = new PgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: sessionTtl,
+    tableName: 'sessions',
   });
-});
-
-passport.deserializeUser(async (sessionUser: any, done) => {
-  try {
-    // Try to get fresh user data from database
-    const user = await storage.getUser(sessionUser.id);
-    if (user) {
-      // Update admin status from database
-      done(null, {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        profileImageUrl: user.profileImageUrl,
-        isAdmin: user.isAdmin,
-      });
-    } else {
-      // If user not found in DB, use session data
-      done(null, sessionUser);
-    }
-  } catch (error) {
-    console.warn('Error deserializing user, using session data:', error);
-    // Fall back to session data if DB lookup fails
-    done(null, sessionUser);
-  }
-});
-
-// Setup authentication middleware
-export async function setupAuth(app: express.Application) {
-  // Session configuration
-  const sessionConfig: expressSession.SessionOptions = {
-    store: new PgStore({
-      conString: process.env.DATABASE_URL,
-      tableName: 'sessions',
-      createTableIfMissing: true,
-    }),
-    secret: process.env.SESSION_SECRET || process.env.JWT_SECRET || 'fallback-secret-for-dev',
+  
+  return expressSession({
+    secret: process.env.SESSION_SECRET || process.env.JWT_SECRET || 'fallback-secret-dev',
+    store: sessionStore,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: sessionTtl,
       sameSite: 'lax',
     },
+  });
+}
+
+// Update user session with tokens
+function updateUserSession(
+  user: any,
+  tokens: any
+) {
+  // Handle both tokenSet.claims() and direct claims
+  user.claims = typeof tokens.claims === 'function' ? tokens.claims() : (tokens.claims || tokens);
+  user.access_token = tokens.access_token;
+  user.refresh_token = tokens.refresh_token;
+  user.expires_at = tokens.expires_at || tokens.exp || user.claims?.exp || Math.floor(Date.now() / 1000) + 3600;
+}
+
+// Upsert user to database
+async function upsertUser(claims: any) {
+  // Ensure claims exist and have required fields
+  const userId = claims?.sub || claims?.id;
+  if (!userId) {
+    console.error('No user ID found in claims:', claims);
+    throw new Error('No user ID found in authentication claims');
+  }
+
+  // Extract user data from claims
+  const userData = {
+    id: String(userId),
+    email: claims?.email || '',
+    firstName: claims?.first_name || claims?.given_name || '',
+    lastName: claims?.last_name || claims?.family_name || '',
+    profileImageUrl: claims?.profile_image_url || claims?.picture || '',
   };
 
-  // Initialize session and passport
-  app.use(expressSession(sessionConfig));
+  await storage.upsertUser(userData);
+  
+  // Check if user is admin
+  const user = await storage.getUser(userData.id);
+  const adminEmails = process.env.ADMIN_EMAILS?.split(',').map(e => e.trim()) || [];
+  const isAdmin = user?.isAdmin ?? adminEmails.includes(userData.email);
+
+  return { ...userData, isAdmin };
+}
+
+// Main authentication setup
+export async function setupAuth(app: Express) {
+  // Trust proxy for production deployments
+  app.set('trust proxy', 1);
+  
+  // Setup sessions
+  app.use(getSession());
   app.use(passport.initialize());
   app.use(passport.session());
 
-  // Get OpenID issuer
-  const issuer = await getOpenIDIssuer();
-  
-  // Get the first domain from REPLIT_DOMAINS
-  const domain = process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000';
-  const baseUrl = process.env.NODE_ENV === 'production' 
-    ? `https://${domain}`
-    : `http://${domain}`;
+  try {
+    // Get OIDC configuration
+    const config = await getOidcConfig();
 
-  // Create OpenID Connect strategy with openid-client v5
-  const client = new issuer.Client({
-    client_id: process.env.REPL_ID || process.env.REPLIT_CLIENT_ID || 'test-client',
-    redirect_uris: [`${baseUrl}/api/callback`],
-    response_types: ['code'],
-  });
+    // Get domains from environment
+    const replitDomains = process.env.REPLIT_DOMAINS?.split(',').filter(d => d.trim()) || [];
+    // Always include localhost for development
+    const domains = [...replitDomains];
+    if (process.env.NODE_ENV !== 'production') {
+      domains.push('localhost:5000');
+    }
+    console.log('Registering strategies for domains:', domains);
+    
+    // Register a strategy for each domain
+    for (const domain of domains) {
+      const strategyName = `replitauth:${domain}`;
+      console.log(`Registering strategy: ${strategyName}`);
+      const isLocalhost = domain.startsWith('localhost');
+      const protocol = (process.env.NODE_ENV === 'production' && !isLocalhost) ? 'https' : 'http';
+      const callbackURL = `${protocol}://${domain}/api/callback`;
 
-  // Configure passport strategy
-  passport.use(
-    'openidconnect',
-    new OpenIDConnectStrategy(
-      {
-        issuer: issuer.metadata.issuer,
-        authorizationURL: issuer.metadata.authorization_endpoint,
-        tokenURL: issuer.metadata.token_endpoint,
-        userInfoURL: issuer.metadata.userinfo_endpoint,
-        clientID: process.env.REPL_ID || process.env.REPLIT_CLIENT_ID || 'test-client',
-        clientSecret: undefined, // No client secret for public clients
-        callbackURL: `${baseUrl}/api/callback`,
-        scope: 'openid email profile',
-        skipUserProfile: false,
-        passReqToCallback: false,
-      },
-      async (
-        issuer: string,
-        profile: any,
-        idToken: string | undefined,
-        accessToken: string,
-        refreshToken: string | undefined,
-        params: any,
-        done: any
-      ) => {
-        try {
-          // Parse profile data from either ID token or userinfo
-          let userInfo = profile;
-          
-          // If profile is not properly parsed, try to decode ID token
-          if (!userInfo.id && idToken) {
-            try {
-              const parts = idToken.split('.');
-              if (parts.length === 3) {
-                const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
-                userInfo = {
-                  id: payload.sub,
-                  email: payload.email,
-                  firstName: payload.given_name || payload.first_name || '',
-                  lastName: payload.family_name || payload.last_name || '',
-                  profileImageUrl: payload.picture || payload.profile_image_url || '',
-                  ...payload,
-                };
-              }
-            } catch (e) {
-              console.error('Failed to decode ID token:', e);
+      // Use passport-openidconnect with discovered metadata for better compatibility
+      const strategy = new OpenIDConnectStrategy(
+        {
+          issuer: config.metadata.issuer,
+          authorizationURL: config.metadata.authorization_endpoint,
+          tokenURL: config.metadata.token_endpoint,
+          userInfoURL: config.metadata.userinfo_endpoint,
+          clientID: process.env.REPL_ID || 'test-client',
+          clientSecret: '', // Empty secret for public clients
+          callbackURL,
+          scope: 'openid email profile offline_access',
+          skipUserProfile: false,
+          // Additional options to help avoid Cloudflare issues
+          passReqToCallback: false,
+        },
+        async (issuer: string, profile: any, idToken: string | undefined, accessToken: string, refreshToken: string | undefined, params: any, done: any) => {
+          try {
+            // Extract claims from ID token or profile
+            const claims = profile._json || {};
+            const userId = claims.sub || claims.id;
+            if (!userId) {
+              return done(new Error('No user ID found'), null);
             }
+
+            // Upsert user and get admin status
+            const userWithAdmin = await upsertUser(claims);
+
+            // Create session user object
+            const sessionUser = {
+              ...userWithAdmin,
+              claims,
+              access_token: accessToken,
+              refresh_token: refreshToken,
+              expires_at: claims.exp || Math.floor(Date.now() / 1000) + 3600,
+            };
+
+            done(null, sessionUser);
+          } catch (error) {
+            console.error('Authentication error:', error);
+            done(error, null);
           }
-
-          // Ensure we have a user ID
-          const userId = userInfo.id || userInfo.sub || profile._json?.sub;
-          if (!userId) {
-            return done(new Error('No user ID found in profile'), null);
-          }
-
-          // Upsert user in database
-          const userData = {
-            id: String(userId),
-            email: String(userInfo.email || profile._json?.email || ''),
-            firstName: String(userInfo.firstName || userInfo.given_name || profile._json?.given_name || ''),
-            lastName: String(userInfo.lastName || userInfo.family_name || profile._json?.family_name || ''),
-            profileImageUrl: String(userInfo.profileImageUrl || userInfo.picture || profile._json?.picture || ''),
-          };
-
-          await storage.upsertUser(userData);
-
-          // Check if user is admin
-          const user = await storage.getUser(userData.id);
-          const adminEmails = process.env.ADMIN_EMAILS?.split(',') || [];
-          const isAdmin = user?.isAdmin ?? adminEmails.includes(userData.email);
-
-          // Return user object for passport
-          return done(null, {
-            id: userData.id,
-            email: userData.email,
-            firstName: userData.firstName,
-            lastName: userData.lastName,
-            profileImageUrl: userData.profileImageUrl,
-            isAdmin,
-            accessToken,
-            refreshToken,
-          });
-        } catch (error) {
-          console.error('Authentication error:', error);
-          return done(error, null);
         }
-      }
-    )
-  );
-
-  // Authentication routes
-  app.get('/api/login', (req, res, next) => {
-    // Generate PKCE parameters for added security
-    const state = require('crypto').randomBytes(16).toString('hex');
-    
-    // Store state in session for CSRF protection
-    req.session.oauthState = state;
-    
-    passport.authenticate('openidconnect', {
-      state,
-    })(req, res, next);
-  });
-
-  app.get('/api/callback',
-    (req, res, next) => {
-      // Validate state for CSRF protection
-      if (req.query.state !== req.session.oauthState) {
-        return res.status(400).json({ error: 'Invalid state parameter' });
-      }
-      delete req.session.oauthState;
-      next();
-    },
-    passport.authenticate('openidconnect', { 
-      failureRedirect: '/auth/login?error=authentication_failed',
-      successRedirect: '/auth/post-login',
-    })
-  );
-
-  app.post('/api/logout', (req, res) => {
-    req.logout((err) => {
-      if (err) {
-        console.error('Logout error:', err);
-        return res.status(500).json({ error: 'Logout failed' });
-      }
+      );
       
-      // Destroy session
-      req.session.destroy((err) => {
+      passport.use(strategyName, strategy);
+    }
+
+    // Serialize/deserialize user for sessions
+    passport.serializeUser((user: Express.User, cb) => cb(null, user));
+    passport.deserializeUser((user: Express.User, cb) => cb(null, user));
+
+    // Login route
+    app.get('/api/login', (req, res, next) => {
+      const host = req.headers.host || 'localhost:5000';
+      const strategyName = `replitauth:${host}`;
+      
+      console.log(`Attempting authentication with strategy: ${strategyName}`);
+      
+      // Use specific options for passport-openidconnect
+      passport.authenticate(strategyName, {
+        prompt: 'login consent',
+        scope: 'openid email profile offline_access',
+      })(req, res, next);
+    });
+
+    // OAuth callback route
+    app.get('/api/callback', (req, res, next) => {
+      const host = req.headers.host || 'localhost:5000';
+      const strategyName = `replitauth:${host}`;
+      
+      console.log(`Callback authentication with strategy: ${strategyName}`);
+      
+      passport.authenticate(strategyName, {
+        successReturnToOrRedirect: '/auth/post-login',
+        failureRedirect: '/auth/login?error=authentication_failed',
+      })(req, res, next);
+    });
+
+    // Logout route (POST)
+    app.post('/api/logout', (req, res) => {
+      req.logout((err) => {
         if (err) {
-          console.error('Session destruction error:', err);
+          console.error('Logout error:', err);
+          return res.status(500).json({ error: 'Logout failed' });
         }
-        
-        // Clear session cookie
-        res.clearCookie('connect.sid');
-        res.json({ success: true, message: 'Logged out successfully' });
+
+        // Destroy session
+        req.session.destroy((destroyErr) => {
+          if (destroyErr) {
+            console.error('Session destruction error:', destroyErr);
+          }
+          res.clearCookie('connect.sid');
+          res.json({ success: true, message: 'Logged out successfully' });
+        });
       });
     });
-  });
 
-  app.get('/api/logout', (req, res) => {
-    req.logout((err) => {
-      if (err) {
-        console.error('Logout error:', err);
-      }
+    // Logout route (GET) with OIDC end session
+    app.get('/api/logout', async (req, res) => {
+      const hostname = req.hostname || req.headers.host?.split(':')[0] || 'localhost';
       
-      // Destroy session
-      req.session.destroy((err) => {
+      req.logout((err) => {
         if (err) {
-          console.error('Session destruction error:', err);
+          console.error('Logout error:', err);
         }
-        
-        // Clear session cookie
-        res.clearCookie('connect.sid');
-        res.redirect('/');
+
+        // Destroy session
+        req.session.destroy(async (destroyErr) => {
+          if (destroyErr) {
+            console.error('Session destruction error:', destroyErr);
+          }
+          res.clearCookie('connect.sid');
+          
+          // Redirect to OIDC end session endpoint
+          try {
+            const issuer = await getOidcConfig();
+            // Create a client for logout
+            const client = new issuer.Client({
+              client_id: process.env.REPL_ID || 'test-client',
+              redirect_uris: [`${req.protocol}://${req.headers.host || hostname}/api/callback`],
+              response_types: ['code'],
+            });
+            
+            // Use endSessionUrl method
+            const endSessionUrl = client.endSessionUrl({
+              post_logout_redirect_uri: `${req.protocol}://${req.headers.host || hostname}`,
+            });
+            
+            res.redirect(endSessionUrl);
+          } catch (error) {
+            console.error('Failed to build end session URL:', error);
+            res.redirect('/');
+          }
+        });
       });
     });
-  });
 
-  // User info endpoint that works with passport sessions
-  app.get('/api/me', (req, res) => {
-    if (req.isAuthenticated() && req.user) {
-      res.json({
-        success: true,
-        user: {
-          id: (req.user as any).id,
-          email: (req.user as any).email,
-          firstName: (req.user as any).firstName,
-          lastName: (req.user as any).lastName,
-          profileImageUrl: (req.user as any).profileImageUrl,
-          isAdmin: (req.user as any).isAdmin,
-        },
-      });
-    } else {
-      res.status(401).json({ success: false, message: 'Not authenticated' });
-    }
-  });
+    // User info endpoint (supports both /api/me and /api/auth/user)
+    const userInfoHandler = (req: any, res: any) => {
+      if (req.isAuthenticated() && req.user) {
+        const user = req.user as any;
+        res.json({
+          success: true,
+          user: {
+            id: user.id || user.claims?.sub,
+            email: user.email || user.claims?.email,
+            firstName: user.firstName || user.claims?.first_name,
+            lastName: user.lastName || user.claims?.last_name,
+            profileImageUrl: user.profileImageUrl || user.claims?.profile_image_url,
+            isAdmin: user.isAdmin || false,
+          },
+        });
+      } else {
+        res.status(401).json({ success: false, message: 'Not authenticated' });
+      }
+    };
 
-  // Also support the existing /api/auth/user endpoint
-  app.get('/api/auth/user', (req, res) => {
-    if (req.isAuthenticated() && req.user) {
-      res.json({
-        success: true,
-        user: {
-          id: (req.user as any).id,
-          email: (req.user as any).email,
-          firstName: (req.user as any).firstName,
-          lastName: (req.user as any).lastName,
-          profileImageUrl: (req.user as any).profileImageUrl,
-          isAdmin: (req.user as any).isAdmin,
-        },
-      });
-    } else {
-      res.status(401).json({ success: false, message: 'Not authenticated' });
-    }
-  });
+    app.get('/api/me', userInfoHandler);
+    app.get('/api/auth/user', userInfoHandler);
 
-  console.log('> Replit Auth with passport initialized');
+    console.log('> Replit Auth initialized successfully');
+  } catch (error) {
+    console.error('Failed to setup authentication:', error);
+    throw error;
+  }
 }
 
-// Export middleware functions for protecting routes
-export const requireAuth = (req: any, res: any, next: any) => {
-  if (req.isAuthenticated()) {
+// Middleware to check if user is authenticated with token refresh
+export const isAuthenticated: RequestHandler = async (req, res, next) => {
+  const user = req.user as any;
+
+  if (!req.isAuthenticated() || !user?.expires_at) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const now = Math.floor(Date.now() / 1000);
+  if (now <= user.expires_at) {
     return next();
   }
-  res.status(401).json({ success: false, message: 'Authentication required' });
+
+  // Try to refresh token if expired
+  const refreshToken = user.refresh_token;
+  if (!refreshToken) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  try {
+    const issuer = await getOidcConfig();
+    const client = new issuer.Client({
+      client_id: process.env.REPL_ID || 'test-client',
+      redirect_uris: [`https://${req.hostname}/api/callback`],
+      response_types: ['code'],
+    });
+    const tokenSet = await client.refresh(refreshToken);
+    updateUserSession(user, tokenSet);
+    return next();
+  } catch (error) {
+    console.error('Token refresh failed:', error);
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
 };
 
-export const requireAdmin = (req: any, res: any, next: any) => {
-  if (req.isAuthenticated() && (req.user as any)?.isAdmin) {
+// Legacy middleware for compatibility
+export const requireAuth = isAuthenticated;
+
+// Admin check middleware
+export const requireAdmin: RequestHandler = async (req, res, next) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const user = req.user as any;
+  if (user?.isAdmin) {
     return next();
   }
-  res.status(403).json({ success: false, message: 'Admin access required' });
+
+  return res.status(403).json({ message: 'Admin access required' });
 };
