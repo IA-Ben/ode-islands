@@ -37,7 +37,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${manrope.variable} antialiased`}>
+      <body className={`${manrope.variable} antialiased bg-slate-950`}>
         <TokenThemeProvider initial={serverTheme}>
           <ThemeProvider>
             <MobileProvider>
