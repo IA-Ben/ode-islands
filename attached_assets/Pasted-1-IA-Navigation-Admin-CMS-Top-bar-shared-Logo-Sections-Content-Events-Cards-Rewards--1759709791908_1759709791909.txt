@@ -1,0 +1,194 @@
+1) IA & Navigation (Admin/CMS)
+
+Top bar (shared): Logo • Sections: Content, Events, Cards, Rewards, Wallet, Users, Orders, Analytics, Settings • Environment pill (Demo/Prod) • Profile.
+
+Section sub-nav (pills, sticky): context actions (List | Create | Drafts | Imports | Rules | Audit).
+
+2) Core Sections (what changes)
+A) Events
+
+Event Overview: Hero meta (name, dates, venue), Quick Actions (Map, Schedule, Scan test), Featured Rules (priority, conditions, layout), Lanes (Info/Interact/Rewards) with reorderable Card Slots.
+
+Lanes editor: drag to order, schedule windows, visibility rules (tier, time, geo).
+
+Top-level Event Home config: Quick Actions shown, fallback cards.
+
+B) Cards (Library)
+
+Card types: AR, QR Scan, Venue Info, Schedule, Map, Merch, F&B, Discounts/Superfan, Wearables, User Media, AI Create, Safety/Help.
+
+Card editor (all types share): Title, Subtitle, Art, Size (S/M/L), Actions, Lane, Time window, Visibility rules, Analytics tag.
+
+Reward hook: Award Memory toggle → templateId, Trigger (onOpen/onComplete/onShare/onOrder/onPair/onScore≥N).
+
+No Memory Wallet card (removed).
+
+C) Rewards
+
+Memory Templates (NFT-ready): title, image, media (image|video|ar-capture|3d glb/usdz), points, rarity, set mapping, OG share, privacy flags, NFT block (enabled, chain preset, contractRef, mintMode lazy|instant, custodial, royaltyBps).
+
+Reward Rules (QR | Location | Action): match schema (QR payload, geofence, event bus event), outputs (points + templateId), constraints (tier gate, cooldown, one-time, window, max redemptions).
+
+Points & Tiers: weights per action; tier thresholds and benefits matrix (discounts %, AR unlocks).
+
+D) Wallet (Global)
+
+Do not create a card. Configure: grid defaults (Owned/All visibility), filters, sets, OG share presets, delete policy, export-to-wallet policy.
+
+Badge behaviour: animation copy, sounds/haptics (optional).
+
+E) Orders (Merch & F&B)
+
+Catalogues/menus, bundles, price overrides by tier, mock checkout toggles, pickup QR formats.
+
+F) Analytics
+
+Dashboards: Active users, Scans, AR launches, Memory awards, Points earned, Tier distribution, Checkout funnel (mock).
+
+Export CSV/JSON.
+
+G) Settings
+
+Environment, feature flags (Demo mode), chains/contracts registry, map zones, staff devices (for manual awards).
+
+3) User Management (new)
+List
+
+Search, filters (role, tier, points range, hasWallet, bans).
+
+Columns: Name/Email • Tier • Points • Memories (owned) • Last seen • Flags (banned, staff).
+
+Detail
+
+Profile: name, email, device ids, consents.
+
+Progress: points history, tier trajectory, actions ledger (scans, AR, orders).
+
+Wallet: items table (id, title, type, earnedAt, nft state, shareUrl).
+
+Controls:
+
+Adjust points (+/– with reason).
+
+Manually award memory (select templateId, optional notes).
+
+Re-mint/void NFT (if failed).
+
+Lock account / lift ban.
+
+Reset demo data.
+
+Audit trail: immutable log (who, what, when, reason).
+
+Roles & permissions
+
+Owner: all.
+
+Admin: all except destructive chain edits.
+
+Producer: Events, Cards, Rewards, Featured, Orders; read-only Users.
+
+Operator (FOH): QR tools, manual awards (PIN), view Users minimal.
+
+Analyst: read Analytics, export.
+
+Support: view Users + wallet, re-mint; no config.
+
+Visitor (app): no CMS.
+
+4) Data model (collections/tables)
+users
+
+id, email, name, roles[], tier, points, lastSeenAt, banned{bool,reason}, consents{media,analytics}, devices[], createdAt
+
+user_points_ledger
+
+id, userId, delta, reason(enum), source{eventId,cardId,ruleId}, createdAt, actor(adminId|null)
+
+memories
+
+id, userId, templateId, state(new|owned|preview), earnedAt, source{eventId,cardId?,subchapterId?,ruleId?,qrId?,sceneId?,geo?}, metadata(json), points, rarity, set{id,index,total}?, shareUrl, nft{enabled,chain,contract,tokenId?,status}
+
+memory_templates
+
+id, title, image, media{type,url}, type(enum), points, rarity, set{id,name,total}, og{title,desc,image}, privacy, nft{…}
+
+reward_rules
+
+id, type(qr|geo|action), match{…}, outputs{points,templateId}, constraints{tierGate,cooldownSec,oneTime,window{start,end},maxRedemptions}, status
+
+events
+
+id, name, dates, venue, map{zones,pins}, schedule[], featuredRules[], lanes{info[],interact[],rewards[]}
+
+cards
+
+id, eventId, type, lane, order, title, subtitle, art, size, actions[], timeWindow, visibility{tier,geo,time}, analyticsTag, award{enabled,templateId,trigger}
+
+orders (mock)
+
+id, userId, eventId, type(merch|fnb), items[], total, status, pickupQr, createdAt
+
+audits
+
+id, actorId, scope, action, payload(json), createdAt
+
+5) UI patterns (match top UI)
+
+Dark glass bars, rounded pills, clear focus rings, consistent iconography.
+
+Tables with sticky headers, row hover, inline actions (edit, duplicate, archive).
+
+Drawers for create/edit; preview pane on the right.
+
+Publish states: Draft • Scheduled • Live • Archived (pill badges).
+
+6) Key workflows
+Create a featured Event home
+
+Events → select event → Featured Rules → add rule (time/tier/zone) → choose card(s) + layout (Hero/Carousel) → Save & Preview.
+
+Make a card award a Memory
+
+Cards → open card → Reward hook ON → pick templateId → set Trigger (e.g., onComplete) → set cooldown/tier gate → Save.
+
+Test with Simulate scan/capture in Preview.
+
+Define a QR reward
+
+Rewards → Reward Rules → New (QR) → paste payload schema → outputs (points + template) → constraints → Save.
+
+Generate QR batch (CSV/PNG).
+
+Adjust a user’s points / re-mint an NFT
+
+Users → open detail → Progress: “Adjust points” (+/– with reason) → Save (ledger entry).
+Users → Wallet: select item → “Re-mint” or “Export to wallet”.
+
+7) Validation & QA (MVP)
+
+No Memory Wallet card can be added; Wallet only global.
+
+Featured cards appear on Event home as per rules; fallbacks render.
+
+Any configured trigger awards Memory within 1s; Wallet badge updates.
+
+Role permissions enforced on every action; audit log writes.
+
+Reward Rules reject duplicate QR nonce; geofence awards once per user (cooldown respected).
+
+Lazy mint succeeds; failed mints appear with retry.
+
+8) Small tickets to implement now
+
+Add Reward hook fields to Card editor.
+
+Build Featured Rules UI (priority, condition builder, layouts).
+
+Ship Users list/detail with ledger + wallet and admin actions.
+
+Add Audit middleware for all mutations.
+
+Migrate existing content to lanes + Event home schema.
+
+If you want, I’ll output TypeScript interfaces for the above collections and a seed JSON for one demo event with featured rules, three cards, two templates, and a test user.
