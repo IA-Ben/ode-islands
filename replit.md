@@ -17,13 +17,18 @@ HLS.js is used for cross-browser HLS video streaming, with a fallback to native 
 ## Data Architecture
 PostgreSQL (Neon) is used for production data storage with Drizzle ORM for type-safe operations. The database includes entities for Chapters & Story Cards (with versioning and media references), a Media Library for asset management, and Content Versioning with audit trails. Advanced search capabilities are provided by PostgreSQL full-text search with GIN indexes.
 
+## Unified Cards Architecture
+A comprehensive card management system that unifies Story and Event cards into a single database-driven architecture. The system includes a `cards` table with scope (story/event), type, and flexible JSONB content, `card_assignments` for polymorphic parent relationships (chapters, event_lanes, featured_slots), `event_lanes` for organizing Event Hub cards (info, interact, rewards), `card_variants` for layout/theme overrides, and `card_tags` for faceted discovery. The Card Library UI provides full CRUD operations with filters (scope, type, status, lane), search, create/edit modals, and publish workflow controls. All endpoints are secured with RBAC (cards:view, cards:create, cards:edit, cards:delete, cards:publish). Currently manages 12 Event cards across 3 lanes with CMS integration.
+
 ## Media Library System
 An enterprise-grade media asset management system provides 10 storage methods, a `media_assets` table with `media_usage` tracking, and a RESTful API with 7 endpoints. The CMS UI includes a MediaLibrary component with drag-and-drop upload, advanced filtering, pagination, and bulk operations. It integrates with editors via a MediaSelectorModal and features delete protection for in-use assets and soft delete functionality.
 
 ## CMS Enterprise Features
 The CMS includes production-ready features for security and workflow:
 ### Authentication & Authorization
-Replit Auth (OpenID Connect) provides secure session management with a 4-Tier RBAC System (Super Admin, Content Admin, Content Editor, Content Viewer) offering granular permission checks.
+Replit Auth (OpenID Connect) provides secure session management with a 6-Tier RBAC System (Owner, Admin, Producer, Operator, Analyst, Support) offering granular permission checks. The RBAC system supports wildcard permissions (e.g., story:*, events:*) with role-to-permission mappings covering all admin operations.
+### Unified Admin Navigation
+A top-level navigation system provides access to 10 admin sections: Dashboard, Story Builder, Events, Cards, Rewards, Wallet, Users, Orders, Analytics, and Settings. Role-based visibility filters navigation items based on user permissions. The navigation includes loading states, access control, and mobile responsiveness.
 ### Audit Logging
 Comprehensive tracking of all CMS operations (create, update, delete, publish) is stored in a 14-field `audit_logs` table with performance indexes.
 ### Publishing Workflow

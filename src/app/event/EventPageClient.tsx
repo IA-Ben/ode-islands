@@ -101,6 +101,13 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   // Demo mode state
   const [isDemoMode, setIsDemoMode] = useState(false);
   
+  // Event lane cards state
+  const [infoLaneCards, setInfoLaneCards] = useState<EventLaneCard[]>([]);
+  const [interactLaneCards, setInteractLaneCards] = useState<EventLaneCard[]>([]);
+  const [rewardsLaneCards, setRewardsLaneCards] = useState<EventLaneCard[]>([]);
+  const [cardsLoading, setCardsLoading] = useState(true);
+  const [cardsError, setCardsError] = useState<string | null>(null);
+  
   // Debouncing for memory awards
   const awardingRef = useRef<Set<string>>(new Set());
   const csrfTokenRef = useRef<string | null>(null);
@@ -304,6 +311,49 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     }
   }, [session.isAuthenticated, fetchFanScore]);
 
+  // Fetch event lane cards on mount
+  useEffect(() => {
+    async function fetchEventCards() {
+      setCardsLoading(true);
+      setCardsError(null);
+      
+      try {
+        const [infoResponse, interactResponse, rewardsResponse] = await Promise.all([
+          fetch('/api/event/cards?laneKey=info'),
+          fetch('/api/event/cards?laneKey=interact'),
+          fetch('/api/event/cards?laneKey=rewards'),
+        ]);
+
+        const [infoData, interactData, rewardsData] = await Promise.all([
+          infoResponse.json(),
+          interactResponse.json(),
+          rewardsResponse.json(),
+        ]);
+
+        if (infoData.success) {
+          setInfoLaneCards(infoData.cards || []);
+        }
+        if (interactData.success) {
+          setInteractLaneCards(interactData.cards || []);
+        }
+        if (rewardsData.success) {
+          setRewardsLaneCards(rewardsData.cards || []);
+        }
+
+        if (!infoData.success || !interactData.success || !rewardsData.success) {
+          console.warn('Some lane cards failed to load');
+        }
+      } catch (error) {
+        console.error('Failed to fetch event cards:', error);
+        setCardsError('Failed to load event cards');
+      } finally {
+        setCardsLoading(false);
+      }
+    }
+
+    fetchEventCards();
+  }, []);
+
   // Refresh active event periodically (only for audience view)
   useEffect(() => {
     if (activeView === 'audience') {
@@ -466,110 +516,6 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     }
   ], []);
 
-  const infoLaneCards: EventLaneCard[] = useMemo(() => [
-    {
-      id: 'schedule',
-      type: 'schedule',
-      title: 'Schedule',
-      subtitle: 'Event Timeline',
-      size: 'M',
-      description: 'View tonight\'s full schedule'
-    },
-    {
-      id: 'map',
-      type: 'map',
-      title: 'Map & Wayfinding',
-      subtitle: 'Find Your Way',
-      size: 'M',
-      description: 'Navigate the venue with our interactive map'
-    },
-    {
-      id: 'venue',
-      type: 'venue',
-      title: 'Venue Info',
-      subtitle: 'Know Before You Go',
-      size: 'S',
-      description: 'Important venue information and guidelines'
-    },
-    {
-      id: 'safety',
-      type: 'safety',
-      title: 'Safety & Help',
-      subtitle: 'We\'re Here For You',
-      size: 'S',
-      description: 'Emergency contacts and assistance'
-    }
-  ], []);
-
-  const interactLaneCards: EventLaneCard[] = useMemo(() => [
-    {
-      id: 'live-ar',
-      type: 'live-ar',
-      title: 'Live AR Experience',
-      subtitle: 'Augmented Reality',
-      size: 'L',
-      description: 'Immerse yourself in the Ode Islands world'
-    },
-    {
-      id: 'qr-scan',
-      type: 'qr-scan',
-      title: 'QR Scanner',
-      subtitle: 'Unlock Content',
-      size: 'M',
-      description: 'Scan codes around the venue for exclusive content'
-    },
-    {
-      id: 'wearables',
-      type: 'wearables',
-      title: 'Wearables Sync',
-      subtitle: 'Connect Your Device',
-      size: 'S',
-      description: 'Sync with wearables for enhanced experiences'
-    },
-    {
-      id: 'ai-create',
-      type: 'ai-create',
-      title: 'AI Creation Studio',
-      subtitle: 'Create with AI',
-      size: 'M',
-      description: 'Generate personalized Ode Islands artwork'
-    },
-    {
-      id: 'user-media',
-      type: 'user-media',
-      title: 'Share Your Moment',
-      subtitle: 'Upload Media',
-      size: 'S',
-      description: 'Share your photos and videos from tonight'
-    }
-  ], []);
-
-  const rewardsLaneCards: EventLaneCard[] = useMemo(() => [
-    {
-      id: 'superfan',
-      type: 'points-superfan',
-      title: 'Superfan Status',
-      subtitle: 'Your Progress',
-      size: 'L',
-      description: 'Track your tier and unlock exclusive rewards'
-    },
-    {
-      id: 'merch',
-      type: 'merch',
-      title: 'Exclusive Merch',
-      subtitle: 'Limited Edition',
-      size: 'M',
-      description: 'Shop exclusive Ode Islands merchandise'
-    },
-    {
-      id: 'food-bev',
-      type: 'f&b',
-      title: 'Food & Beverage',
-      subtitle: 'Dining Options',
-      size: 'M',
-      description: 'Browse menu and pre-order from your seat'
-    }
-  ], []);
 
   const handleEnterLane = (lane: 'info' | 'interact' | 'rewards') => {
     setCurrentLane(lane);
