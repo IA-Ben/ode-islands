@@ -11,6 +11,25 @@ Preferred communication style: Simple, everyday language.
 ## Frontend Architecture
 The application uses Next.js 15 with the App Router, implementing a three-phase event companion system with client-side rendering. It features a two-tier navigation architecture (TopNav for global navigation and Section Sub-Navigation for phase-specific content). The UI includes an Event Hub with a lane system for exploring event experiences through Info, Interact, and Rewards lanes, supported by a Global HUD for persistent access to wallet, points, and a quick QR scanner. A modular Card Architecture supports 12+ card types with memory earning and point allocation. A Featured Card Selection Engine dynamically selects cards based on priority rules and user context. Styling is managed with Tailwind CSS 4, custom CSS variables, and a theming system.
 
+## Unified Navigation System
+A production-ready unified TopNav component serves both App and Admin modes with server-side authentication:
+### App Mode Features
+- Three-phase navigation tabs (Before/Event/After)
+- Wallet button with notification badge
+- Tier display (Bronze/Silver/Gold) with points
+- QR Scan button for memory collection
+- Mode switch to Admin (RBAC-gated)
+### Admin Mode Features
+- 10 admin section tabs (Dashboard, Story Builder, Events, Cards, Rewards, Wallet, Users, Orders, Analytics, Settings)
+- RBAC filtering (tabs visible based on user permissions)
+- Desktop horizontal navigation with icons + labels
+- Mobile dropdown menu
+- Mode switch back to App
+### Server-Side Authentication Architecture
+All routes (Admin, Event, After, Before, Memory Wallet) implement async server components that fetch user data via `getServerUser()` on the server, passing pre-loaded user objects to client wrappers. This eliminates client-side fetch race conditions and ensures RBAC data is available on first render. The `getServerUser()` function validates JWT cookies, checks server sessions, confirms user records, and enriches with RBAC permissions for trusted data delivery.
+### Design System
+Unified dark glass aesthetic: `bg-white/85 dark:bg-slate-900/85 backdrop-blur`, rounded pill tabs with fuchsia accent (`bg-fuchsia-600`), focus rings (`focus-visible:ring-2 focus-visible:ring-fuchsia-400`), sticky positioning (`sticky top-0 z-50`).
+
 ## Video Streaming Architecture
 HLS.js is used for cross-browser HLS video streaming, with a fallback to native HLS for Safari. Videos are served from Google Cloud Storage in HLS format via a configurable CDN URL. A custom Player component handles auto-play, muted playback, and event handling for chapter progression, supporting both background and immersive video modes.
 

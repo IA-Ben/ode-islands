@@ -1,9 +1,8 @@
 import { Suspense } from 'react';
 import { headers } from 'next/headers';
-import TopNav from "@/components/TopNav";
 import EventPageClient from './EventPageClient';
 import EventLoadingSkeleton from './EventLoadingSkeleton';
-import { getSessionFromHeaders } from '../../../server/auth';
+import { getServerUser } from '../../../server/auth';
 import { db } from '../../../server/db';
 import { liveEvents } from '../../../shared/schema';
 import { eq, and } from 'drizzle-orm';
@@ -11,8 +10,20 @@ import { eq, and } from 'drizzle-orm';
 // Server component that fetches initial data
 async function getInitialEventData() {
   try {
-    // For server-side rendering, return default session data since we don't have a request object
-    const sessionData = { isAuthenticated: false, isAdmin: false };
+    // Fetch user data server-side
+    const user = await getServerUser();
+    const sessionData = { 
+      isAuthenticated: !!user, 
+      isAdmin: user?.isAdmin ?? false,
+      userId: user?.id,
+      user: user ? {
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        isAdmin: user.isAdmin
+      } : undefined
+    };
     
     // Parallel data fetching based on user role
     if (sessionData.isAuthenticated && sessionData.isAdmin) {
@@ -81,8 +92,6 @@ export default async function EventPage() {
   
   return (
     <div className="w-full min-h-screen bg-black relative">
-      <TopNav currentPhase="event" />
-      
       <Suspense fallback={<EventLoadingSkeleton />}>
         <EventPageClient initialData={initialData} />
       </Suspense>

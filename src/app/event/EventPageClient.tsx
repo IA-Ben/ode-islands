@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
+import UnifiedTopNav from '@/components/UnifiedTopNav';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import HelpSystem from '@/components/HelpSystem';
@@ -13,6 +14,7 @@ import { GlobalHUD, type Tier } from '@/components/event/GlobalHUD';
 import ScoreToast from '@/components/ScoreToast';
 import type { ScoreToastData } from '@/@typings/fanScore';
 import { selectFeaturedCards, type FeaturedCardWithRules, type UserContext } from '@/lib/event/cardSelection';
+import { useFanScore } from '@/hooks/useFanScore';
 import dynamic from 'next/dynamic';
 
 const EventDashboard = dynamic(() => import('@/components/EventDashboard'), {
@@ -62,6 +64,15 @@ interface InitialData {
   error?: string;
 }
 
+interface UserData {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  isAdmin?: boolean;
+  permissions?: string[];
+}
+
 interface EventPageClientProps {
   initialData: InitialData;
 }
@@ -69,11 +80,53 @@ interface EventPageClientProps {
 export default function EventPageClient({ initialData }: EventPageClientProps) {
   const { theme } = useTheme();
   const router = useRouter();
+  const { scoreData } = useFanScore();
+  const [user] = useState<UserData | null>(initialData.session.user || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(initialData.error || null);
   const [events, setEvents] = useState<LiveEvent[]>(initialData.events);
   const [session] = useState<SessionData>(initialData.session);
   const [activeEvent, setActiveEvent] = useState<LiveEvent | null>(initialData.activeEvent);
+  
+  // Navigation handlers for UnifiedTopNav
+  const handlePhaseChange = (phase: "before" | "event" | "after") => {
+    switch (phase) {
+      case 'before':
+        router.push('/before');
+        break;
+      case 'event':
+        router.push('/event');
+        break;
+      case 'after':
+        router.push('/after');
+        break;
+    }
+  };
+
+  const handleOpenWallet = () => {
+    router.push('/memory-wallet');
+  };
+
+  const handleOpenQR = () => {
+    setIsQRScannerOpen(true);
+  };
+
+  const handleSwitchMode = (nextMode: "app" | "admin") => {
+    if (nextMode === 'admin') {
+      router.push('/admin');
+    }
+  };
+
+  // Calculate tier from fan score level
+  const getTierFromLevel = (level: number): "Bronze" | "Silver" | "Gold" => {
+    if (level >= 8) return "Gold";
+    if (level >= 4) return "Silver";
+    return "Bronze";
+  };
+
+  const points = scoreData?.currentScore?.totalScore || 0;
+  const level = scoreData?.currentScore?.level || 1;
+  const tier = getTierFromLevel(level);
   
   const [activeView, setActiveView] = useState<'audience' | 'dashboard' | 'interactive'>(() => {
     if (initialData.userType === 'admin') {
@@ -614,6 +667,18 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     
     return (
       <>
+        <UnifiedTopNav
+          mode="app"
+          user={user}
+          currentPhase="event"
+          onPhaseChange={handlePhaseChange}
+          walletNewCount={newItemsCount}
+          points={points}
+          tier={tier}
+          onOpenWallet={handleOpenWallet}
+          onOpenQR={handleOpenQR}
+          onSwitchMode={handleSwitchMode}
+        />
         {view === 'hub' && (
           <EventHub
             onEnterLane={handleEnterLane}

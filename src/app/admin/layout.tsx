@@ -1,18 +1,13 @@
 import { ReactNode } from 'react';
-import AdminTopNav from '@/components/admin/TopNav';
-import { layout } from '@/lib/admin/designTokens';
+import { getServerUser } from '../../../server/auth';
+import AdminLayoutClient from './AdminLayoutClient';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
-export default function AdminLayout({ children }: AdminLayoutProps) {
-  return (
-    <div className={layout.page}>
-      <AdminTopNav />
-      <main className={layout.content}>
-        {children}
-      </main>
-    </div>
-  );
+export default async function AdminLayout({ children }: AdminLayoutProps) {
+  const user = await getServerUser();
+  
+  return <AdminLayoutClient user={user}>{children}</AdminLayoutClient>;
 }

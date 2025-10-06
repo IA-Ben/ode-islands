@@ -1,0 +1,249 @@
+here’s a tight, actionable update pack for all four areas. It’s aligned with the unified top bar + pill sub-nav and the card drawer/editor you’ve got.
+
+1) Event board with card display
+
+Goals: lane columns, snap-cards, quick filters, inline status; opens the shared Card Editor Drawer.
+
+UX
+
+Columns: Info • Interact • Rewards (sortable).
+
+Toolbar: Search, Filters (Type, Tier gate, Status, Time window), “Add Card”.
+
+Cards show: type icon, title, status (Draft/Live), badges (Tier ≥, Time), quick actions (Edit, Hide, Duplicate).
+
+Drag between lanes; order persists.
+
+Component sketch (React + Tailwind)
+
+// EventLanesBoard.tsx
+export function EventLanesBoard({
+  lanes, onReorder, onEdit, onAddCard
+}: {
+  lanes: { id: "info"|"interact"|"rewards"; title: string; cards: CardSummary[] }[];
+  onReorder: (laneId: string, newOrder: string[]) => void;
+  onEdit: (cardId: string) => void;
+  onAddCard: (laneId: string) => void;
+}) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+      {lanes.map(lane => (
+        <section key={lane.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/70 backdrop-blur">
+          <header className="flex items-center justify-between p-3 border-b border-slate-200/70 dark:border-slate-800/70">
+            <h3 className="text-sm font-semibold">{lane.title}</h3>
+            <button onClick={() => onAddCard(lane.id)} className="px-3 py-1.5 rounded-full text-sm bg-slate-900 text-white dark:bg-slate-700">Add</button>
+          </header>
+          <ul className="p-3 space-y-2 min-h-[360px]">
+            {lane.cards.map(c => (
+              <li key={c.id} className="rounded-xl border border-slate-200 dark:border-slate-700 p-3 bg-white dark:bg-slate-900 hover:shadow-sm cursor-grab">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg grid place-items-center bg-slate-100 dark:bg-slate-800">{/* type icon */}</span>
+                    <div>
+                      <div className="text-sm font-medium">{c.title}</div>
+                      <div className="text-xs text-slate-500">{c.type} • {c.scope === "event" ? c.lane : "story"}</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {c.badges?.map(b => <span key={b} className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">{b}</span>)}
+                    <span className={`text-[11px] px-2 py-0.5 rounded-full ${c.status==="live"?"bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40":"bg-slate-100 dark:bg-slate-800"}`}>{c.status}</span>
+                    <button onClick={() => onEdit(c.id)} className="text-sm px-2 py-1 rounded-lg border border-slate-200 dark:border-slate-700">Edit</button>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+    </div>
+  );
+}
+
+
+Acceptance
+
+Drag-and-drop order across lanes persists.
+
+Filters narrow visible cards; quick “Add” opens type picker.
+
+Edit opens shared Card Editor Drawer (Basics/Reward/Visibility/Params/Preview/Audit).
+
+2) Rules builder – new look
+
+Goals: priority list on the left, rule editor on the right, live preview; shared dark-glass style.
+
+UX
+
+List: rule rows with drag handles, status pill, type (QR/Geo/Action), quick enable toggle.
+
+Editor tabs: Conditions • Outputs • Constraints • Preview • Audit.
+
+Preview: simulate user (tier/time/zone), show “Would feature cards X,Y” or “Would award Template Z”.
+
+Component sketch
+
+// FeaturedRulesBuilder / RewardRuleEditor switch by "mode"
+export function RulesBuilderLayout({ list, activeId, onSelect, onReorder, children }){
+  return (
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <aside className="lg:col-span-1 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <header className="p-3 border-b">Rules <span className="text-xs text-slate-500">priority order</span></header>
+        <ul className="p-2 space-y-2">
+          {list.map(r => (
+            <li key={r.id} onClick={()=>onSelect(r.id)}
+              className={`p-3 rounded-xl border ${activeId===r.id?"border-fuchsia-500":"border-slate-200 dark:border-slate-700"} cursor-pointer`}>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-medium">{r.name}</div>
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800">{r.type}</span>
+              </div>
+              <div className="text-xs text-slate-500 mt-1">prio {r.priority}</div>
+            </li>
+          ))}
+        </ul>
+      </aside>
+      <section className="lg:col-span-2 rounded-2xl border border-slate-200 dark:border-slate-800">
+        {children /* RuleEditor tabs */}
+      </section>
+    </div>
+  );
+}
+
+
+RuleEditor tabs
+
+Conditions: time window, tier ≥, zones[], popularity ≥ (for Featured) / QR prefix + HMAC, geohash+precision+dwell, action+conditions JSON (for Reward).
+
+Outputs: Featured → pick 1–3 cardIds + layout (Hero/Carousel). Reward → points + templateId.
+
+Constraints: cooldown, one-time, max redemptions; enable/disable.
+
+Preview: simulate and render result.
+
+Audit: immutable changes.
+
+Acceptance
+
+Drag reorders priority; saving persists.
+
+Preview accurately reflects simulated user/time.
+
+Status toggle moves rule between Draft/Live/Archived.
+
+3) Story builder with timeline
+
+Goals: horizontal chapter timeline, sub-chapter canvas, reuse Card Drawer, branching builder.
+
+UX
+
+Timeline bar (sticky under top bar): chapters as pills with status; add/reorder chapters.
+
+Sub-chapter canvas: list of cards (scope: story). Add card → opens Card Drawer (with storyParams tab if needed).
+
+Branching Builder: condition chips → target sub-chapter; visual arrow preview.
+
+Component sketch
+
+// ChapterTimeline.tsx
+export function ChapterTimeline({ chapters, activeId, onSelect, onReorder, onAdd }) {
+  return (
+    <div className="sticky top-14 z-30 bg-slate-900/70 backdrop-blur border-b border-white/10">
+      <div className="max-w-6xl mx-auto px-3 py-2 flex items-center gap-2 overflow-x-auto">
+        {chapters.map(ch => (
+          <button key={ch.id} onClick={()=>onSelect(ch.id)}
+           className={`px-4 h-9 rounded-full text-sm ${activeId===ch.id?"bg-fuchsia-600 text-white":"text-slate-200/90 hover:bg-white/10"}`}>
+            {ch.title}
+          </button>
+        ))}
+        <button onClick={onAdd} className="ml-auto px-3 h-9 rounded-full text-sm bg-white/10 text-white">Add chapter</button>
+      </div>
+    </div>
+  );
+}
+
+// SubchapterCanvas.tsx
+export function SubchapterCanvas({ cards, onAddCard, onEditCard, onReorder }) {
+  return (
+    <div className="max-w-6xl mx-auto px-3 py-4 space-y-3">
+      {cards.map(c => (
+        <div key={c.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-3 bg-white/70 dark:bg-slate-900/70">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-medium">{c.title}</div>
+            <button onClick={()=>onEditCard(c.id)} className="px-3 py-1.5 rounded-lg border">Edit</button>
+          </div>
+        </div>
+      ))}
+      <button onClick={onAddCard} className="px-4 py-2 rounded-xl bg-slate-900 text-white">Add card</button>
+    </div>
+  );
+}
+
+
+Branching Builder (drawer tab)
+
+Condition pills: points≥N, tier≥X, choice==Y, qrSeen(ruleId), geoInZone(zone).
+
+Target picker: list of sub-chapters; visual list of rules ordered.
+
+Acceptance
+
+Chapter reordering persists; sub-chapter card edits saved via shared Drawer.
+
+Branch rules resolve in preview using the same Reward/State store.
+
+Publish states: Draft/Scheduled/Live/Archived consistent with Events.
+
+4) Admin pages — new look
+
+Goals: unify surfaces, spacing, typography, and controls with the end-user top bar & secondary nav.
+
+Apply to:
+
+Dashboard: KPIs (Active users, Scans, AR launches, Memory awards, Tier distro), links to common tasks.
+
+Cards: new Grid/Table + Drawer (from §2).
+
+Events: EventLanesBoard + FeaturedRules (from §1–2).
+
+Story: Timeline + Canvas + Branching (from §3).
+
+Rewards: Templates grid + Rule builder.
+
+Users: List + Detail tabs (Profile/Progress/Wallet/Actions/Audit).
+
+Orders: Table with status pills; detail drawer.
+
+Analytics: dashboards with export.
+
+Settings: locked unless owner|admin.
+
+Styling checklist
+
+Containers: rounded-2xl, border-slate-200 dark:border-slate-800, bg-white/70 dark:bg-slate-900/70, backdrop-blur.
+
+Buttons: rounded-xl; focus ring ring-2 ring-fuchsia-400.
+
+Pills: used for tabs, filters, status.
+
+Dark mode parity.
+
+Acceptance
+
+All admin routes display with unified top bar, pill sub-nav, and component styling.
+
+RBAC hides Admin for unauthorised users; Settings disabled unless owner|admin.
+
+Audit drawers present on mutating records.
+
+Quick task list for dev
+
+Implement EventLanesBoard + toolbar, wire DnD and open Card Drawer.
+
+Replace existing rules UIs with RulesBuilderLayout + RuleEditor tabs.
+
+Add ChapterTimeline + SubchapterCanvas; add Branching tab to Card Drawer.
+
+Sweep admin routes for surface styles and pill sub-nav; ensure RBAC/hiding.
+
+Hook all saves to Audit logging.
+
+If you want, I can generate stubs for the Card Editor Drawer tabs (Basics/Reward/Visibility/Params/Preview/Audit) using your interfaces so you can drop them straight in.
