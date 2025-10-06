@@ -1,8 +1,11 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./simplifiedAuth";
+import { verifyJWT } from "./jwtUtils";
 import { withAdminAuthAndCSRF, withCSRFProtection, validateCSRFToken } from "./auth";
+import cookieParser from "cookie-parser";
+import session from "express-session";
+import connectPg from "connect-pg-simple";
 
 // Import enterprise services
 import { featureFlagService } from './featureFlagService';
@@ -18,8 +21,58 @@ import { seedRoles } from './seedRoles';
 // Import Audit Logger
 import { AuditLogger } from './auditLogger';
 
-// Re-export unified auth middleware
-export { isAuthenticated };
+// isAuthenticated middleware for Express routes
+export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  const authCookie = req.cookies?.['auth-session'];
+  
+  if (!authCookie) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  try {
+    const payload = verifyJWT(authCookie);
+    (req as any).user = {
+      userId: payload.userId,
+      isAdmin: payload.isAdmin,
+      sessionId: payload.sessionId,
+      claims: { sub: payload.userId } // For backward compatibility
+    };
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid or expired session' });
+  }
+}
+
+// Setup auth middleware (session and cookie parser)
+export async function setupAuth(app: Express) {
+  app.set("trust proxy", 1);
+  
+  // Add cookie parser middleware
+  app.use(cookieParser());
+  
+  // Keep session middleware for backward compatibility
+  const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 7 days
+  const pgStore = connectPg(session);
+  const sessionStore = new pgStore({
+    conString: process.env.DATABASE_URL,
+    createTableIfMissing: true,
+    ttl: sessionTtl,
+    tableName: "sessions",
+  });
+  
+  app.use(session({
+    secret: process.env.SESSION_SECRET!,
+    store: sessionStore,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: sessionTtl,
+    },
+  }));
+}
 
 // Export RBAC middleware for use in routes
 export { requireRole, requirePermission, requireAnyPermission, combineMiddleware };

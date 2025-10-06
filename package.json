@@ -75,7 +75,6 @@
     "memoizee": "^0.4.17",
     "multer": "^2.0.2",
     "next": "15.4.4",
-    "openid-client": "^6.8.0",
     "passport": "^0.7.0",
     "playcanvas": "^2.11.4",
     "react": "19.1.0",

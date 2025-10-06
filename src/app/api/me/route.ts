@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { verifyJWT } from '../../../../server/simplifiedAuth';
+import { verifyJWT } from '../../../../server/jwtUtils';
 import { storage } from '../../../../server/storage';
 import { db } from '../../../../server/db';
 import { users } from '../../../../shared/schema';
