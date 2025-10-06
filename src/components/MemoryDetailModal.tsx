@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Memory } from './EventMemoriesGallery';
 import { Button } from '@/components/ui/button';
+import { surfaces, components, borders } from '@/lib/admin/designTokens';
 
 interface MemoryDetailModalProps {
   memory: Memory;
@@ -36,20 +37,9 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
 
     try {
       setIsDeleting(true);
-      
-      // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token');
-      const csrfData = await csrfResponse.json();
-      
-      if (!csrfData.success) {
-        throw new Error('Failed to get CSRF token');
-      }
 
       const response = await fetch(`/api/memories/${memory.id}`, {
         method: 'DELETE',
-        headers: {
-          'X-CSRF-Token': csrfData.token,
-        },
       });
 
       if (response.ok) {
@@ -179,18 +169,15 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-lg">
       <div 
-        className="w-full max-w-4xl bg-black border border-white/20 rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto"
+        className={`w-full max-w-4xl ${surfaces.darkGlass} border border-slate-700/50 rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
+        <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
           <div className="flex-1 min-w-0">
-            <h2 
-              className="text-2xl font-bold truncate"
-              style={{ color: theme.colors.secondary }}
-            >
+            <h2 className="text-2xl font-bold text-white truncate">
               {memory.title}
             </h2>
             <div className="flex items-center gap-4 mt-2 text-sm text-white/60">
@@ -240,7 +227,7 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
                 {memory.tags.map((tag, index) => (
                   <span 
                     key={index}
-                    className="px-3 py-1 bg-white/10 rounded-full text-sm text-white/80"
+                    className="px-3 py-1 bg-fuchsia-500/20 text-fuchsia-200 rounded-full text-sm border border-fuchsia-500/30"
                   >
                     #{tag}
                   </span>
@@ -257,56 +244,53 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
           )}
 
           {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-white/10">
+          <div className="flex flex-col sm:flex-row gap-3 pt-4 border-t border-slate-700/50">
             {/* Share Actions */}
             <div className="flex flex-wrap gap-2 flex-1">
-              <Button
+              <button
                 onClick={() => handleShare('copy')}
-                variant="outline"
-                className="border-white/20 text-white hover:bg-white/10"
+                className={`${components.buttonSecondary} flex items-center gap-2`}
               >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                 </svg>
                 Share
-              </Button>
+              </button>
               
               {memory.mediaUrl && (
-                <Button
+                <button
                   onClick={() => handleShare('download')}
-                  variant="outline"
-                  className="border-white/20 text-white hover:bg-white/10"
+                  className={`${components.buttonSecondary} flex items-center gap-2`}
                 >
-                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3M3 17V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
                   </svg>
                   Download
-                </Button>
+                </button>
               )}
             </div>
 
             {/* Delete Action */}
             <div className="flex gap-3">
-              <Button
+              <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                variant="outline"
-                className="border-red-500/30 text-red-400 hover:bg-red-500/20"
+                className="px-4 py-2 border border-red-500/30 text-red-400 hover:bg-red-500/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isDeleting ? (
-                  <div className="flex items-center">
-                    <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <>
+                    <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin"></div>
                     Deleting...
-                  </div>
+                  </>
                 ) : (
                   <>
-                    <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                     </svg>
                     Delete
                   </>
                 )}
-              </Button>
+              </button>
             </div>
           </div>
         </div>
