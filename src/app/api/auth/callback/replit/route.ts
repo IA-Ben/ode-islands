@@ -60,6 +60,9 @@ export async function GET(request: NextRequest) {
     
     // Fetch user info
     const userInfoUrl = process.env.AUTH_USERINFO_URL || 'https://replit.com/oidc/userinfo';
+    console.log('Fetching user info from:', userInfoUrl);
+    console.log('Using access token:', tokens.access_token ? 'present' : 'missing');
+    
     const userInfoResponse = await fetch(userInfoUrl, {
       headers: {
         'Authorization': `Bearer ${tokens.access_token}`,
@@ -67,6 +70,8 @@ export async function GET(request: NextRequest) {
     });
     
     if (!userInfoResponse.ok) {
+      const errorText = await userInfoResponse.text();
+      console.error('User info fetch failed:', userInfoResponse.status, errorText);
       return NextResponse.json(
         { error: 'Failed to fetch user info' },
         { status: 400 }
