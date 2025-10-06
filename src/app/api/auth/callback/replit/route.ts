@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { signJWT, generateSessionId } from '../../../../../server/jwtUtils';
-import { storage } from '../../../../../server/storage';
-import { db } from '../../../../../server/db';
-import { sessions } from '../../../../../shared/schema';
+import { signJWT, generateSessionId } from '../../../../../../server/jwtUtils';
+import { storage } from '../../../../../../server/storage';
+import { db } from '../../../../../../server/db';
+import { sessions } from '../../../../../../shared/schema';
 
 export async function GET(request: NextRequest) {
   try {
