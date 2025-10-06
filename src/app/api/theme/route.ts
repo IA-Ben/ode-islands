@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { validateExpressSession } from '../../../../server/sessionValidator';
-import { validateCSRFToken } from '../../../../server/auth';
+import { withAuth, validateCSRFToken } from '../../../../server/auth';
 import { promises as fs } from 'fs';
 import path from 'path';
 
@@ -89,36 +88,10 @@ export async function GET() {
 }
 
 // PUT /api/theme - Update theme configuration (admin only)
-export async function PUT(request: NextRequest) {
+async function handlePUT(request: NextRequest) {
   try {
-    // Parse cookies from request
-    const cookies: { [key: string]: string } = {};
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, ...rest] = cookie.trim().split('=');
-        if (name && rest.length > 0) {
-          cookies[name] = rest.join('=');
-        }
-      });
-    }
-
-    // Validate session
-    const session = await validateExpressSession(cookies);
-    
-    if (!session.isAuthenticated || !session.userId) {
-      return NextResponse.json(
-        { message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    if (!session.isAdmin) {
-      return NextResponse.json(
-        { message: 'Admin access required' },
-        { status: 403 }
-      );
-    }
+    // Get session from withAuth middleware
+    const session = (request as any).session;
 
     // Verify CSRF token
     const csrfToken = request.headers.get('X-CSRF-Token');
@@ -184,3 +157,6 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+// Wrap PUT with JWT auth middleware (admin only)
+export const PUT = withAuth(handlePUT, { requireAdmin: true });

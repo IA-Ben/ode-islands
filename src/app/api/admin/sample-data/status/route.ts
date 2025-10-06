@@ -2,39 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { eq } from 'drizzle-orm';
 import { db } from '../../../../../../server/db';
 import { liveEvents } from '../../../../../../shared/schema';
-import { validateExpressSession } from '../../../../../../server/sessionValidator';
+import { withAuth } from '../../../../../../server/auth';
 
-export async function GET(request: NextRequest) {
+async function handleGET(request: NextRequest) {
   try {
-    // Parse cookies from request
-    const cookies: { [key: string]: string } = {};
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, ...rest] = cookie.trim().split('=');
-        if (name && rest.length > 0) {
-          cookies[name] = rest.join('=');
-        }
-      });
-    }
-
-    // Validate session directly using sessionValidator
-    const session = await validateExpressSession(cookies);
-    
-    if (!session.isAuthenticated || !session.userId) {
-      return NextResponse.json(
-        { message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    if (!session.isAdmin) {
-      return NextResponse.json(
-        { message: 'Admin access required' },
-        { status: 403 }
-      );
-    }
-
+    // Session is already validated by withAuth middleware
     // Check if sample data exists by looking for the marker event
     const existingSampleEvents = await db
       .select()
@@ -58,3 +30,6 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+// Wrap with JWT auth middleware (admin only)
+export const GET = withAuth(handleGET, { requireAdmin: true });

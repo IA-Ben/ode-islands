@@ -8,7 +8,7 @@ import {
   userAchievements 
 } from '../../../../shared/schema';
 import { eq, desc, and, count, sum, sql } from 'drizzle-orm';
-import { withSessionAuth } from '../../../../server/sessionAuth';
+import { withAuth } from '../../../../server/auth';
 import { ScoringService } from '../../../../server/scoringService';
 
 async function handleGET(request: NextRequest) {
@@ -22,9 +22,6 @@ async function handleGET(request: NextRequest) {
     // Get session information for authorization
     const session = (request as any).session;
 
-    if (!session || !session.isAuthenticated) {
-      return NextResponse.json(
-        { success: false, message: 'Authentication required to access fan scores' },
         { status: 401 }
       );
     }
@@ -167,4 +164,4 @@ async function handleGET(request: NextRequest) {
   }
 }
 
-export const GET = withSessionAuth(handleGET);
+export const GET = withAuth(handleGET);

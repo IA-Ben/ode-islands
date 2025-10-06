@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../server/db';
 import { notifications } from '../../../../shared/schema';
 import { eq, desc, and } from 'drizzle-orm';
-import { withSessionAuth, withUserSessionAuth, withAdminSessionAuth } from '../../../../server/sessionAuth';
+import { withAuth, withUserAuth } from '../../../../server/auth';
 
 async function handleGET(request: NextRequest) {
   try {
@@ -152,6 +152,6 @@ async function handlePATCH(request: NextRequest) {
 }
 
 // Apply authentication middleware
-export const GET = withUserSessionAuth(handleGET); // Users can only access their own notifications
-export const POST = withAdminSessionAuth(handlePOST); // Only admins can create notifications
-export const PATCH = withUserSessionAuth(handlePATCH); // Users can only update their own notifications
+export const GET = withUserAuth(handleGET); // Users can only access their own notifications
+export const POST = withAuth(handlePOST, { requireAdmin: true }); // Only admins can create notifications
+export const PATCH = withUserAuth(handlePATCH); // Users can only update their own notifications

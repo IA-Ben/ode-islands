@@ -1,40 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { removeSampleEventData } from '../../../../../../server/sampleDataGenerator';
-import { validateCSRFToken } from '../../../../../../server/auth';
-import { validateExpressSession } from '../../../../../../server/sessionValidator';
+import { validateCSRFToken, withAuth } from '../../../../../../server/auth';
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
-    // Parse cookies from request
-    const cookies: { [key: string]: string } = {};
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      cookieHeader.split(';').forEach(cookie => {
-        const [name, ...rest] = cookie.trim().split('=');
-        if (name && rest.length > 0) {
-          cookies[name] = rest.join('=');
-        }
-      });
-    }
+    // Get session from withAuth middleware
+    const session = (request as any).session;
 
-    // Validate session directly using sessionValidator
-    const session = await validateExpressSession(cookies);
-    
-    if (!session.isAuthenticated || !session.userId) {
-      return NextResponse.json(
-        { message: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
-    if (!session.isAdmin) {
-      return NextResponse.json(
-        { message: 'Admin access required' },
-        { status: 403 }
-      );
-    }
-
-    // Verify CSRF token properly using the actual session ID
+    // Verify CSRF token
     const csrfToken = request.headers.get('X-CSRF-Token');
     if (!csrfToken) {
       return NextResponse.json(
@@ -43,8 +16,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Use the actual session ID for CSRF validation
-    if (!session.sessionId || !validateCSRFToken(csrfToken, session.sessionId)) {
+    if (!session.sessionId) {
+      return NextResponse.json(
+        { message: 'Invalid session' },
+        { status: 401 }
+      );
+    }
+
+    const isValidCSRF = await validateCSRFToken(csrfToken, session.sessionId);
+    if (!isValidCSRF) {
       return NextResponse.json(
         { message: 'Invalid CSRF token' },
         { status: 403 }
@@ -89,3 +69,6 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// Wrap with JWT auth middleware (admin only)
+export const POST = withAuth(handlePOST, { requireAdmin: true });

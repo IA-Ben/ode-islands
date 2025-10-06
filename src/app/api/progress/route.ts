@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { db } from '../../../../server/db';
 import { userProgress, users } from '../../../../shared/schema';
 import { eq, and, desc } from 'drizzle-orm';
-import { withUserSessionAuth } from '../../../../server/sessionAuth';
+import { withUserAuth } from '../../../../server/auth';
 import { ScoringService } from '../../../../server/scoringService';
 import { respondOk, respondError, respondUnauthorized, respondBadRequest, respondOkCompat } from '../../../lib/apiHelpers';
 
@@ -166,5 +166,5 @@ async function handlePOST(request: NextRequest) {
 }
 
 // Apply authentication middleware
-export const GET = withUserSessionAuth(handleGET);
-export const POST = withUserSessionAuth(handlePOST);
+export const GET = withUserAuth(handleGET);
+export const POST = withUserAuth(handlePOST);

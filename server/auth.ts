@@ -7,34 +7,48 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { storage } from './storage';
 
-// JWT Secret - must be set in environment for production security
-function getJWTSecret(): string {
-  // In production, JWT_SECRET is mandatory for security
+// JWT Keys for RS256 asymmetric encryption
+function getJWTPublicKey(): string {
+  if (!process.env.JWT_PUBLIC_KEY) {
+    throw new Error(
+      '🚨 FATAL: JWT_PUBLIC_KEY environment variable is required. ' +
+      'RS256 authentication requires both JWT_PUBLIC_KEY and JWT_PRIVATE_KEY.'
+    );
+  }
+  return process.env.JWT_PUBLIC_KEY;
+}
+
+function getJWTPrivateKey(): string {
+  if (!process.env.JWT_PRIVATE_KEY) {
+    throw new Error(
+      '🚨 FATAL: JWT_PRIVATE_KEY environment variable is required. ' +
+      'RS256 authentication requires both JWT_PUBLIC_KEY and JWT_PRIVATE_KEY.'
+    );
+  }
+  return process.env.JWT_PRIVATE_KEY;
+}
+
+// CSRF Secret (symmetric key for CSRF tokens)
+function getCSRFSecret(): string {
   if (process.env.NODE_ENV === 'production' && !process.env.JWT_SECRET) {
     throw new Error(
-      '🚨 FATAL: JWT_SECRET environment variable is required in production. ' +
-      'Set JWT_SECRET to a secure random string (at least 64 characters) before starting the application.'
+      '🚨 FATAL: JWT_SECRET environment variable is required for CSRF protection in production.'
     );
   }
 
-  // In development, warn if not set but allow fallback for convenience
   if (!process.env.JWT_SECRET) {
     console.warn(
-      '⚠️  WARNING: JWT_SECRET not set in environment. Using default secret for development only. ' +
-      'This is insecure and will cause the application to fail in production.'
+      '⚠️  WARNING: JWT_SECRET not set. Using default for CSRF protection in development only.'
     );
     return 'b941a79febc4e94a05dac7de79d1a51122dbf8b3874a5d47935f92e299f5756ecb48fcb7f0e3c672515b10e9c16e1b52a790c18a714dfc557db879c4e491d1ee';
-  }
-
-  // Validate secret length for security
-  if (process.env.JWT_SECRET.length < 32) {
-    console.warn('⚠️  WARNING: JWT_SECRET should be at least 32 characters long for security.');
   }
 
   return process.env.JWT_SECRET;
 }
 
-const JWT_SECRET = getJWTSecret();
+const JWT_PUBLIC_KEY = getJWTPublicKey();
+const JWT_PRIVATE_KEY = getJWTPrivateKey();
+const CSRF_SECRET = getCSRFSecret();
 
 // Session interfaces for JWT payload
 export interface JWTPayload {
@@ -76,18 +90,7 @@ declare module 'express-session' {
 }
 
 // Auth middleware for Express routes (server-side)
-// TEMP: Authentication disabled for development
-// TODO: Re-enable before production deployment
 export function requireAuth(req: any, res: any, next: any) {
-  // TEMP: Bypass auth during development
-  // Create mock session for development
-  if (!req.session) req.session = {};
-  req.session.isAuthenticated = true;
-  req.session.userId = 'dev-user-id';
-  req.session.isAdmin = true;
-  return next();
-  
-  /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
   if (req.session?.isAuthenticated && req.session?.userId) {
     return next();
   }
@@ -95,18 +98,9 @@ export function requireAuth(req: any, res: any, next: any) {
     success: false, 
     message: 'Authentication required. Please log in.' 
   });
-  */
 }
 
 export function requireAdmin(req: any, res: any, next: any) {
-  // TEMP: Bypass admin check during development
-  if (!req.session) req.session = {};
-  req.session.isAuthenticated = true;
-  req.session.userId = 'dev-user-id';
-  req.session.isAdmin = true;
-  return next();
-  
-  /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
   if (req.session?.isAuthenticated && req.session?.isAdmin) {
     return next();
   }
@@ -114,7 +108,6 @@ export function requireAdmin(req: any, res: any, next: any) {
     success: false, 
     message: 'Admin access required.' 
   });
-  */
 }
 
 // Authorization helper for user-scoped resources
@@ -152,7 +145,7 @@ export function generateCSRFToken(sessionId: string): string {
     nonce: crypto.randomBytes(16).toString('hex'),
   };
   
-  return jwt.sign(payload, JWT_SECRET, {
+  return jwt.sign(payload, CSRF_SECRET, {
     expiresIn: '1h', // CSRF tokens expire in 1 hour
     issuer: 'ode-island-csrf',
   });
@@ -161,7 +154,7 @@ export function generateCSRFToken(sessionId: string): string {
 // Validate CSRF token
 export function validateCSRFToken(token: string, sessionId: string): boolean {
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    const decoded = jwt.verify(token, CSRF_SECRET) as any;
     
     // Verify token is for this session and hasn't expired
     return decoded.sessionId === sessionId && 
@@ -224,8 +217,8 @@ export async function getSessionFromHeaders(request: NextRequest): Promise<Sessi
   }
 
   try {
-    // Verify JWT token cryptographically
-    const decoded = jwt.verify(sessionCookie.value, JWT_SECRET) as JWTPayload;
+    // Verify JWT token cryptographically using RS256 public key
+    const decoded = jwt.verify(sessionCookie.value, JWT_PUBLIC_KEY, { algorithms: ['RS256'] }) as JWTPayload;
     
     // Verify server-side session exists (defense in depth)
     const isServerSessionValid = await verifyServerSession(decoded.sessionId);
@@ -284,8 +277,8 @@ export async function getServerUser() {
       return null;
     }
 
-    // Verify JWT token cryptographically
-    const decoded = jwt.verify(sessionCookie.value, JWT_SECRET) as JWTPayload;
+    // Verify JWT token cryptographically using RS256 public key
+    const decoded = jwt.verify(sessionCookie.value, JWT_PUBLIC_KEY, { algorithms: ['RS256'] }) as JWTPayload;
     
     // Verify server-side session exists (defense in depth)
     const isServerSessionValid = await verifyServerSession(decoded.sessionId);
@@ -346,8 +339,9 @@ export async function createAuthResponse(user: any, success: boolean = true, mes
     sessionId: sessionId,
   };
 
-  // Sign JWT token with expiration
-  const token = jwt.sign(jwtPayload, JWT_SECRET, {
+  // Sign JWT token with RS256 private key
+  const token = jwt.sign(jwtPayload, JWT_PRIVATE_KEY, {
+    algorithm: 'RS256',
     expiresIn: '7d', // 7 days
     issuer: 'ode-island',
     audience: 'ode-island-users',
@@ -433,31 +427,11 @@ export async function createLogoutResponse(sessionId?: string) {
 }
 
 // Auth middleware for Next.js API routes
-// TEMP: Authentication disabled for development
-// TODO: Re-enable before production deployment
 export function withAuth(
   handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>,
   options: { requireAdmin?: boolean } = {}
 ) {
   return async (request: NextRequest, context: { params?: any }) => {
-    // TEMP: Bypass auth during development
-    // Create mock session for development
-    (request as any).session = {
-      isAuthenticated: true,
-      userId: 'dev-user-id',
-      isAdmin: true,
-      sessionId: 'dev-session-id',
-      user: {
-        id: 'dev-user-id',
-        email: 'dev@example.com',
-        firstName: 'Dev',
-        lastName: 'User',
-        isAdmin: true,
-      }
-    };
-    return handler(request, context);
-    
-    /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
     const session = await getSessionFromHeaders(request);
 
     if (!session.isAuthenticated) {
@@ -478,34 +452,14 @@ export function withAuth(
     (request as any).session = session;
 
     return handler(request, context);
-    */
   };
 }
 
 // Authorization middleware for user-scoped resources in Next.js API routes
-// TEMP: Authentication disabled for development
-// TODO: Re-enable before production deployment
 export function withUserAuth(
   handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, context: { params?: any }) => {
-    // TEMP: Bypass auth during development
-    (request as any).session = {
-      isAuthenticated: true,
-      userId: 'dev-user-id',
-      isAdmin: true,
-      sessionId: 'dev-session-id',
-      user: {
-        id: 'dev-user-id',
-        email: 'dev@example.com',
-        firstName: 'Dev',
-        lastName: 'User',
-        isAdmin: true,
-      }
-    };
-    return handler(request, context);
-    
-    /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
     const session = await getSessionFromHeaders(request);
 
     if (!session.isAuthenticated) {
@@ -549,7 +503,6 @@ export function withUserAuth(
 
     (request as any).session = session;
     return handler(request, context);
-    */
   };
 }
 
@@ -560,22 +513,10 @@ export function getUserIdFromRequest(request: NextRequest): string | null {
 }
 
 // CSRF Protection Middleware
-// TEMP: CSRF Protection disabled for development
-// TODO: Re-enable before production deployment
 export function withCSRFProtection(
   handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
 ) {
   return async (request: NextRequest, context: { params?: any }) => {
-    // TEMP: Bypass CSRF protection during development
-    (request as any).session = {
-      isAuthenticated: true,
-      userId: 'dev-user-id',
-      isAdmin: true,
-      sessionId: 'dev-session-id'
-    };
-    return handler(request, context);
-    
-    /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
     // Only apply CSRF protection to state-changing methods
     const protectedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
     
@@ -617,7 +558,6 @@ export function withCSRFProtection(
     (request as any).session = session;
     
     return handler(request, context);
-    */
   };
 }
 
