@@ -6,6 +6,7 @@ import MemoryCard from './MemoryCard';
 import MemoryUploadModal from './MemoryUploadModal';
 import MemoryDetailModal from './MemoryDetailModal';
 import { Button } from '@/components/ui/button';
+import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
 export interface Memory {
   id: string;
@@ -18,7 +19,6 @@ export interface Memory {
   isPublic: boolean;
   createdBy: string;
   createdAt: string;
-  // Additional fields for display
   authorName?: string;
   authorAvatar?: string;
 }
@@ -64,7 +64,6 @@ export default function EventMemoriesGallery({
       const data = await response.json();
 
       if (data.success) {
-        // Parse tags if they're stored as JSON strings
         const processedMemories = data.memories.map((memory: any) => ({
           ...memory,
           tags: typeof memory.tags === 'string' ? JSON.parse(memory.tags || '[]') : memory.tags || []
@@ -83,7 +82,7 @@ export default function EventMemoriesGallery({
 
   const handleMemoryUploaded = () => {
     setShowUploadModal(false);
-    fetchMemories(); // Refresh memories after upload
+    fetchMemories();
   };
 
   const handleMemoryDeleted = (memoryId: string) => {
@@ -92,12 +91,10 @@ export default function EventMemoriesGallery({
   };
 
   const filteredMemories = memories.filter(memory => {
-    // Filter by type
     if (filterType !== 'all' && memory.mediaType !== filterType) {
       return false;
     }
 
-    // Filter by search query
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       return (
@@ -114,7 +111,7 @@ export default function EventMemoriesGallery({
     return (
       <div className={`flex items-center justify-center py-12 ${className}`}>
         <div className="flex items-center space-x-3 text-white/60">
-          <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+          <div className="w-6 h-6 border-2 border-fuchsia-600 border-t-transparent rounded-full animate-spin"></div>
           <span>Loading memories...</span>
         </div>
       </div>
@@ -131,26 +128,21 @@ export default function EventMemoriesGallery({
           <p className="text-lg mb-2">Failed to load memories</p>
           <p className="text-sm">{error}</p>
         </div>
-        <Button
+        <button
           onClick={fetchMemories}
-          variant="outline"
-          className="border-white/20 text-white hover:bg-white/10"
+          className={components.buttonSecondary}
         >
           Try Again
-        </Button>
+        </button>
       </div>
     );
   }
 
   return (
     <div className={`w-full ${className}`}>
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
         <div>
-          <h2 
-            className="text-3xl font-bold mb-2"
-            style={{ color: theme.colors.secondary }}
-          >
+          <h2 className="text-3xl font-bold mb-2 text-white">
             Event Memories
           </h2>
           <p className="text-white/60">
@@ -159,28 +151,22 @@ export default function EventMemoriesGallery({
         </div>
         
         {showUploadButton && (
-          <Button
+          <button
             onClick={() => setShowUploadModal(true)}
-            className="mt-4 md:mt-0"
-            style={{ 
-              backgroundColor: theme.colors.primary,
-              color: 'white'
-            }}
+            className={`mt-4 md:mt-0 ${components.buttonPrimary}`}
           >
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             Add Memory
-          </Button>
+          </button>
         )}
       </div>
 
-      {/* Controls */}
       <div className="flex flex-col md:flex-row gap-4 mb-6">
-        {/* Search */}
         <div className="flex-1">
           <div className="relative">
-            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <input
@@ -188,16 +174,15 @@ export default function EventMemoriesGallery({
               placeholder="Search memories..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/30"
+              className={`w-full pl-10 pr-4 py-2 ${surfaces.subtleGlass} border border-slate-700/50 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-fuchsia-400`}
             />
           </div>
         </div>
 
-        {/* Filter by type */}
         <select
           value={filterType}
           onChange={(e) => setFilterType(e.target.value as any)}
-          className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white focus:outline-none focus:border-white/30"
+          className={`px-4 py-2 ${surfaces.subtleGlass} border border-slate-700/50 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-fuchsia-400`}
         >
           <option value="all">All Types</option>
           <option value="image">Images</option>
@@ -205,11 +190,10 @@ export default function EventMemoriesGallery({
           <option value="audio">Audio</option>
         </select>
 
-        {/* View mode toggle */}
-        <div className="flex border border-white/10 rounded-lg overflow-hidden">
+        <div className={`flex ${surfaces.subtleGlass} border border-slate-700/50 rounded-lg overflow-hidden`}>
           <button
             onClick={() => setViewMode('grid')}
-            className={`px-4 py-2 text-sm ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white/80'}`}
+            className={`px-4 py-2 text-sm transition-colors ${viewMode === 'grid' ? 'bg-fuchsia-600 text-white' : 'text-white/60 hover:text-white/80 hover:bg-white/5'}`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
@@ -217,7 +201,7 @@ export default function EventMemoriesGallery({
           </button>
           <button
             onClick={() => setViewMode('list')}
-            className={`px-4 py-2 text-sm ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-white/60 hover:text-white/80'}`}
+            className={`px-4 py-2 text-sm transition-colors ${viewMode === 'list' ? 'bg-fuchsia-600 text-white' : 'text-white/60 hover:text-white/80 hover:bg-white/5'}`}
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
@@ -226,7 +210,6 @@ export default function EventMemoriesGallery({
         </div>
       </div>
 
-      {/* Memories Grid/List */}
       {filteredMemories.length === 0 ? (
         <div className="text-center py-12">
           <div className="text-white/40 mb-4">
@@ -241,13 +224,12 @@ export default function EventMemoriesGallery({
               : 'Be the first to share a memorable moment'}
           </p>
           {showUploadButton && !searchQuery && filterType === 'all' && (
-            <Button
+            <button
               onClick={() => setShowUploadModal(true)}
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
+              className={components.buttonSecondary}
             >
               Share Your First Memory
-            </Button>
+            </button>
           )}
         </div>
       ) : (
@@ -268,7 +250,6 @@ export default function EventMemoriesGallery({
         </div>
       )}
 
-      {/* Upload Modal */}
       {showUploadModal && (
         <MemoryUploadModal
           isOpen={showUploadModal}
@@ -278,7 +259,6 @@ export default function EventMemoriesGallery({
         />
       )}
 
-      {/* Detail Modal */}
       {selectedMemory && (
         <MemoryDetailModal
           memory={selectedMemory}
