@@ -177,7 +177,8 @@ export async function setupAuth(app: Express) {
       
       const tokens = await client.authorizationCodeGrant(config, new URL(redirectUri), {
         pkceCodeVerifier: codeVerifier,
-        expectedState: state as string
+        expectedState: state as string,
+        [client.skipSubjectCheck]: true
       }, callbackParams);
       
       const claims = tokens.claims();

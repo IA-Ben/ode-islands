@@ -48,9 +48,34 @@ An enterprise-grade media asset management system provides 10 storage methods, a
 ## CMS Enterprise Features
 The CMS includes production-ready features for security and workflow:
 ### Authentication & Authorization
-Replit Auth (OpenID Connect) provides secure session management with a 6-Tier RBAC System (Owner, Admin, Producer, Operator, Analyst, Support) offering granular permission checks. The RBAC system supports wildcard permissions (e.g., story:*, events:*) with role-to-permission mappings covering all admin operations.
-### Authentication Flow & Login Loop Fix
-The authentication system uses a post-login refresh pattern to ensure user state is properly recognized across the application after Replit OAuth callback. When users log in, they flow through: Login → Replit Auth → Callback (`/api/auth/callback`) → Post-Login Page (`/auth/post-login`) → Destination. The post-login page verifies user authentication via `/api/auth/user`, then forces a full browser reload using `window.location.href` to refresh all component state. This is necessary because the `useAuth` hook is not connected to a global AuthContext—each component has local state that requires a full page reload to refresh with the new session cookie. The callback handler in `server/replitAuth.ts` stores the `returnTo` parameter in the session and redirects through the post-login page. Session cookies are configured with `httpOnly: true`, `sameSite: 'lax'`, and `secure` in production for proper security. Legacy auth systems (`server/simpleAuth.ts` and `server/routes.ts`) have been removed to prevent conflicts—the application now exclusively uses the unified Replit Auth implementation via `server/unifiedRoutes.ts`.
+The application implements a simplified PKCE OAuth authentication flow with RS256 JWT session cookies for maximum security and reliability. A 6-Tier RBAC System (Owner, Admin, Producer, Operator, Analyst, Support) provides granular permission checks with wildcard permissions (e.g., story:*, events:*) across all admin operations.
+
+### Authentication Architecture (Simplified PKCE Flow)
+**Implementation**: Direct PKCE OAuth using openid-client library with RS256 JWT tokens (no Passport.js complexity).
+
+**Key Components**:
+- **server/simplifiedAuth.ts**: Pure PKCE OAuth implementation with issuer validation disabled for Replit compatibility
+- **server/auth.ts**: RS256 JWT validation middleware using JWT_PUBLIC_KEY for Next.js API routes
+- **src/app/api/me/route.ts**: Single source of truth for authenticated user data
+- **src/hooks/useAuth.ts**: React hook fetching from /api/me endpoint
+
+**Authentication Flow**:
+1. User clicks "Sign In" → `/api/login` → redirects to `/api/auth/login`
+2. PKCE flow initiated with code challenge (S256) → redirects to Replit OAuth
+3. OAuth callback at `/api/auth/callback/replit` exchanges code for tokens with PKCE verifier
+4. User upserted in database, session created in PostgreSQL `sessions` table
+5. RS256 JWT cookie 'auth-session' set (httpOnly, secure in production, sameSite: lax, 7-day TTL)
+6. Redirect to `/auth/post-login` → validates session via `/api/me` → full page reload to destination
+
+**Security Features**:
+- RS256 asymmetric signing (JWT_PRIVATE_KEY for signing, JWT_PUBLIC_KEY for verification)
+- PostgreSQL session validation for defense-in-depth
+- CSRF protection with separate csrf-token cookie
+- Rate limiting on auth endpoints (10 requests per 15 minutes)
+- Issuer validation disabled via `[client.skipSubjectCheck]: true` to handle Replit's OAuth response format
+
+**JWT Payload**: `{ userId, isAdmin, sessionId, iat, exp }`
+**Session Storage**: PostgreSQL `sessions` table with user ID validation and expiry checking
 ### Unified Admin Navigation
 A top-level navigation system provides access to 10 admin sections: Dashboard, Story Builder, Events, Cards, Rewards, Wallet, Users, Orders, Analytics, and Settings. Role-based visibility filters navigation items based on user permissions. The navigation includes loading states, access control, and mobile responsiveness.
 ### Audit Logging
