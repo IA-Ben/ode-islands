@@ -46,6 +46,8 @@ A full-featured form-based editor provides structured editing for text content, 
 An automated transcoding pipeline processes uploaded videos into adaptive HLS format with 11 quality profiles and a dual-orientation system (landscape and portrait versions for 16:9 videos). This includes an intelligent Player with device orientation detection.
 ### Security & Data Integrity
 All mutation endpoints require CSRF token validation. Sensitive routes are protected by `isAdmin` and `isAdminWithCSRF` middleware. Server-side validation is enforced for all user input, and Drizzle ORM's parameterized queries prevent SQL injection.
+### Admin UI Redesign (In Progress)
+A comprehensive UI redesign implementing a dark glass aesthetic with fuchsia accents across all admin sections. The redesign includes centralized design tokens (`src/lib/admin/designTokens.ts`), reusable component patterns, and improved UX. Completed components: AdminLayout with dark glass top bar, SectionSubNav (sticky pills navigation), card view primitives (CardTile/CardTable/CardViewToggle), CardEditorDrawer (6-tab drawer editor with state management), and fully refactored /admin/cards page with grid/table toggle. All components follow the design system: `bg-slate-900/70` surfaces, `backdrop-blur-xl` effects, `rounded-full` pills, `focus-visible:ring-fuchsia-400` states. State management ensures proper form hydration on drawer open/close cycles. Components located in `src/components/admin/` for reusability across admin sections.
 
 ## Memory Wallet & Gamification System
 A comprehensive reward and collection system enables users to collect memories through QR codes, location-based triggers, and story interactions with gamification features.
