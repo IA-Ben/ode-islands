@@ -109,8 +109,6 @@ app.prepare().then(async () => {
     }
   });
 
-  // Session management is handled by unified Replit Auth system in unifiedRoutes
-  
   // Enforce required environment variables for production security
   if (!process.env.SESSION_SECRET) {
     console.error('FATAL: SESSION_SECRET environment variable is required');
@@ -122,7 +120,11 @@ app.prepare().then(async () => {
     process.exit(1);
   }
 
-  // Import and setup unified authentication routes
+  // Initialize Replit Auth with Passport BEFORE other routes
+  const { setupAuth } = await import('./server/replitAuth.ts');
+  await setupAuth(server);
+
+  // Import and setup unified routes for non-auth endpoints
   const { registerUnifiedRoutes, isAuthenticated, isAdmin } = await import('./server/unifiedRoutes.ts');
   await registerUnifiedRoutes(server);
 
