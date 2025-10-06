@@ -456,7 +456,7 @@ export const combineMiddleware = (...middlewares: RequestHandler[]): RequestHand
 type NextRouteHandler = (
   req: NextRequest,
   context?: any
-) => Promise<Response>;
+) => Promise<NextResponse>;
 
 export function requirePermission(permission: string): (handler: NextRouteHandler) => NextRouteHandler {
   return function(handler: NextRouteHandler): NextRouteHandler {
