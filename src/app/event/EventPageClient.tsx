@@ -678,6 +678,8 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
           onOpenWallet={handleOpenWallet}
           onOpenQR={handleOpenQR}
           onSwitchMode={handleSwitchMode}
+          isDemoMode={isDemoMode}
+          onToggleDemo={() => setIsDemoMode(prev => !prev)}
         />
         {view === 'hub' && (
           <EventHub
@@ -710,11 +712,8 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
               currentPoints={currentPoints}
               currentTier={currentTier}
               nextTierThreshold={nextTierThreshold}
-              isDemoMode={isDemoMode}
-              showDemoToggle={true}
               onWalletClick={() => router.push('/memory-wallet')}
               onQuickScan={() => setIsQRScannerOpen(true)}
-              onToggleDemo={() => setIsDemoMode(prev => !prev)}
               onPulse={hudPulse}
             />
           </div>

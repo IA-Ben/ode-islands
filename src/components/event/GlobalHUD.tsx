@@ -10,11 +10,8 @@ export interface GlobalHUDProps {
   currentPoints?: number;
   currentTier?: Tier;
   nextTierThreshold?: number;
-  isDemoMode?: boolean;
-  showDemoToggle?: boolean;
   onWalletClick?: () => void;
   onQuickScan?: () => void;
-  onToggleDemo?: () => void;
   onPulse?: boolean;
 }
 
@@ -32,11 +29,6 @@ interface PointsRingProps {
 
 interface QuickQRButtonProps {
   onClick: () => void;
-}
-
-interface DemoToggleProps {
-  isDemoMode: boolean;
-  onToggle: () => void;
 }
 
 const tierConfig: Record<Tier, { color: string; glowColor: string; icon: any }> = {
@@ -170,45 +162,13 @@ function QuickQRButton({ onClick }: QuickQRButtonProps) {
   );
 }
 
-function DemoToggle({ isDemoMode, onToggle }: DemoToggleProps) {
-  return (
-    <button
-      onClick={onToggle}
-      className={`
-        flex items-center gap-2 px-3 py-2 rounded-xl
-        backdrop-blur-md border transition-all duration-200
-        ${isDemoMode 
-          ? 'bg-fuchsia-600/90 border-fuchsia-500 text-white shadow-lg shadow-fuchsia-500/30' 
-          : 'bg-white/10 border-white/20 text-white/70 hover:bg-white/15 hover:border-white/30'
-        }
-      `}
-      aria-label={`Demo mode ${isDemoMode ? 'enabled' : 'disabled'}`}
-    >
-      <div className={`
-        w-9 h-5 rounded-full relative transition-colors duration-200
-        ${isDemoMode ? 'bg-white/30' : 'bg-white/20'}
-      `}>
-        <div className={`
-          absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white
-          transition-transform duration-200
-          ${isDemoMode ? 'translate-x-4' : 'translate-x-0'}
-        `} />
-      </div>
-      <span className="text-xs font-medium">Demo Mode</span>
-    </button>
-  );
-}
-
 export function GlobalHUD({
   newItemsCount = 0,
   currentPoints = 0,
   currentTier = "Bronze",
   nextTierThreshold = 100,
-  isDemoMode = false,
-  showDemoToggle = false,
   onWalletClick,
   onQuickScan,
-  onToggleDemo,
   onPulse = false,
 }: GlobalHUDProps) {
   const [shouldPulse, setShouldPulse] = useState(false);
@@ -233,20 +193,8 @@ export function GlobalHUD({
     }
   };
 
-  const handleToggleDemo = () => {
-    if (onToggleDemo) {
-      onToggleDemo();
-    }
-  };
-
   return (
     <>
-      {showDemoToggle && (
-        <div className="fixed top-20 left-4 z-40 animate-in fade-in slide-in-from-left-4 duration-300">
-          <DemoToggle isDemoMode={isDemoMode} onToggle={handleToggleDemo} />
-        </div>
-      )}
-
       <div className="fixed top-20 right-4 z-40 flex items-start gap-3 animate-in fade-in slide-in-from-right-4 duration-300">
         <PointsRing
           currentPoints={currentPoints}

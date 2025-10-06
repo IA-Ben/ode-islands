@@ -53,6 +53,9 @@ interface UnifiedTopNavProps {
   onAdminSectionChange?: (section: string) => void;
   // Mode switch
   onSwitchMode: (nextMode: Mode) => void;
+  // Demo mode
+  isDemoMode?: boolean;
+  onToggleDemo?: () => void;
 }
 
 interface NavItem {
@@ -174,6 +177,8 @@ export default function UnifiedTopNav({
   currentAdminSection = "dashboard",
   onAdminSectionChange,
   onSwitchMode,
+  isDemoMode = false,
+  onToggleDemo,
 }: UnifiedTopNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -422,6 +427,30 @@ export default function UnifiedTopNav({
                               Switch to App
                             </>
                           )}
+                        </button>
+                      )}
+                      {onToggleDemo && (
+                        <button
+                          onClick={() => {
+                            onToggleDemo();
+                            setMenuOpen(false);
+                          }}
+                          role="menuitem"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center justify-between text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400"
+                        >
+                          <span className="flex items-center gap-2">
+                            <span>Demo Mode</span>
+                          </span>
+                          <div className={`
+                            w-9 h-5 rounded-full relative transition-colors duration-200
+                            ${isDemoMode ? 'bg-fuchsia-600' : 'bg-slate-300 dark:bg-slate-600'}
+                          `}>
+                            <div className={`
+                              absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white
+                              transition-transform duration-200
+                              ${isDemoMode ? 'translate-x-4' : 'translate-x-0'}
+                            `} />
+                          </div>
                         </button>
                       )}
                       <button
