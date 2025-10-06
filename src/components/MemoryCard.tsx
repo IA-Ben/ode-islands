@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
 import { Memory } from './EventMemoriesGallery';
 import { surfaces, components } from '@/lib/admin/designTokens';
 
@@ -13,7 +12,6 @@ interface MemoryCardProps {
 }
 
 export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: MemoryCardProps) {
-  const { theme } = useTheme();
   const [imageError, setImageError] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -60,7 +58,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
   const renderMediaPreview = () => {
     if (!memory.mediaUrl) {
       return (
-        <div className="w-full h-48 bg-white/5 rounded-lg flex items-center justify-center text-white/40">
+        <div className={`w-full h-48 ${surfaces.subtleGlass} rounded-lg flex items-center justify-center text-white/40`}>
           {getMediaIcon(memory.mediaType)}
         </div>
       );
@@ -68,28 +66,28 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
 
     if (memory.mediaType === 'image' && !imageError) {
       return (
-        <div className="relative w-full h-48 bg-white/5 rounded-lg overflow-hidden">
+        <div className={`relative w-full h-48 ${surfaces.subtleGlass} rounded-lg overflow-hidden`}>
           <img
             src={memory.mediaUrl}
             alt={memory.title}
             className="w-full h-full object-cover"
             onError={() => setImageError(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-200" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950/50 to-transparent opacity-0 hover:opacity-100 transition-opacity duration-200" />
         </div>
       );
     }
 
     if (memory.mediaType === 'video') {
       return (
-        <div className="relative w-full h-48 bg-white/5 rounded-lg overflow-hidden">
+        <div className={`relative w-full h-48 ${surfaces.subtleGlass} rounded-lg overflow-hidden`}>
           <video
             src={memory.mediaUrl}
             className="w-full h-full object-cover"
             preload="metadata"
           />
-          <div className="absolute inset-0 bg-black/20 flex items-center justify-center">
-            <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+          <div className="absolute inset-0 bg-slate-950/20 flex items-center justify-center">
+            <div className={`w-12 h-12 ${surfaces.cardGlass} rounded-full flex items-center justify-center backdrop-blur-sm`}>
               <svg className="w-6 h-6 text-white ml-1" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"/>
               </svg>
@@ -101,7 +99,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
 
     // Default fallback for other media types
     return (
-      <div className="w-full h-48 bg-white/5 rounded-lg flex items-center justify-center text-white/40">
+      <div className={`w-full h-48 ${surfaces.subtleGlass} rounded-lg flex items-center justify-center text-white/40`}>
         {getMediaIcon(memory.mediaType)}
       </div>
     );
@@ -137,7 +135,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
   if (viewMode === 'list') {
     return (
       <div 
-        className={`flex items-center p-4 ${surfaces.subtleGlass} rounded-lg border border-slate-700/50 hover:bg-slate-800/60 hover:border-fuchsia-500/30 transition-all cursor-pointer`}
+        className={`flex items-center p-4 ${surfaces.subtleGlass} rounded-lg border border-slate-700/50 hover:bg-slate-900/60 hover:border-fuchsia-500/30 transition-all cursor-pointer`}
         onClick={onClick}
       >
         {/* Media preview - smaller for list view */}
@@ -150,7 +148,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
               onError={() => setImageError(true)}
             />
           ) : (
-            <div className="w-full h-full bg-white/5 rounded flex items-center justify-center text-white/40">
+            <div className={`w-full h-full ${surfaces.subtleGlass} rounded flex items-center justify-center text-white/40`}>
               {getMediaIcon(memory.mediaType)}
             </div>
           )}
@@ -169,7 +167,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
                 {memory.tags && memory.tags.length > 0 && (
                   <div className="flex gap-1">
                     {memory.tags.slice(0, 3).map((tag, index) => (
-                      <span key={index} className="px-2 py-1 bg-white/10 rounded text-xs">
+                      <span key={index} className={`${components.badge} bg-fuchsia-500/20 text-fuchsia-200`}>
                         {tag}
                       </span>
                     ))}
@@ -190,7 +188,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
               <button
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="text-red-400 hover:text-red-300 p-1 rounded transition-colors hover:bg-red-400/10"
+                className="text-red-400 hover:text-red-300 p-1 rounded transition-colors hover:bg-red-500/20"
                 title="Delete memory"
               >
                 {isDeleting ? (
@@ -211,7 +209,7 @@ export default function MemoryCard({ memory, viewMode, onClick, onDeleted }: Mem
   // Grid view
   return (
     <div 
-      className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 overflow-hidden hover:bg-slate-800/60 hover:border-fuchsia-500/30 transition-all cursor-pointer group`}
+      className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 overflow-hidden hover:bg-slate-900/70 hover:border-fuchsia-500/30 transition-all cursor-pointer group`}
       onClick={onClick}
     >
       {/* Media preview */}

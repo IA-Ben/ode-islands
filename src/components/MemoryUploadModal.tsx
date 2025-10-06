@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
 import { ObjectUploader } from '@/components/ObjectUploader';
-import { Button } from '@/components/ui/button';
+import { surfaces, components, colors } from '@/lib/admin/designTokens';
 
 interface MemoryUploadModalProps {
   isOpen: boolean;
@@ -13,7 +12,6 @@ interface MemoryUploadModalProps {
 }
 
 export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId }: MemoryUploadModalProps) {
-  const { theme } = useTheme();
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -38,20 +36,10 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
 
   const getUploadParameters = async (file: { name: string; type: string; size: number }) => {
     try {
-      // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token');
-      const csrfData = await csrfResponse.json();
-      
-      if (!csrfData.success) {
-        throw new Error('Failed to get CSRF token');
-      }
-
-      // Get upload URL with real file information
       const response = await fetch('/api/memories/upload', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.token,
         },
         body: JSON.stringify({
           fileName: file.name,
@@ -100,14 +88,6 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
       setIsUploading(true);
       setError(null);
 
-      // Get CSRF token
-      const csrfResponse = await fetch('/api/csrf-token');
-      const csrfData = await csrfResponse.json();
-      
-      if (!csrfData.success) {
-        throw new Error('Failed to get CSRF token');
-      }
-
       // Parse tags
       const tags = formData.tags
         .split(',')
@@ -128,7 +108,6 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfData.token,
         },
         body: JSON.stringify(memoryData),
       });
@@ -165,17 +144,14 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/90 backdrop-blur-lg">
       <div 
-        className="w-full max-w-2xl bg-black border border-white/20 rounded-lg shadow-2xl max-h-[90vh] overflow-y-auto"
+        className={`w-full max-w-2xl ${surfaces.darkGlass} border border-slate-700/50 rounded-xl shadow-2xl max-h-[90vh] overflow-y-auto`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-white/10">
-          <h2 
-            className="text-2xl font-bold"
-            style={{ color: theme.colors.secondary }}
-          >
+        <div className="flex items-center justify-between p-6 border-b border-slate-700/50">
+          <h2 className="text-2xl font-bold text-white">
             Share a Memory
           </h2>
           <button
@@ -213,7 +189,7 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
                 ]}
                 onGetUploadParameters={getUploadParameters}
                 onComplete={handleUploadComplete}
-                buttonClassName="w-full bg-white/10 border border-white/20 text-white hover:bg-white/20"
+                buttonClassName={`w-full ${components.buttonSecondary}`}
               >
                 <div className="flex items-center justify-center py-4">
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +200,7 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
               </ObjectUploader>
               
               {uploadedMedia && (
-                <div className="p-3 bg-green-500/20 border border-green-500/30 rounded text-green-300 text-sm">
+                <div className={`${components.badge} bg-green-500/20 text-green-300 text-sm`}>
                   ✓ File uploaded successfully ({uploadedMedia.type})
                 </div>
               )}
@@ -248,7 +224,7 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
               value={formData.title}
               onChange={handleInputChange}
               placeholder="Give your memory a title..."
-              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
+              className={`${components.input}`}
             />
           </div>
 
@@ -264,7 +240,7 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
               value={formData.description}
               onChange={handleInputChange}
               placeholder="Share more details about this memory..."
-              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10 resize-vertical"
+              className={`${components.input} resize-vertical`}
             />
           </div>
 
@@ -280,7 +256,7 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
               value={formData.tags}
               onChange={handleInputChange}
               placeholder="adventure, nature, friends (comma-separated)"
-              className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:border-white/40 focus:bg-white/10"
+              className={`${components.input}`}
             />
             <p className="text-xs text-white/40 mt-1">
               Add tags separated by commas to help organize your memories
@@ -323,33 +299,29 @@ export default function MemoryUploadModal({ isOpen, onClose, onUploaded, eventId
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end space-x-3 pt-4 border-t border-white/10">
-            <Button
+          <div className="flex justify-end space-x-3 pt-4 border-t border-slate-700/50">
+            <button
               type="button"
               onClick={handleClose}
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
               disabled={isUploading}
+              className={`${components.buttonSecondary}`}
             >
               Cancel
-            </Button>
-            <Button
+            </button>
+            <button
               type="submit"
               disabled={isUploading || !formData.title.trim()}
-              style={{ 
-                backgroundColor: theme.colors.primary,
-                color: 'white'
-              }}
+              className={`${components.buttonPrimary} disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {isUploading ? (
-                <div className="flex items-center">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2"></div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
                   Creating...
                 </div>
               ) : (
                 'Share Memory'
               )}
-            </Button>
+            </button>
           </div>
         </form>
       </div>

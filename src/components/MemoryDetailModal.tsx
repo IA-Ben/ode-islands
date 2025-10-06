@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { useTheme } from '@/contexts/ThemeContext';
 import { Memory } from './EventMemoriesGallery';
-import { Button } from '@/components/ui/button';
 import { surfaces, components, borders } from '@/lib/admin/designTokens';
 
 interface MemoryDetailModalProps {
@@ -14,7 +12,6 @@ interface MemoryDetailModalProps {
 }
 
 export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }: MemoryDetailModalProps) {
-  const { theme } = useTheme();
   const [isDeleting, setIsDeleting] = useState(false);
   const [shareMessage, setShareMessage] = useState('');
 
@@ -96,7 +93,7 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
   const renderMedia = () => {
     if (!memory.mediaUrl) {
       return (
-        <div className="w-full h-64 bg-white/5 rounded-lg flex items-center justify-center text-white/40">
+        <div className={`w-full h-64 ${surfaces.subtleGlass} rounded-lg flex items-center justify-center text-white/40`}>
           <div className="text-center">
             <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -110,7 +107,7 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
     switch (memory.mediaType) {
       case 'image':
         return (
-          <div className="w-full max-h-96 bg-white/5 rounded-lg overflow-hidden">
+          <div className={`w-full max-h-96 ${surfaces.subtleGlass} rounded-lg overflow-hidden`}>
             <img
               src={memory.mediaUrl}
               alt={memory.title}
@@ -121,7 +118,7 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
 
       case 'video':
         return (
-          <div className="w-full max-h-96 bg-white/5 rounded-lg overflow-hidden">
+          <div className={`w-full max-h-96 ${surfaces.subtleGlass} rounded-lg overflow-hidden`}>
             <video
               src={memory.mediaUrl}
               controls
@@ -135,7 +132,7 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
 
       case 'audio':
         return (
-          <div className="w-full p-8 bg-white/5 rounded-lg">
+          <div className={`w-full p-8 ${surfaces.subtleGlass} rounded-lg`}>
             <div className="flex items-center justify-center mb-4">
               <svg className="w-16 h-16 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
@@ -154,7 +151,7 @@ export default function MemoryDetailModal({ memory, isOpen, onClose, onDeleted }
 
       default:
         return (
-          <div className="w-full h-64 bg-white/5 rounded-lg flex items-center justify-center text-white/40">
+          <div className={`w-full h-64 ${surfaces.subtleGlass} rounded-lg flex items-center justify-center text-white/40`}>
             <div className="text-center">
               <svg className="w-16 h-16 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
