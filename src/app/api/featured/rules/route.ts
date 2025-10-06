@@ -50,6 +50,12 @@ export async function GET(request: NextRequest) {
     }
 
     const context = contextParam as 'event_hub' | 'story_chapter' | 'before' | 'after' | 'rewards';
+    
+    const userTier = searchParams.get('userTier') || 'Bronze';
+    const zone = searchParams.get('zone');
+    const currentTimeParam = searchParams.get('currentTime');
+    const currentTime = currentTimeParam ? new Date(currentTimeParam) : new Date();
+    
     const now = new Date();
 
     const rulesWithCards = await db
@@ -145,7 +151,66 @@ export async function GET(request: NextRequest) {
       return acc;
     }, {} as Record<string, typeof conditions>);
 
-    const transformedCards: FeaturedCardWithRules[] = rulesWithCards.map(rule => {
+    function evaluateConditions(
+      ruleConditions: typeof conditions,
+      userTier?: string,
+      zone?: string,
+      currentTime?: Date
+    ): boolean {
+      if (!ruleConditions || ruleConditions.length === 0) {
+        return true; // No conditions = always pass
+      }
+
+      return ruleConditions.every((condition) => {
+        switch (condition.conditionType) {
+          case 'tier_requirement': {
+            const tierData = condition.conditionData as { tier: string };
+            const effectiveTier = userTier || 'Bronze';
+            return tierData.tier === 'any' || tierData.tier === effectiveTier;
+          }
+
+          case 'zone': {
+            const zoneData = condition.conditionData as { zones: string[] };
+            
+            // If 'any' is in zones, treat as universal (applies to all users)
+            if (zoneData.zones.includes('any')) {
+              return true; // Universal zone rule - always passes
+            }
+            
+            // For specific zones: require zone context and check membership
+            if (!zone || zone.trim() === '') {
+              return false; // No zone context = fail zone-restricted rule
+            }
+            
+            // Check if user zone is in allowed zones
+            return zoneData.zones.includes(zone);
+          }
+
+          case 'time_window': {
+            const timeData = condition.conditionData as { start: string; end: string };
+            const now = currentTime || new Date();
+            const start = new Date(timeData.start);
+            const end = new Date(timeData.end);
+            return now >= start && now <= end;
+          }
+
+          case 'custom': {
+            // Custom conditions - extensible for future logic
+            return true;
+          }
+
+          default:
+            return true; // Unknown condition types pass gracefully
+        }
+      });
+    }
+
+    const transformedCards: FeaturedCardWithRules[] = rulesWithCards
+      .filter(rule => {
+        const ruleConditions = conditionsByRuleId[rule.ruleId] || [];
+        return evaluateConditions(ruleConditions, userTier, zone, currentTime);
+      })
+      .map(rule => {
       const ruleConditions = conditionsByRuleId[rule.ruleId] || [];
       
       const tierCondition = ruleConditions.find(c => c.conditionType === 'tier_requirement');

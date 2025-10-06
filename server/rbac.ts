@@ -32,6 +32,12 @@ export const PERMISSIONS = {
   'rewards:configure': 'Configure reward settings',
   'rewards:delete': 'Delete reward rules',
   
+  // Featured rules permissions
+  'featured:view': 'View featured content rules',
+  'featured:create': 'Create new featured rules',
+  'featured:edit': 'Edit featured rules',
+  'featured:delete': 'Delete featured rules',
+  
   // Orders permissions (for merchandise/tickets)
   'orders:view': 'View orders',
   'orders:create': 'Create new orders',
@@ -103,6 +109,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'events:*',
     'cards:*',
     'rewards:*',
+    'featured:*',
     'orders:*',
     'analytics:*',
     'users:*',
@@ -118,6 +125,7 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'events:*',
     'cards:*',
     'rewards:*',
+    'featured:*',
     'orders:*',
     'analytics:*',
     'users:view',
@@ -149,6 +157,9 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
     'rewards:view',
     'rewards:create',
     'rewards:edit',
+    'featured:view',
+    'featured:create',
+    'featured:edit',
     'analytics:view',
     'users:view',
     'settings:view',

@@ -364,7 +364,17 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     async function fetchFeaturedCards() {
       try {
         setFeaturedCardsLoading(true);
-        const response = await fetch('/api/featured/rules?context=event_hub');
+        
+        // Build params - only include zone if we have a real zone context
+        // TODO: Get actual zone from location/QR scan/event state when available
+        const params = new URLSearchParams({
+          context: 'event_hub',
+          userTier: currentTier,
+          currentTime: new Date().toISOString()
+        });
+        // Note: Zone parameter omitted - will be added when real zone tracking is implemented
+        
+        const response = await fetch(`/api/featured/rules?${params.toString()}`);
         const data = await response.json();
         
         if (data.success && data.cards) {
@@ -404,7 +414,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     }
     
     fetchFeaturedCards();
-  }, []);
+  }, [currentTier]);
 
   // Refresh active event periodically (only for audience view)
   useEffect(() => {
