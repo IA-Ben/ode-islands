@@ -65,6 +65,9 @@ export async function GET(request: NextRequest) {
         cardSubtitle: cards.subtitle,
         cardSize: cards.size,
         imageUrl: mediaAssets.cloudUrl,
+        ctaLabel: cards.ctaLabel,
+        ctaAction: cards.ctaAction,
+        ctaTarget: cards.ctaTarget,
       })
       .from(featuredRules)
       .innerJoin(cards, eq(featuredRules.cardId, cards.id))
@@ -167,6 +170,9 @@ export async function GET(request: NextRequest) {
         title: rule.cardTitle,
         subtitle: rule.cardSubtitle || undefined,
         imageUrl: rule.imageUrl || undefined,
+        ctaLabel: rule.ctaLabel || undefined,
+        ctaAction: rule.ctaAction || undefined,
+        ctaTarget: rule.ctaTarget || undefined,
         analyticsTag: `featured-${rule.cardId}`,
         layoutHint,
         rules: {

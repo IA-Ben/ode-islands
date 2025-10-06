@@ -108,6 +108,11 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   const [cardsLoading, setCardsLoading] = useState(true);
   const [cardsError, setCardsError] = useState<string | null>(null);
   
+  // Featured cards state
+  const [featuredCardsPool, setFeaturedCardsPool] = useState<FeaturedCardWithRules[]>([]);
+  const [featuredCardsLoading, setFeaturedCardsLoading] = useState(true);
+  const [featuredCardsError, setFeaturedCardsError] = useState<string | null>(null);
+  
   // Debouncing for memory awards
   const awardingRef = useRef<Set<string>>(new Set());
   const csrfTokenRef = useRef<string | null>(null);
@@ -354,6 +359,53 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     fetchEventCards();
   }, []);
 
+  // Fetch featured cards from API
+  useEffect(() => {
+    async function fetchFeaturedCards() {
+      try {
+        setFeaturedCardsLoading(true);
+        const response = await fetch('/api/featured/rules?context=event_hub');
+        const data = await response.json();
+        
+        if (data.success && data.cards) {
+          // Transform cards to add ctaAction handlers
+          const cardsWithActions = data.cards.map((card: any) => ({
+            ...card,
+            ctaLabel: card.ctaLabel || 'Learn More',
+            ctaAction: () => {
+              // Map action types to real handlers
+              switch(card.ctaAction) {
+                case 'enter_lane':
+                  if (card.ctaTarget === 'info' || card.ctaTarget === 'interact' || card.ctaTarget === 'rewards') {
+                    handleEnterLane(card.ctaTarget as 'info' | 'interact' | 'rewards');
+                  }
+                  break;
+                case 'open_url':
+                  if (card.ctaTarget) {
+                    window.open(card.ctaTarget, '_blank');
+                  }
+                  break;
+                default:
+                  console.log(`Featured card clicked: ${card.id}`);
+              }
+            }
+          }));
+          setFeaturedCardsPool(cardsWithActions);
+        } else {
+          setFeaturedCardsPool([]);
+        }
+      } catch (error) {
+        console.error('Failed to fetch featured cards:', error);
+        setFeaturedCardsError('Failed to load featured content');
+        setFeaturedCardsPool([]);
+      } finally {
+        setFeaturedCardsLoading(false);
+      }
+    }
+    
+    fetchFeaturedCards();
+  }, []);
+
   // Refresh active event periodically (only for audience view)
   useEffect(() => {
     if (activeView === 'audience') {
@@ -371,116 +423,6 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     [theme.colors.primary]
   );
 
-  const featuredCardsPool: FeaturedCardWithRules[] = useMemo(() => [
-    {
-      id: 'featured-hero-welcome',
-      size: 'L',
-      title: 'Welcome to Ode Islands',
-      subtitle: 'Tonight\'s Experience',
-      imageUrl: '/images/ode-islands-hero.jpg',
-      ctaLabel: 'Explore Now',
-      ctaAction: () => console.log('Welcome card clicked'),
-      analyticsTag: 'featured-hero-welcome',
-      layoutHint: 'hero',
-      rules: {
-        pinned: true,
-        tierRequirement: 'any',
-        popularity: 245,
-      },
-    },
-    {
-      id: 'featured-ar-experience',
-      size: 'L',
-      title: 'Live AR Experience',
-      subtitle: 'Immerse Yourself',
-      imageUrl: '/images/ar-experience.jpg',
-      ctaLabel: 'Try Now',
-      ctaAction: () => handleEnterLane('interact'),
-      analyticsTag: 'featured-ar-experience',
-      layoutHint: 'hero',
-      rules: {
-        pinned: false,
-        timeWindow: {
-          startTime: new Date(Date.now() - 3600000),
-          endTime: new Date(Date.now() + 7200000),
-        },
-        tierRequirement: 'Bronze',
-        zone: 'main-stage',
-        popularity: 189,
-      },
-    },
-    {
-      id: 'featured-vip-upgrade',
-      size: 'M',
-      title: 'VIP Lounge Access',
-      subtitle: 'Exclusive for Gold Members',
-      imageUrl: '/images/vip-lounge.jpg',
-      ctaLabel: 'Enter VIP',
-      ctaAction: () => handleEnterLane('rewards'),
-      analyticsTag: 'featured-vip-upgrade',
-      layoutHint: 'carousel',
-      rules: {
-        pinned: false,
-        tierRequirement: 'Gold',
-        zone: 'vip-lounge',
-        popularity: 134,
-      },
-    },
-    {
-      id: 'featured-limited-merch',
-      size: 'M',
-      title: 'Limited Edition Merch',
-      subtitle: 'Available Tonight Only',
-      imageUrl: '/images/merch-promo.jpg',
-      ctaLabel: 'Shop Now',
-      ctaAction: () => handleEnterLane('rewards'),
-      analyticsTag: 'featured-limited-merch',
-      layoutHint: 'carousel',
-      rules: {
-        pinned: false,
-        timeWindow: {
-          startTime: new Date(Date.now() - 1800000),
-          endTime: new Date(Date.now() + 3600000),
-        },
-        tierRequirement: 'Silver',
-        popularity: 156,
-      },
-    },
-    {
-      id: 'featured-photo-contest',
-      size: 'M',
-      title: 'Photo Contest',
-      subtitle: 'Win Exclusive Prizes',
-      imageUrl: '/images/photo-contest.jpg',
-      ctaLabel: 'Upload Photo',
-      ctaAction: () => handleEnterLane('interact'),
-      analyticsTag: 'featured-photo-contest',
-      layoutHint: 'carousel',
-      rules: {
-        pinned: false,
-        tierRequirement: 'Bronze',
-        popularity: 98,
-      },
-    },
-    {
-      id: 'featured-backstage-tour',
-      size: 'M',
-      title: 'Backstage Tour',
-      subtitle: 'Silver & Gold Only',
-      imageUrl: '/images/backstage.jpg',
-      ctaLabel: 'Book Tour',
-      ctaAction: () => console.log('Backstage tour clicked'),
-      analyticsTag: 'featured-backstage-tour',
-      layoutHint: 'carousel',
-      rules: {
-        pinned: false,
-        tierRequirement: 'Silver',
-        zone: 'any',
-        popularity: 76,
-      },
-    },
-  ], []);
-
   const userContext: UserContext = useMemo(() => ({
     currentTier,
     currentTime: new Date(),
@@ -488,10 +430,14 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   }), [currentTier]);
 
   const selectedFeaturedCards = useMemo(() => {
+    if (featuredCardsLoading || featuredCardsPool.length === 0) {
+      return [];
+    }
+    
     const result = selectFeaturedCards(featuredCardsPool, userContext);
     console.log('Selected featured cards:', result);
     return result.layoutHint === 'fallback' ? [] : result.selectedCards;
-  }, [featuredCardsPool, userContext]);
+  }, [featuredCardsPool, userContext, featuredCardsLoading]);
 
   const mockNowNextItems: NowNextItem[] = useMemo(() => [
     {

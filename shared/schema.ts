@@ -226,6 +226,11 @@ export const cards = pgTable("cards", {
   isActive: boolean("is_active").default(true),
   metadata: jsonb("metadata"), // Additional flexible metadata
   
+  // CTA (Call-to-Action) fields
+  ctaLabel: varchar("cta_label"), // Button text (e.g., 'Enter', 'Learn More', 'Explore')
+  ctaAction: varchar("cta_action"), // Action type: 'enter_lane', 'open_url', 'custom'
+  ctaTarget: varchar("cta_target"), // Target data: lane key ('info'/'interact'/'rewards'), URL, etc.
+  
   // Audit fields
   createdBy: varchar("created_by").references(() => users.id),
   createdAt: timestamp("created_at").defaultNow(),
