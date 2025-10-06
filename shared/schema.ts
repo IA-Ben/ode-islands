@@ -4,6 +4,7 @@ import {
   uniqueIndex,
   jsonb,
   pgTable,
+  pgEnum,
   timestamp,
   varchar,
   text,
@@ -12,6 +13,9 @@ import {
   decimal,
   serial
 } from "drizzle-orm/pg-core";
+
+// Enums
+export const cardScopeEnum = pgEnum('card_scope', ['story', 'event']);
 
 // Session storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
@@ -150,6 +154,166 @@ export const storyCards = pgTable("story_cards", {
     createdAtIndex: index("story_cards_created_at_idx").on(table.createdAt),
     updatedAtIndex: index("story_cards_updated_at_idx").on(table.updatedAt),
     searchVectorIndex: index("story_cards_search_vector_idx").using('gin', sql`to_tsvector('english', COALESCE(${table.content}::text, ''))`),
+  };
+});
+
+// Unified Cards System - Modern card-based content architecture
+// Cards table - Unified card system for both story and event contexts
+export const cards = pgTable("cards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Card identity and scope
+  scope: cardScopeEnum("scope").notNull(), // 'story', 'event'
+  type: varchar("type").notNull(), // 'schedule', 'map', 'ar-story', 'text-story', etc.
+  schemaVersion: integer("schema_version").notNull().default(1),
+  
+  // Content fields
+  title: varchar("title").notNull(),
+  subtitle: varchar("subtitle"),
+  summary: text("summary"),
+  content: jsonb("content").notNull(), // Flexible content per type
+  
+  // Media references
+  imageMediaId: varchar("image_media_id").references(() => mediaAssets.id),
+  videoMediaId: varchar("video_media_id").references(() => mediaAssets.id),
+  
+  // Visual configuration
+  iconName: varchar("icon_name"), // e.g., 'Calendar', 'MapPin'
+  size: varchar("size"), // 'S', 'M', 'L'
+  
+  // Publishing workflow
+  publishStatus: varchar("publish_status").default('draft').notNull(), // 'draft', 'in_review', 'published', 'archived'
+  publishedAt: timestamp("published_at"),
+  publishedBy: varchar("published_by").references(() => users.id),
+  scheduledPublishAt: timestamp("scheduled_publish_at"),
+  reviewedBy: varchar("reviewed_by").references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
+  
+  // Status and metadata
+  isActive: boolean("is_active").default(true),
+  metadata: jsonb("metadata"), // Additional flexible metadata
+  
+  // Audit fields
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    scopeIndex: index("cards_scope_idx").on(table.scope),
+    typeIndex: index("cards_type_idx").on(table.type),
+    publishStatusIndex: index("cards_publish_status_idx").on(table.publishStatus),
+    isActiveIndex: index("cards_is_active_idx").on(table.isActive),
+    imageMediaIdIndex: index("cards_image_media_id_idx").on(table.imageMediaId),
+    videoMediaIdIndex: index("cards_video_media_id_idx").on(table.videoMediaId),
+    createdAtIndex: index("cards_created_at_idx").on(table.createdAt),
+  };
+});
+
+// Card Assignments - Polymorphic assignment of cards to various parent contexts
+export const cardAssignments = pgTable("card_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Card reference
+  cardId: varchar("card_id").references(() => cards.id).notNull(),
+  
+  // Polymorphic parent reference
+  parentType: varchar("parent_type").notNull(), // 'chapter', 'sub_chapter', 'event_lane', 'featured_slot'
+  parentId: varchar("parent_id").notNull(),
+  
+  // Positioning and visibility
+  order: integer("order").default(0),
+  visibilityStartAt: timestamp("visibility_start_at"),
+  visibilityEndAt: timestamp("visibility_end_at"),
+  status: varchar("status").default('active').notNull(), // 'active', 'inactive', 'scheduled'
+  
+  // Audit fields
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    cardIdIndex: index("card_assignments_card_id_idx").on(table.cardId),
+    parentTypeIndex: index("card_assignments_parent_type_idx").on(table.parentType),
+    parentIdIndex: index("card_assignments_parent_id_idx").on(table.parentId),
+    parentCompositeIndex: index("card_assignments_parent_composite_idx").on(table.parentType, table.parentId),
+    statusIndex: index("card_assignments_status_idx").on(table.status),
+    orderIndex: index("card_assignments_order_idx").on(table.order),
+    uniqueAssignment: uniqueIndex("card_assignments_unique").on(table.cardId, table.parentType, table.parentId),
+  };
+});
+
+// Event Lanes - Organized lanes within events (info, interact, rewards)
+export const eventLanes = pgTable("event_lanes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Event reference
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  
+  // Lane configuration
+  laneKey: varchar("lane_key").notNull(), // 'info', 'interact', 'rewards'
+  title: varchar("title").notNull(),
+  description: text("description"),
+  iconName: varchar("icon_name"),
+  
+  // Positioning and status
+  order: integer("order").default(0),
+  isActive: boolean("is_active").default(true),
+  
+  // Audit fields
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    eventIdIndex: index("event_lanes_event_id_idx").on(table.eventId),
+    laneKeyIndex: index("event_lanes_lane_key_idx").on(table.laneKey),
+    isActiveIndex: index("event_lanes_is_active_idx").on(table.isActive),
+    orderIndex: index("event_lanes_order_idx").on(table.order),
+    uniqueEventLane: uniqueIndex("event_lanes_unique").on(table.eventId, table.laneKey),
+  };
+});
+
+// Card Variants - Layout and theme overrides for different contexts
+export const cardVariants = pgTable("card_variants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Card reference
+  cardId: varchar("card_id").references(() => cards.id).notNull(),
+  
+  // Variant configuration
+  variantName: varchar("variant_name").notNull(), // 'mobile', 'desktop', 'dark', 'light', etc.
+  layoutOverrides: jsonb("layout_overrides"),
+  themeOverrides: jsonb("theme_overrides"),
+  
+  // Audit fields
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    cardIdIndex: index("card_variants_card_id_idx").on(table.cardId),
+    variantNameIndex: index("card_variants_variant_name_idx").on(table.variantName),
+    uniqueCardVariant: uniqueIndex("card_variants_unique").on(table.cardId, table.variantName),
+  };
+});
+
+// Card Tags - Faceted discovery and categorization
+export const cardTags = pgTable("card_tags", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Card reference
+  cardId: varchar("card_id").references(() => cards.id).notNull(),
+  
+  // Tag data
+  tag: varchar("tag").notNull(),
+  category: varchar("category"), // 'feature', 'content-type', 'audience', etc.
+  
+  // Audit fields
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => {
+  return {
+    cardIdIndex: index("card_tags_card_id_idx").on(table.cardId),
+    tagIndex: index("card_tags_tag_idx").on(table.tag),
+    categoryIndex: index("card_tags_category_idx").on(table.category),
+    uniqueCardTag: uniqueIndex("card_tags_unique").on(table.cardId, table.tag),
   };
 });
 
