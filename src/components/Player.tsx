@@ -146,8 +146,9 @@ const Player: React.FC<PlayerProps> = ({ video, active, onEnd, ...props }) => {
     }
 
     try {
-      const response = await fetch(`/api/video-status/${videoId}`);
-      const data = await response.json();
+      // Use cached video status to avoid expensive API calls
+      const { getVideoStatus } = await import('@/lib/videoStatusCache');
+      const data = await getVideoStatus(videoId);
       console.log(`Video status for ${videoId}:`, data);
       
       // Update portrait availability flag

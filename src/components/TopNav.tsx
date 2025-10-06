@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { QrCode, Crown, WalletCards, Shield, LogOut, ScanLine, ChevronDown, User } from "lucide-react";
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +20,28 @@ export default function TopNav({ currentPhase }: TopNavProps) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
   const [userScoreOpen, setUserScoreOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close menu when clicking outside (use capture phase to prevent event propagation issues)
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+
+    // Use timeout to avoid closing on the same click that opened the menu
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside, true);
+    }, 0);
+
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener('mousedown', handleClickOutside, true);
+    };
+  }, [menuOpen]);
 
   const handlePhaseChange = (phase: Phase) => {
     if (phase === currentPhase) return;
@@ -176,7 +198,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
                   )}
 
                   {/* Profile menu */}
-                  <div className="relative">
+                  <div className="relative" ref={menuRef}>
                     <button
                       onClick={() => setMenuOpen(v => !v)}
                       className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition"
@@ -191,25 +213,19 @@ export default function TopNav({ currentPhase }: TopNavProps) {
                     </button>
 
                     {menuOpen && (
-                      <>
-                        <div 
-                          className="fixed inset-0 z-10" 
-                          onClick={() => setMenuOpen(false)}
-                        />
-                        <div
-                          role="menu"
-                          className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden z-20"
+                      <div
+                        role="menu"
+                        className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden z-20"
+                      >
+                        <button
+                          onClick={handleSignOut}
+                          role="menuitem"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-900 dark:text-white"
                         >
-                          <button
-                            onClick={handleSignOut}
-                            role="menuitem"
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-900 dark:text-white"
-                          >
-                            <LogOut className="w-4 h-4" />
-                            Sign out
-                          </button>
-                        </div>
-                      </>
+                          <LogOut className="w-4 h-4" />
+                          Sign out
+                        </button>
+                      </div>
                     )}
                   </div>
                 </>

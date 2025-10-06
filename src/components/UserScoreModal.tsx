@@ -138,8 +138,6 @@ export default function UserScoreModal({ isOpen, onClose, source = 'tier_pill' }
     window.location.href = link;
   };
 
-  if (!isOpen) return null;
-
   const currentScore = scoreDetails?.userScore || 0;
   const scoreLabel = getScoreLabel(currentScore);
 
@@ -151,6 +149,10 @@ export default function UserScoreModal({ isOpen, onClose, source = 'tier_pill' }
 
   const thresholds = getTierThresholds(level);
   const progressPercentage = ((points - thresholds.current) / (thresholds.next - thresholds.current)) * 100;
+
+  if (!isOpen) {
+    return null;
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
