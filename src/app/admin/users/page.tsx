@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { Users as UsersIcon, Search, Shield, Trash2, Plus, Mail } from 'lucide-react';
-import { surfaces, gradients, badges, buttons } from '@/lib/admin/designTokens';
+import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
 interface User {
   id: string;
@@ -63,7 +63,7 @@ export default function AdminUsersPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl ${gradients.primary} flex items-center justify-center shadow-lg`}>
+              <div className={`w-12 h-12 rounded-xl ${colors.gradients.primary} flex items-center justify-center shadow-lg`}>
                 <UsersIcon className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -75,7 +75,7 @@ export default function AdminUsersPage() {
                 </p>
               </div>
             </div>
-            <button className={buttons.primary}>
+            <button className={components.buttonPrimary}>
               <Plus className="w-4 h-4" />
               Add User
             </button>
@@ -125,7 +125,7 @@ export default function AdminUsersPage() {
                   <tr key={user.id} className="hover:bg-slate-800/30 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
-                        <div className={`w-10 h-10 rounded-full ${gradients.primary} flex items-center justify-center text-white font-medium`}>
+                        <div className={`w-10 h-10 rounded-full ${colors.gradients.primary} flex items-center justify-center text-white font-medium`}>
                           {user.firstName?.[0]}{user.lastName?.[0]}
                         </div>
                         <div className="ml-4">
@@ -142,12 +142,12 @@ export default function AdminUsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={user.emailVerified ? badges.success : badges.warning}>
+                      <span className={user.emailVerified ? `${components.badge} bg-green-500/20 text-green-400` : `${components.badge} bg-amber-500/20 text-amber-400`}>
                         {user.emailVerified ? 'Verified' : 'Pending'}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={user.isAdmin ? badges.primary : badges.secondary}>
+                      <span className={user.isAdmin ? `${components.badge} bg-fuchsia-500/20 text-fuchsia-400` : `${components.badge} bg-slate-500/20 text-slate-400`}>
                         {user.isAdmin ? 'Admin' : 'User'}
                       </span>
                     </td>
@@ -200,7 +200,7 @@ export default function AdminUsersPage() {
                 </div>
               </div>
               <div className="mt-6 flex gap-3">
-                <button onClick={() => setSelectedUser(null)} className={buttons.secondary}>
+                <button onClick={() => setSelectedUser(null)} className={components.buttonSecondary}>
                   Close
                 </button>
               </div>

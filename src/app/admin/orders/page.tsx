@@ -1,7 +1,7 @@
 "use client";
 
-import { ShoppingCart, Plus, Filter } from 'lucide-react';
-import { surfaces, gradients, buttons } from '@/lib/admin/designTokens';
+import { ShoppingCart, Filter } from 'lucide-react';
+import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
 export default function OrdersPage() {
   return (
@@ -10,7 +10,7 @@ export default function OrdersPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl ${gradients.primary} flex items-center justify-center shadow-lg`}>
+              <div className={`w-12 h-12 rounded-xl ${colors.gradients.primary} flex items-center justify-center shadow-lg`}>
                 <ShoppingCart className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -22,7 +22,7 @@ export default function OrdersPage() {
                 </p>
               </div>
             </div>
-            <button className={buttons.secondary}>
+            <button className={components.buttonSecondary}>
               <Filter className="w-4 h-4" />
               Filters
             </button>
@@ -31,7 +31,7 @@ export default function OrdersPage() {
 
         <div className={`${surfaces.cardGlass} rounded-xl p-8 border border-slate-700/50`}>
           <div className="text-center py-12">
-            <div className={`w-24 h-24 rounded-2xl ${gradients.primary} flex items-center justify-center mx-auto mb-6 shadow-xl`}>
+            <div className={`w-24 h-24 rounded-2xl ${colors.gradients.primary} flex items-center justify-center mx-auto mb-6 shadow-xl`}>
               <ShoppingCart className="w-12 h-12 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-4">

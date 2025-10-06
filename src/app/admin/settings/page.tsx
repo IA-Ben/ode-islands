@@ -1,7 +1,7 @@
 "use client";
 
 import { Settings, Bell, Shield, Palette, Globe } from 'lucide-react';
-import { surfaces, gradients, buttons } from '@/lib/admin/designTokens';
+import { surfaces, colors } from '@/lib/admin/designTokens';
 
 export default function SettingsPage() {
   return (
@@ -9,7 +9,7 @@ export default function SettingsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-4">
-            <div className={`w-12 h-12 rounded-xl ${gradients.primary} flex items-center justify-center shadow-lg`}>
+            <div className={`w-12 h-12 rounded-xl ${colors.gradients.primary} flex items-center justify-center shadow-lg`}>
               <Settings className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -25,7 +25,7 @@ export default function SettingsPage() {
 
         <div className={`${surfaces.cardGlass} rounded-xl p-8 border border-slate-700/50`}>
           <div className="text-center py-12">
-            <div className={`w-24 h-24 rounded-2xl ${gradients.primary} flex items-center justify-center mx-auto mb-6 shadow-xl`}>
+            <div className={`w-24 h-24 rounded-2xl ${colors.gradients.primary} flex items-center justify-center mx-auto mb-6 shadow-xl`}>
               <Settings className="w-12 h-12 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-4">

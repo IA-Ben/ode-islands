@@ -11,7 +11,7 @@ import {
   Search,
   Filter,
 } from 'lucide-react';
-import { surfaces, gradients, badges, buttons } from '@/lib/admin/designTokens';
+import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
 interface FeaturedRule {
   id: string;
@@ -123,7 +123,7 @@ export default function FeaturedRulesPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl ${gradients.primary} flex items-center justify-center shadow-lg`}>
+              <div className={`w-12 h-12 rounded-xl ${colors.gradients.primary} flex items-center justify-center shadow-lg`}>
                 <Star className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -135,7 +135,7 @@ export default function FeaturedRulesPage() {
                 </p>
               </div>
             </div>
-            <button className={buttons.primary}>
+            <button className={components.buttonPrimary}>
               <Plus className="w-4 h-4" />
               New Rule
             </button>
@@ -213,7 +213,7 @@ export default function FeaturedRulesPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={badges.secondary}>
+                      <span className={`${components.badge} bg-slate-500/20 text-slate-400`}>
                         {rule.context.replace('_', ' ')}
                       </span>
                     </td>
@@ -221,7 +221,7 @@ export default function FeaturedRulesPage() {
                       {rule.cardTitle || 'N/A'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={badges.info}>
+                      <span className={`${components.badge} bg-sky-500/20 text-sky-400`}>
                         {rule.priority}
                       </span>
                     </td>
@@ -233,12 +233,12 @@ export default function FeaturedRulesPage() {
                         {rule.isActive ? (
                           <>
                             <Power className="w-4 h-4 text-green-400" />
-                            <span className={badges.success}>Active</span>
+                            <span className={`${components.badge} bg-green-500/20 text-green-400`}>Active</span>
                           </>
                         ) : (
                           <>
                             <PowerOff className="w-4 h-4 text-slate-500" />
-                            <span className={badges.secondary}>Inactive</span>
+                            <span className={`${components.badge} bg-slate-500/20 text-slate-400`}>Inactive</span>
                           </>
                         )}
                       </button>

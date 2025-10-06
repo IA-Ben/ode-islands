@@ -13,7 +13,7 @@ import {
   BarChart3,
   ArrowRight
 } from 'lucide-react';
-import { surfaces, gradients, badges } from '@/lib/admin/designTokens';
+import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
 interface QuickStat {
   label: string;
@@ -42,7 +42,7 @@ export default function AdminDashboard() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-2">
-            <div className={`w-12 h-12 rounded-xl ${gradients.primary} flex items-center justify-center shadow-lg`}>
+            <div className={`w-12 h-12 rounded-xl ${colors.gradients.primary} flex items-center justify-center shadow-lg`}>
               <LayoutDashboard className="w-6 h-6 text-white" />
             </div>
             <div>
@@ -92,7 +92,7 @@ export default function AdminDashboard() {
             <div className="space-y-3">
               <button
                 onClick={() => router.push('/admin/cms')}
-                className={`w-full text-left px-4 py-3 rounded-lg ${gradients.primary} text-white font-medium hover:opacity-90 transition-all duration-300 flex items-center justify-between`}
+                className={`w-full text-left px-4 py-3 rounded-lg ${colors.gradients.primary} text-white font-medium hover:opacity-90 transition-all duration-300 flex items-center justify-between`}
               >
                 <span>Open Content Management</span>
                 <ArrowRight className="w-5 h-5" />
@@ -121,19 +121,19 @@ export default function AdminDashboard() {
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">CMS Status</span>
-                <span className={badges.success}>
+                <span className={`${components.badge} bg-green-500/20 text-green-400`}>
                   Active
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">User Role</span>
-                <span className={badges.primary}>
+                <span className={`${components.badge} bg-fuchsia-500/20 text-fuchsia-400`}>
                   Admin
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-slate-400">Permissions</span>
-                <span className={badges.info}>
+                <span className={`${components.badge} bg-sky-500/20 text-sky-400`}>
                   Full Access
                 </span>
               </div>

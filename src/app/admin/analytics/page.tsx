@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { BarChart3, TrendingUp, Users, Eye, Calendar, Download } from 'lucide-react';
-import { surfaces, gradients, badges, buttons } from '@/lib/admin/designTokens';
+import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
 type AnalyticsTab = 'overview' | 'engagement' | 'content' | 'events';
 
@@ -29,7 +29,7 @@ export default function AdminAnalyticsPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl ${gradients.primary} flex items-center justify-center shadow-lg`}>
+              <div className={`w-12 h-12 rounded-xl ${colors.gradients.primary} flex items-center justify-center shadow-lg`}>
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
               <div>
@@ -41,7 +41,7 @@ export default function AdminAnalyticsPage() {
                 </p>
               </div>
             </div>
-            <button className={buttons.secondary}>
+            <button className={components.buttonSecondary}>
               <Download className="w-4 h-4" />
               Export Report
             </button>
@@ -77,7 +77,7 @@ export default function AdminAnalyticsPage() {
                   <div className={`w-10 h-10 rounded-lg ${surfaces.subtleGlass} flex items-center justify-center border border-slate-700/50`}>
                     <Icon className="w-5 h-5 text-fuchsia-400" />
                   </div>
-                  <span className={stat.trend === 'up' ? badges.success : badges.error}>
+                  <span className={`${components.badge} ${stat.trend === 'up' ? 'bg-green-500/20 text-green-400' : 'bg-rose-500/20 text-rose-400'}`}>
                     {stat.change}
                   </span>
                 </div>
@@ -90,7 +90,7 @@ export default function AdminAnalyticsPage() {
 
         <div className={`${surfaces.cardGlass} rounded-xl p-8 border border-slate-700/50`}>
           <div className="text-center py-12">
-            <div className={`w-24 h-24 rounded-2xl ${gradients.primary} flex items-center justify-center mx-auto mb-6 shadow-xl`}>
+            <div className={`w-24 h-24 rounded-2xl ${colors.gradients.primary} flex items-center justify-center mx-auto mb-6 shadow-xl`}>
               <BarChart3 className="w-12 h-12 text-white" />
             </div>
             <h2 className="text-2xl font-bold text-white mb-4">
