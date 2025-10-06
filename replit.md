@@ -50,32 +50,32 @@ The CMS includes production-ready features for security and workflow:
 ### Authentication & Authorization
 The application implements a simplified PKCE OAuth authentication flow with RS256 JWT session cookies for maximum security and reliability. A 6-Tier RBAC System (Owner, Admin, Producer, Operator, Analyst, Support) provides granular permission checks with wildcard permissions (e.g., story:*, events:*) across all admin operations.
 
-### Authentication Architecture (Simplified PKCE Flow)
-**Implementation**: Direct PKCE OAuth using openid-client library with RS256 JWT tokens (no Passport.js complexity).
+### Authentication Architecture (Replit Auth with Passport)
+**Implementation**: Official Replit Auth integration using passport with openid-client v5.7.1
 
 **Key Components**:
-- **server/simplifiedAuth.ts**: Pure PKCE OAuth implementation with issuer validation disabled for Replit compatibility
-- **server/auth.ts**: RS256 JWT validation middleware using JWT_PUBLIC_KEY for Next.js API routes
-- **src/app/api/me/route.ts**: Single source of truth for authenticated user data
-- **src/hooks/useAuth.ts**: React hook fetching from /api/me endpoint
+- **server/replitAuth.ts**: Passport-based OpenID Connect authentication with Replit
+- **server/auth.ts**: Authentication middleware for API route protection
+- **src/app/api/auth/user/route.ts**: User data endpoint returning authenticated user info
+- **src/hooks/useAuth.ts**: React hook fetching from /api/auth/user endpoint
 
 **Authentication Flow**:
-1. User clicks "Sign In" → `/api/login` → redirects to `/api/auth/login`
-2. PKCE flow initiated with code challenge (S256) → redirects to Replit OAuth
-3. OAuth callback at `/api/auth/callback/replit` exchanges code for tokens with PKCE verifier
+1. User clicks "Sign In" → `/api/login` → redirects to Replit OAuth
+2. OAuth flow with OpenID Connect → redirects to Replit authentication page
+3. OAuth callback at `/api/callback` processes authentication response
 4. User upserted in database, session created in PostgreSQL `sessions` table
-5. RS256 JWT cookie 'auth-session' set (httpOnly, secure in production, sameSite: lax, 7-day TTL)
-6. Redirect to `/auth/post-login` → validates session via `/api/me` → full page reload to destination
+5. Session cookie 'connect.sid' set (httpOnly, secure in production, sameSite: lax, 7-day TTL)
+6. Redirect to home page or originally requested page
 
 **Security Features**:
-- RS256 asymmetric signing (JWT_PRIVATE_KEY for signing, JWT_PUBLIC_KEY for verification)
-- PostgreSQL session validation for defense-in-depth
-- CSRF protection with separate csrf-token cookie
-- Rate limiting on auth endpoints (10 requests per 15 minutes)
-- Issuer validation disabled via `[client.skipSubjectCheck]: true` to handle Replit's OAuth response format
+- OpenID Connect protocol with discovery metadata
+- PostgreSQL session storage with connect-pg-simple
+- Token refresh capability for expired access tokens
+- Per-domain strategy registration for multi-domain support
+- Session serialization/deserialization with passport
 
-**JWT Payload**: `{ userId, isAdmin, sessionId, iat, exp }`
-**Session Storage**: PostgreSQL `sessions` table with user ID validation and expiry checking
+**Session Management**: PostgreSQL `sessions` table with automatic TTL and cleanup
+**User Claims**: Access to sub, email, first_name, last_name, profile_image_url from ID token
 ### Unified Admin Navigation
 A top-level navigation system provides access to 10 admin sections: Dashboard, Story Builder, Events, Cards, Rewards, Wallet, Users, Orders, Analytics, and Settings. Role-based visibility filters navigation items based on user permissions. The navigation includes loading states, access control, and mobile responsiveness.
 ### Audit Logging
