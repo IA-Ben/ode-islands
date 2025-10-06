@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import AdminTopNav from '@/components/admin/TopNav';
+import { layout } from '@/lib/admin/designTokens';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -7,9 +8,9 @@ interface AdminLayoutProps {
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className={layout.page}>
       <AdminTopNav />
-      <main className="w-full">
+      <main className={layout.content}>
         {children}
       </main>
     </div>

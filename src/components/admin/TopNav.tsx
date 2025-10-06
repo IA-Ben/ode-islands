@@ -21,6 +21,7 @@ import {
   Loader2,
   AlertCircle
 } from 'lucide-react';
+import { surfaces, pills, focus, colors } from '@/lib/admin/designTokens';
 
 interface NavItem {
   label: string;
@@ -46,7 +47,7 @@ const navItems: NavItem[] = [
     permissions: ['content:view'] 
   },
   { 
-    label: 'Story', 
+    label: 'Story Builder', 
     href: '/admin/story', 
     icon: BookOpen, 
     permissions: ['story:view', 'story:create', 'story:edit'] 
@@ -182,11 +183,11 @@ export default function AdminTopNav() {
 
   if (loading) {
     return (
-      <nav className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <nav className={`sticky top-0 z-50 ${surfaces.darkGlass} border-b border-white/10`}>
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-center h-16">
-            <Loader2 className="w-5 h-5 animate-spin text-fuchsia-600" />
-            <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">Loading...</span>
+            <Loader2 className="w-5 h-5 animate-spin text-fuchsia-400" />
+            <span className="ml-2 text-sm text-slate-300">Loading...</span>
           </div>
         </div>
       </nav>
@@ -195,7 +196,7 @@ export default function AdminTopNav() {
 
   if (!hasAnyAdminPermission) {
     return (
-      <nav className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+      <nav className={`sticky top-0 z-50 ${surfaces.darkGlass} border-b border-white/10`}>
         <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-3">
@@ -203,13 +204,13 @@ export default function AdminTopNav() {
                 <LayoutDashboard className="w-5 h-5 text-white" />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-lg font-bold text-gray-900 dark:text-white">Admin CMS</h1>
-                <p className="text-xs text-gray-500 dark:text-gray-400">The Ode Islands</p>
+                <h1 className="text-lg font-bold text-white">Admin CMS</h1>
+                <p className="text-xs text-slate-400">The Ode Islands</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
-              <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
-              <span className="text-sm font-medium text-red-700 dark:text-red-400">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/20 backdrop-blur-md border border-red-400/30">
+              <AlertCircle className="w-4 h-4 text-red-400" />
+              <span className="text-sm font-medium text-red-400">
                 Access Denied - No Admin Permissions
               </span>
             </div>
@@ -219,8 +220,10 @@ export default function AdminTopNav() {
     );
   }
 
+  const envMode = process.env.NEXT_PUBLIC_ENV === 'production' ? 'Prod' : 'Demo';
+
   return (
-    <nav className="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 shadow-sm">
+    <nav className={`sticky top-0 z-50 ${surfaces.darkGlass} border-b border-white/10`}>
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo / Brand */}
@@ -229,8 +232,8 @@ export default function AdminTopNav() {
               <LayoutDashboard className="w-5 h-5 text-white" />
             </div>
             <div className="hidden sm:block">
-              <h1 className="text-lg font-bold text-gray-900 dark:text-white">Admin CMS</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">The Ode Islands</p>
+              <h1 className="text-lg font-bold text-white">Admin CMS</h1>
+              <p className="text-xs text-slate-400">The Ode Islands</p>
             </div>
           </div>
 
@@ -245,10 +248,10 @@ export default function AdminTopNav() {
                   key={item.href}
                   href={item.href}
                   className={`
-                    flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all
+                    flex items-center gap-2 px-3 py-2 ${pills.base} text-sm font-medium transition-all ${focus.ring}
                     ${active
-                      ? 'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-fuchsia-600/90 text-white backdrop-blur-md'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                     }
                   `}
                 >
@@ -261,10 +264,15 @@ export default function AdminTopNav() {
 
           {/* User Menu */}
           <div className="flex items-center gap-2">
+            {/* Env pill */}
+            <div className={`hidden md:flex items-center px-3 py-1.5 ${pills.base} ${envMode === 'Prod' ? 'bg-green-500/20 text-green-400 border border-green-400/30' : 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30'} backdrop-blur-md`}>
+              <span className="text-xs font-medium">{envMode}</span>
+            </div>
+
             {/* Mobile menu button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+              className={`lg:hidden p-2 ${pills.base} text-slate-300 hover:bg-slate-800/80 transition ${focus.ring}`}
               aria-label="Toggle menu"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -274,12 +282,12 @@ export default function AdminTopNav() {
             <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition"
+                className={`flex items-center gap-2 px-3 py-2 ${pills.base} border border-white/10 hover:bg-slate-800/80 transition ${focus.ring}`}
               >
                 <div className="w-7 h-7 rounded-full bg-gradient-to-br from-fuchsia-400 to-rose-400 flex items-center justify-center">
                   <User className="w-4 h-4 text-white" />
                 </div>
-                <span className="hidden sm:inline text-sm font-medium text-gray-900 dark:text-white max-w-[120px] truncate">
+                <span className="hidden sm:inline text-sm font-medium text-white max-w-[120px] truncate">
                   {userName}
                 </span>
               </button>
@@ -291,19 +299,19 @@ export default function AdminTopNav() {
                     className="fixed inset-0 z-10" 
                     onClick={() => setUserMenuOpen(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-56 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-lg overflow-hidden z-20">
-                    <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                      <p className="text-sm font-medium text-gray-900 dark:text-white">{userName}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{user?.email}</p>
+                  <div className={`absolute right-0 mt-2 w-56 rounded-xl border border-white/10 ${surfaces.darkGlass} shadow-lg overflow-hidden z-20`}>
+                    <div className="px-4 py-3 border-b border-white/10">
+                      <p className="text-sm font-medium text-white">{userName}</p>
+                      <p className="text-xs text-slate-400 truncate">{user?.email}</p>
                       {user?.isAdmin && (
-                        <span className="inline-flex items-center mt-1 px-2 py-0.5 rounded text-xs font-medium bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400">
+                        <span className={`inline-flex items-center mt-1 px-2 py-0.5 ${pills.base} bg-fuchsia-600/90 text-white text-xs font-medium backdrop-blur-md`}>
                           Admin
                         </span>
                       )}
                     </div>
                     <button
                       onClick={handleLogout}
-                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 flex items-center gap-2 text-gray-700 dark:text-gray-300"
+                      className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-800/80 flex items-center gap-2 text-slate-300 hover:text-white transition ${focus.ring}`}
                     >
                       <LogOut className="w-4 h-4" />
                       Sign out
@@ -318,7 +326,7 @@ export default function AdminTopNav() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="lg:hidden border-t border-white/10">
           <div className="px-4 py-3 space-y-1">
             {visibleNavItems.map((item) => {
               const Icon = item.icon;
@@ -330,10 +338,10 @@ export default function AdminTopNav() {
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
                   className={`
-                    flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all
+                    flex items-center gap-3 px-3 py-2 ${pills.base} text-sm font-medium transition-all ${focus.ring}
                     ${active
-                      ? 'bg-fuchsia-100 dark:bg-fuchsia-900/30 text-fuchsia-700 dark:text-fuchsia-400'
-                      : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-fuchsia-600/90 text-white backdrop-blur-md'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-800/80'
                     }
                   `}
                 >
