@@ -34,10 +34,10 @@ interface AfterExperienceDTO {
 const configCache = new Map<string, { data: AfterExperienceDTO; timestamp: number }>();
 const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-export async function GET(request: NextRequest, { params }: { params: { eventId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ eventId: string }> }) {
   return withAuth(async (session: any) => {
     try {
-      const { eventId } = params;
+      const { eventId } = await params;
       
       // Check cache first
       const cached = configCache.get(eventId);
@@ -115,9 +115,9 @@ export async function GET(request: NextRequest, { params }: { params: { eventId:
           .where(eq(gallerySettings.eventId, eventId))
           .limit(1),
         
-        // Feature flags
+        // Feature flags - global flags, not event-specific
         db.select().from(featureFlags)
-          .where(eq(featureFlags.eventId, eventId))
+          .where(eq(featureFlags.isEnabled, true))
       ]);
 
       // Build comprehensive configuration DTO

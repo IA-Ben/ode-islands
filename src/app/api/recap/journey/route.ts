@@ -17,11 +17,14 @@ interface JourneyEvent {
 export async function GET(request: NextRequest) {
   return withAuth(async (session: any) => {
     try {
+      // Get user ID from session (works with both authenticated and mock sessions)
+      const userId = session?.user?.id || session?.id || 'dev-user';
+      
       // Get user's latest progress and activities
       const progressData = await db
         .select()
         .from(userProgress)
-        .where(eq(userProgress.userId, session.user.id))
+        .where(eq(userProgress.userId, userId))
         .orderBy(desc(userProgress.lastAccessed))
         .limit(20);
 
@@ -29,21 +32,21 @@ export async function GET(request: NextRequest) {
       const memories = await db
         .select()
         .from(eventMemories)
-        .where(eq(eventMemories.createdBy, session.user.id))
+        .where(eq(eventMemories.createdBy, userId))
         .orderBy(desc(eventMemories.createdAt));
 
     // Get user's poll responses count
     const [pollsResult] = await db
       .select({ count: count() })
       .from(pollResponses)
-      .where(eq(pollResponses.userId, session.user.id));
+      .where(eq(pollResponses.userId, userId));
 
     // Get user's completed tasks count
     const [tasksResult] = await db
       .select({ count: count() })
       .from(contentInteractions)
       .where(and(
-        eq(contentInteractions.userId, session.user.id),
+        eq(contentInteractions.userId, userId),
         eq(contentInteractions.interactionType, 'complete')
       ));
 
@@ -55,7 +58,7 @@ export async function GET(request: NextRequest) {
       })
       .from(userFanScores)
       .where(and(
-        eq(userFanScores.userId, session.user.id),
+        eq(userFanScores.userId, userId),
         eq(userFanScores.scopeType, 'global'),
         eq(userFanScores.scopeId, 'all')
       ));
@@ -95,7 +98,7 @@ export async function GET(request: NextRequest) {
 
       // Create recap data
       const recapData = {
-        userId: session.user.id,
+        userId: userId,
         eventTitle: 'The Ode Islands',
         venue: 'Digital Experience',
         date: new Date().toISOString().split('T')[0],
