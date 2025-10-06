@@ -140,29 +140,6 @@ export default function EventMemoriesGallery({
 
   return (
     <div className={`w-full ${className}`}>
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8">
-        <div>
-          <h2 className="text-3xl font-bold mb-2 text-white">
-            Event Memories
-          </h2>
-          <p className="text-white/60">
-            Share and explore memorable moments from your journey
-          </p>
-        </div>
-        
-        {showUploadButton && (
-          <button
-            onClick={() => setShowUploadModal(true)}
-            className={`mt-4 md:mt-0 ${components.buttonPrimary}`}
-          >
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Memory
-          </button>
-        )}
-      </div>
-
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="flex-1">
           <div className="relative">
@@ -208,6 +185,18 @@ export default function EventMemoriesGallery({
             </svg>
           </button>
         </div>
+
+        {showUploadButton && (
+          <button
+            onClick={() => setShowUploadModal(true)}
+            className={components.buttonPrimary}
+          >
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Memory
+          </button>
+        )}
       </div>
 
       {filteredMemories.length === 0 ? (
