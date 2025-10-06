@@ -6,6 +6,7 @@ import { useFanScore } from '@/hooks/useFanScore';
 import { Button } from '@/components/ui/button';
 import type { FanScoreData } from '@/@typings/fanScore';
 import { ACTIVITY_CONFIGS, LEVEL_THRESHOLDS } from '@/@typings/fanScore';
+import { surfaces } from '@/lib/admin/designTokens';
 
 interface ScoreProgressPanelProps {
   /** Custom scope for score display */
@@ -92,9 +93,9 @@ export default function ScoreProgressPanel({
   if (loading && !scoreData) {
     return (
       <div className={`score-progress-panel ${className}`}>
-        <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6">
+        <div className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 p-6`}>
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/60"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fuchsia-400"></div>
             <span className="ml-3 text-white/60">Loading your score progress...</span>
           </div>
         </div>
@@ -105,7 +106,7 @@ export default function ScoreProgressPanel({
   if (error || !scoreData) {
     return (
       <div className={`score-progress-panel ${className}`}>
-        <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6">
+        <div className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 p-6`}>
           <div className="text-center py-12">
             <div className="text-red-400 mb-4">
               <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -116,7 +117,7 @@ export default function ScoreProgressPanel({
             {!hideRefresh && (
               <Button 
                 onClick={refreshScore}
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                className={`${surfaces.subtleGlass} hover:bg-white/20 text-white border border-slate-700/50`}
               >
                 Try Again
               </Button>
@@ -142,9 +143,9 @@ export default function ScoreProgressPanel({
 
   return (
     <div className={`score-progress-panel ${className}`}>
-      <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-hidden">
+      <div className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 overflow-hidden`}>
         {/* Header */}
-        <div className="p-6 border-b border-white/10">
+        <div className="p-6 border-b border-slate-700/30">
           <div className="flex items-center justify-between mb-4">
             <h2 
               className="text-2xl font-bold"
@@ -155,7 +156,7 @@ export default function ScoreProgressPanel({
             {!hideRefresh && (
               <Button
                 onClick={refreshScore}
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                className={`${surfaces.subtleGlass} hover:bg-white/20 text-white border border-slate-700/50`}
                 disabled={loading}
               >
                 {loading ? (
@@ -202,7 +203,7 @@ export default function ScoreProgressPanel({
                     {pointsToNext.toLocaleString()}
                   </div>
                   <div className="text-sm text-white/60">Points to Level {nextLevel}</div>
-                  <div className="w-full bg-white/20 rounded-full h-2 mt-2">
+                  <div className={`w-full ${surfaces.subtleGlass} rounded-full h-2 mt-2`}>
                     <div 
                       className="h-2 rounded-full transition-all duration-500"
                       style={{ 
@@ -225,7 +226,7 @@ export default function ScoreProgressPanel({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="border-b border-white/10">
+        <div className="border-b border-slate-700/30">
           <nav className="flex space-x-8 px-6">
             {[
               { id: 'overview', label: 'Overview', show: true },
@@ -238,8 +239,8 @@ export default function ScoreProgressPanel({
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
                   activeTab === tab.id
-                    ? 'border-white text-white'
-                    : 'border-transparent text-white/60 hover:text-white/80 hover:border-white/30'
+                    ? 'border-fuchsia-500 text-white'
+                    : 'border-transparent text-white/60 hover:text-white/80 hover:border-slate-700/50'
                 }`}
               >
                 {tab.label}
@@ -279,7 +280,7 @@ export default function ScoreProgressPanel({
                         </div>
                       </div>
                       {threshold.level === level && (
-                        <div className="text-xs text-white/60 bg-white/10 px-2 py-1 rounded">
+                        <div className={`text-xs text-white/60 ${surfaces.subtleGlass} px-2 py-1 rounded`}>
                           Current
                         </div>
                       )}
@@ -294,7 +295,7 @@ export default function ScoreProgressPanel({
                   <h3 className="text-lg font-semibold text-white mb-4">All Scopes</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {allScopes.map((scope, index) => (
-                      <div key={index} className="bg-white/5 rounded-lg p-4">
+                      <div key={index} className={`${surfaces.subtleGlass} rounded-lg p-4`}>
                         <div className="flex items-center justify-between">
                           <div>
                             <div className="text-sm font-medium text-white">
@@ -327,7 +328,7 @@ export default function ScoreProgressPanel({
                   {recentEvents.map((event) => {
                     const config = getActivityConfig(event.activityType);
                     return (
-                      <div key={event.id} className="flex items-center space-x-3 p-3 bg-white/5 rounded-lg">
+                      <div key={event.id} className={`flex items-center space-x-3 p-3 ${surfaces.subtleGlass} rounded-lg`}>
                         <div 
                           className="w-8 h-8 rounded-full flex items-center justify-center text-sm"
                           style={{ backgroundColor: config.color }}
@@ -372,18 +373,18 @@ export default function ScoreProgressPanel({
             <div>
               <h3 className="text-lg font-semibold text-white mb-4">Achievements</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                <div className="bg-white/5 rounded-lg p-4 text-center">
+                <div className={`${surfaces.subtleGlass} rounded-lg p-4 text-center`}>
                   <div className="text-2xl font-bold text-white">{achievements.unlocked}</div>
                   <div className="text-sm text-white/60">Unlocked</div>
                 </div>
-                <div className="bg-white/5 rounded-lg p-4 text-center">
+                <div className={`${surfaces.subtleGlass} rounded-lg p-4 text-center`}>
                   <div className="text-2xl font-bold text-white">{achievements.total}</div>
                   <div className="text-sm text-white/60">Total Available</div>
                 </div>
               </div>
               
               {achievements.total > 0 && (
-                <div className="w-full bg-white/20 rounded-full h-3">
+                <div className={`w-full ${surfaces.subtleGlass} rounded-full h-3`}>
                   <div 
                     className="h-3 bg-gradient-to-r from-yellow-400 to-yellow-500 rounded-full transition-all duration-500"
                     style={{ width: `${(achievements.unlocked / achievements.total) * 100}%` }}
@@ -398,28 +399,28 @@ export default function ScoreProgressPanel({
             <div>
               <h3 className="text-lg font-semibold text-white mb-4">Statistics</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white/5 rounded-lg p-4 text-center">
+                <div className={`${surfaces.subtleGlass} rounded-lg p-4 text-center`}>
                   <div className="text-2xl font-bold text-white">
                     {statistics.totalPointsEarned.toLocaleString()}
                   </div>
                   <div className="text-sm text-white/60">Total Points Earned</div>
                 </div>
                 
-                <div className="bg-white/5 rounded-lg p-4 text-center">
+                <div className={`${surfaces.subtleGlass} rounded-lg p-4 text-center`}>
                   <div className="text-2xl font-bold text-white">
                     {statistics.totalActivities}
                   </div>
                   <div className="text-sm text-white/60">Total Activities</div>
                 </div>
                 
-                <div className="bg-white/5 rounded-lg p-4 text-center">
+                <div className={`${surfaces.subtleGlass} rounded-lg p-4 text-center`}>
                   <div className="text-2xl font-bold text-white">
                     {statistics.totalActivities > 0 ? Math.round(statistics.totalPointsEarned / statistics.totalActivities) : 0}
                   </div>
                   <div className="text-sm text-white/60">Avg Points/Activity</div>
                 </div>
                 
-                <div className="bg-white/5 rounded-lg p-4 text-center">
+                <div className={`${surfaces.subtleGlass} rounded-lg p-4 text-center`}>
                   <div className="text-2xl font-bold text-white">
                     {currentScore.leaderboardPosition || 'N/A'}
                   </div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Button } from '@/components/ui/button';
+import { surfaces } from '@/lib/admin/designTokens';
 
 interface LeaderboardUser {
   firstName?: string;
@@ -187,12 +188,12 @@ export default function Leaderboard({
   if (loading) {
     return (
       <div className={`leaderboard ${className}`}>
-        <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6">
+        <div className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 p-6`}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-white">{title}</h3>
           </div>
           <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/60"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-fuchsia-400"></div>
             <span className="ml-3 text-white/60">Loading leaderboard...</span>
           </div>
         </div>
@@ -203,7 +204,7 @@ export default function Leaderboard({
   if (error || !leaderboardData) {
     return (
       <div className={`leaderboard ${className}`}>
-        <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 p-6">
+        <div className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 p-6`}>
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl font-bold text-white">{title}</h3>
           </div>
@@ -217,7 +218,7 @@ export default function Leaderboard({
             {!hideRefresh && (
               <Button 
                 onClick={fetchLeaderboard}
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                className={`${surfaces.subtleGlass} hover:bg-white/20 text-white border border-slate-700/50`}
               >
                 Try Again
               </Button>
@@ -232,9 +233,9 @@ export default function Leaderboard({
 
   return (
     <div className={`leaderboard ${className}`}>
-      <div className="bg-white/5 backdrop-blur-sm rounded-lg border border-white/10 overflow-hidden">
+      <div className={`${surfaces.cardGlass} rounded-lg border border-slate-700/50 overflow-hidden`}>
         {/* Header */}
-        <div className="p-6 border-b border-white/10">
+        <div className="p-6 border-b border-slate-700/30">
           <div className="flex items-center justify-between">
             <div>
               <h3 
@@ -253,7 +254,7 @@ export default function Leaderboard({
             {!hideRefresh && (
               <Button
                 onClick={fetchLeaderboard}
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20"
+                className={`${surfaces.subtleGlass} hover:bg-white/20 text-white border border-slate-700/50`}
                 disabled={loading}
               >
                 {loading ? (
@@ -286,7 +287,7 @@ export default function Leaderboard({
               {leaderboard.map((entry) => (
                 <div
                   key={entry.userId}
-                  className={`flex items-center space-x-4 rounded-lg transition-all duration-200 hover:bg-white/5 ${
+                  className={`flex items-center space-x-4 rounded-lg transition-all duration-200 hover:bg-slate-800/30 ${
                     compact ? 'p-3' : 'p-4'
                   }`}
                   style={{
@@ -361,10 +362,10 @@ export default function Leaderboard({
 
           {/* Current User Position (if not in top entries) */}
           {includeUserPosition && userPosition && !userPosition.isInTopList && userPosition.position > 0 && (
-            <div className="mt-6 pt-4 border-t border-white/10">
+            <div className="mt-6 pt-4 border-t border-slate-700/30">
               <div className="text-sm text-white/60 mb-3">Your Position</div>
               <div
-                className="flex items-center space-x-4 p-4 rounded-lg bg-white/5"
+                className={`flex items-center space-x-4 p-4 rounded-lg ${surfaces.subtleGlass}`}
                 style={{
                   borderLeft: `3px solid ${theme.colors.primary}`
                 }}

@@ -20,12 +20,12 @@ const Leaderboard = lazy(() => import("@/components/Leaderboard"));
 const ComponentSkeleton = ({ height = "400px" }: { height?: string }) => (
   <div className={`${surfaces.cardGlass} rounded-2xl border border-slate-700/50 p-8 animate-pulse`} style={{ minHeight: height }}>
     <div className="space-y-4">
-      <div className="h-8 bg-white/20 rounded w-3/4 animate-pulse"></div>
-      <div className="h-4 bg-white/20 rounded w-1/2 animate-pulse"></div>
+      <div className={`h-8 ${surfaces.subtleGlass} rounded w-3/4 animate-pulse`}></div>
+      <div className={`h-4 ${surfaces.subtleGlass} rounded w-1/2 animate-pulse`}></div>
       <div className="space-y-2">
-        <div className="h-4 bg-white/20 rounded animate-pulse"></div>
-        <div className="h-4 bg-white/20 rounded w-5/6 animate-pulse"></div>
-        <div className="h-4 bg-white/20 rounded w-4/6 animate-pulse"></div>
+        <div className={`h-4 ${surfaces.subtleGlass} rounded animate-pulse`}></div>
+        <div className={`h-4 ${surfaces.subtleGlass} rounded w-5/6 animate-pulse`}></div>
+        <div className={`h-4 ${surfaces.subtleGlass} rounded w-4/6 animate-pulse`}></div>
       </div>
     </div>
   </div>
