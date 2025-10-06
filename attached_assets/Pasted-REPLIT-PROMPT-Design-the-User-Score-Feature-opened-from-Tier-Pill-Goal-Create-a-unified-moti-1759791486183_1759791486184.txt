@@ -1,0 +1,227 @@
+REPLIT PROMPT — Design the “User Score” Feature (opened from Tier Pill)
+Goal
+
+Create a unified, motivating User Score experience that opens when a user taps the Tier Pill (“Bronze/Silver/Gold”) in the top nav. It should explain progress, celebrate wins, and guide the user to the next actions—across Story, Event, and After.
+
+Entry Points & Placement
+
+Primary: Tier Pill in the top nav (e.g., “Bronze • 340 pts”).
+
+Tap opens User Score as a sheet/modal on mobile and a side panel or full panel on desktop.
+
+Secondary:
+
+From Rewards lane (“See your score”).
+
+From Wallet detail (“+50 pts earned — view score”).
+
+From Discounts/Superfan card (“How tiers work”).
+
+Core Concepts
+
+Points: Earned from actions (AR, QR, Orders, Shares, AI, etc.).
+
+Tier: Bronze, Silver, Gold (thresholds unchanged).
+
+User Score: A composite value representing engagement quality + points (0–100).
+
+Weighting (design intent, not implementation):
+
+Points momentum (recent 7 days)
+
+Action diversity (unique action types)
+
+Event recency (at-event > off-event)
+
+Set completions / rare memories
+
+Score updates instantly on earn; recalculated nightly for momentum.
+
+Do not change back-end thresholds; present this as a user-facing index that complements points.
+
+Surface & Layout
+A) Header (sticky)
+
+Tier badge (Bronze/Silver/Gold) + current points.
+
+User Score dial (0–100) with label (e.g., “Good”, “Great”, “Elite”).
+
+CTA: “How to level up” (scrolls to Recommendations).
+
+B) Progress to Next Tier
+
+Horizontal progress bar: current points → next tier threshold.
+
+Copy: “{N} pts to reach {Next Tier}”.
+
+Milestones: small chips (e.g., +100, +250, +500).
+
+C) Score Breakdown (cards)
+
+Three small cards explaining the User Score composition:
+
+Momentum: “Last 7 days • +{X} actions”.
+
+Diversity: “You tried {Y}/{Total} action types”.
+
+Highlights: “{Rare/Set bonus/Big order}”.
+
+Each card has a “Do more like this” micro-CTA linking to relevant areas (e.g., AI Create, AR scene, QR hunt).
+
+D) Recommendations (“How to level up”)
+
+Actionable list (3–6 items), each with:
+
+Title (e.g., “Complete an AR capture”)
+
+Estimated points (design copy)
+
+Time/place hint (e.g., “Available now in Interact”)
+
+Go button deep-linking to the card/lane.
+
+Include at most one Offer upsell if applicable (e.g., “10% off F&B for Silver”).
+
+E) History & Highlights
+
+Activity timeline (last 14 days): stamps for actions; tap shows “+pts” and source (AR/QR/etc.).
+
+Badges preview (if any): set completions, rare memories; tap to open Wallet item.
+
+F) Perks (by Tier)
+
+Accordion showing current tier perks and next tier perks.
+
+Copy examples:
+
+Bronze: “Collect memories, start earning.”
+
+Silver: “Unlock 10% F&B, bonus AR scene.”
+
+Gold: “Priority merch, exclusive character.”
+
+G) Footer
+
+Share score (optional): image/card preview with tier + points.
+
+Privacy note: “Only you can see your detailed score.”
+
+States & Behaviour
+
+New user / zero points: Friendly empty state with 2–3 starter actions.
+
+At an event (geo/time window): Highlight at-venue actions first.
+
+Tier up: Confetti pulse on header badge, toast (“Welcome to Silver”), and optional perk spotlight.
+
+Stale activity (no actions in 14 days): Nudge card (“Pick one: AR capture • QR stamp • AI clip”).
+
+Offline: Show cached totals; indicate “Syncing…” on return.
+
+Microcopy (examples)
+
+Header subtitle: “Your engagement at a glance.”
+
+Score labels: 0–39 “Getting started”, 40–69 “Good”, 70–89 “Great”, 90–100 “Elite”.
+
+Breakdown tooltips:
+
+Momentum: “Recent activity boosts your score more than older actions.”
+
+Diversity: “Try different actions to grow faster.”
+
+Highlights: “Rare memories and set completions give bonuses.”
+
+Recommendations CTA: “Go”.
+
+Perks subtitle: “Perks apply automatically at checkout.”
+
+Navigation & Integration
+
+Back returns to the screen the user came from.
+
+Deep links:
+
+“Go” buttons route to specific Event lanes or Story sub-chapters.
+
+Wallet links open specific memory details.
+
+The Tier Pill’s label (e.g., “Silver • 340 pts”) should update immediately after changes.
+
+Visual & Motion
+
+Matches the app’s dark glass style, rounded controls, and focus rings.
+
+Dial animation: smooth spring to new score; small glow on increase.
+
+Confetti pulse on tier-up (subtle, 600–800 ms).
+
+Respect reduced motion settings.
+
+Accessibility & Localisation
+
+Keyboard navigation across cards and CTAs.
+
+High-contrast compliant; do not rely on colour alone (use labels and icons).
+
+Screen-reader labels for the dial: “User Score 72 out of 100, Great”.
+
+UK English copy; numbers formatted appropriately.
+
+Privacy & Transparency
+
+Short note describing how score is derived (points momentum, diversity, event recency, highlights).
+
+“Learn more” link to policy.
+
+Make clear that User Score is private and does not affect pricing—only perk unlocks are tier-based.
+
+CMS Controls (non-technical)
+
+Copy & thresholds: Manage tier copy, perk descriptions, and the labels for score bands (e.g., “Great”, “Elite”).
+
+Recommendations library: Curate action tiles (title, description, deeplink) and order by context (event vs away).
+
+Perks matrix: Maintain perk text per tier (no logic changes here).
+
+Microcopy: Edit tooltips and empty-state text.
+
+Analytics (events to capture)
+
+user_score_open (source: tier pill, rewards card, wallet).
+
+user_score_reco_click (actionId).
+
+tier_up (from, to, pointsAtUpgrade).
+
+user_score_share.
+
+user_score_view_section (breakdown|history|perks).
+
+Acceptance Criteria
+
+Tapping the Tier Pill opens the User Score panel/sheet with header (tier badge, points, score dial).
+
+Shows progress to next tier and actionable recommendations with deep links.
+
+Breakdown explains score in 3 cards (momentum, diversity, highlights) with clear copy.
+
+History displays recent activity with points; badges preview links to Wallet.
+
+Perks list shows current and next tier benefits.
+
+States covered: new user, event-active, tier-up, stale activity, offline.
+
+Visual style matches top nav & secondary pill bars; fully accessible; UK English.
+
+Points and tier updates reflect instantly in the Tier Pill and in the User Score panel.
+
+Out-of-Scope (explicitly)
+
+No architectural changes or back-end logic.
+
+No code samples.
+
+No changes to points rules or tier thresholds (display only).
+
+Deliver this UX as described, with all states and copy hooks ready for CMS population.

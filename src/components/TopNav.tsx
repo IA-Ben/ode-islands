@@ -5,6 +5,7 @@ import { QrCode, Crown, WalletCards, Shield, LogOut, ScanLine, ChevronDown, User
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useFanScore } from '@/hooks/useFanScore';
+import UserScoreModal from './UserScoreModal';
 
 export type Phase = "before" | "event" | "after";
 
@@ -18,6 +19,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
   const { scoreData } = useFanScore();
   const [menuOpen, setMenuOpen] = useState(false);
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
+  const [userScoreOpen, setUserScoreOpen] = useState(false);
 
   const handlePhaseChange = (phase: Phase) => {
     if (phase === currentPhase) return;
@@ -134,7 +136,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
 
                   {/* Progress (tier ring + points) */}
                   <button
-                    onClick={() => router.push('/progress')}
+                    onClick={() => setUserScoreOpen(true)}
                     className="relative group flex items-center gap-2 px-3 py-2 rounded-xl bg-fuchsia-600 text-white shadow hover:bg-fuchsia-700 transition"
                     aria-label="Progress and tier"
                     title={`${tier} • ${points} pts`}
@@ -246,6 +248,13 @@ export default function TopNav({ currentPhase }: TopNavProps) {
           </div>
         </div>
       )}
+
+      {/* User Score Modal */}
+      <UserScoreModal
+        isOpen={userScoreOpen}
+        onClose={() => setUserScoreOpen(false)}
+        source="tier_pill"
+      />
     </>
   );
 }
