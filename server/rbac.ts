@@ -1,5 +1,6 @@
 import type { RequestHandler } from "express";
 import { storage } from "./storage";
+import { NextRequest, NextResponse } from "next/server";
 
 export const PERMISSIONS = {
   // Story/Content permissions
@@ -358,7 +359,7 @@ export const requireRole = (minRole: string): RequestHandler => {
   };
 };
 
-export const requirePermission = (permission: string): RequestHandler => {
+export const requirePermissionExpress = (permission: string): RequestHandler => {
   return async (req: any, res, next) => {
     if (!req.isAuthenticated()) {
       return res.status(401).json({ error: 'Authentication required' });
@@ -440,3 +441,54 @@ export const combineMiddleware = (...middlewares: RequestHandler[]): RequestHand
     await runNext();
   };
 };
+
+type NextRouteHandler = (
+  req: NextRequest,
+  context?: any
+) => Promise<Response>;
+
+export function requirePermission(permission: string): (handler: NextRouteHandler) => NextRouteHandler {
+  return function(handler: NextRouteHandler): NextRouteHandler {
+    return async (req: NextRequest, context?: any) => {
+      const session = (req as any).session;
+      
+      if (!session || !session.user) {
+        return NextResponse.json(
+          { error: 'Authentication required' }, 
+          { status: 401 }
+        );
+      }
+      
+      const userId = session.userId || session.user.id;
+      
+      if (!userId) {
+        return NextResponse.json(
+          { error: 'Invalid user session' }, 
+          { status: 401 }
+        );
+      }
+      
+      try {
+        const userPermissions = await storage.getUserPermissions(userId);
+        
+        if (!hasPermission(userPermissions, permission)) {
+          return NextResponse.json(
+            { 
+              error: 'Insufficient permissions', 
+              required: permission 
+            }, 
+            { status: 403 }
+          );
+        }
+        
+        return await handler(req, context);
+      } catch (error) {
+        console.error('Permission check error:', error);
+        return NextResponse.json(
+          { error: 'Failed to verify permission' }, 
+          { status: 500 }
+        );
+      }
+    };
+  };
+}

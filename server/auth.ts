@@ -386,7 +386,14 @@ export function withAuth(
       isAuthenticated: true,
       userId: 'dev-user-id',
       isAdmin: true,
-      sessionId: 'dev-session-id'
+      sessionId: 'dev-session-id',
+      user: {
+        id: 'dev-user-id',
+        email: 'dev@example.com',
+        firstName: 'Dev',
+        lastName: 'User',
+        isAdmin: true,
+      }
     };
     return handler(request, context);
     
@@ -427,7 +434,14 @@ export function withUserAuth(
       isAuthenticated: true,
       userId: 'dev-user-id',
       isAdmin: true,
-      sessionId: 'dev-session-id'
+      sessionId: 'dev-session-id',
+      user: {
+        id: 'dev-user-id',
+        email: 'dev@example.com',
+        firstName: 'Dev',
+        lastName: 'User',
+        isAdmin: true,
+      }
     };
     return handler(request, context);
     
