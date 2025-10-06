@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import { useTheme } from '@/contexts/ThemeContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,9 @@ import HelpSystem from '@/components/HelpSystem';
 import { SectionScaffold } from '@/components/SectionScaffold';
 import { EventHub, type FeaturedCard, type NowNextItem } from '@/components/event/EventHub';
 import { EventLane, type EventLaneCard } from '@/components/event/EventLane';
+import { GlobalHUD, type Tier } from '@/components/event/GlobalHUD';
+import ScoreToast from '@/components/ScoreToast';
+import type { ScoreToastData } from '@/@typings/fanScore';
 import dynamic from 'next/dynamic';
 
 const EventDashboard = dynamic(() => import('@/components/EventDashboard'), {
@@ -16,6 +20,11 @@ const EventDashboard = dynamic(() => import('@/components/EventDashboard'), {
 
 const EventInteractiveHub = dynamic(() => import('@/components/EventInteractiveHub'), {
   loading: () => <div className="p-8 text-white/60">Loading interactive features...</div>
+});
+
+const QRScanner = dynamic(() => import('@/components/QRScanner'), {
+  ssr: false,
+  loading: () => null
 });
 
 // Types
@@ -58,6 +67,7 @@ interface EventPageClientProps {
 
 export default function EventPageClient({ initialData }: EventPageClientProps) {
   const { theme } = useTheme();
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(initialData.error || null);
   const [events, setEvents] = useState<LiveEvent[]>(initialData.events);
@@ -73,10 +83,30 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   
   const [view, setView] = useState<'hub' | 'lane'>('hub');
   const [currentLane, setCurrentLane] = useState<'info' | 'interact' | 'rewards' | null>(null);
+  
+  // Fan Score and Memory Wallet state
+  const [currentPoints, setCurrentPoints] = useState(0);
+  const [currentTier, setCurrentTier] = useState<Tier>('Bronze');
+  const [nextTierThreshold, setNextTierThreshold] = useState(100);
+  const [newItemsCount, setNewItemsCount] = useState(0);
+  const [hudPulse, setHudPulse] = useState(false);
+  
+  // Toast notifications
+  const [toasts, setToasts] = useState<ScoreToastData[]>([]);
+  
+  // QR Scanner state
+  const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  
+  // Demo mode state
+  const [isDemoMode, setIsDemoMode] = useState(false);
+  
+  // Debouncing for memory awards
+  const awardingRef = useRef<Set<string>>(new Set());
+  const csrfTokenRef = useRef<string | null>(null);
 
   // Optimized CSRF token fetching (only when needed)
   const fetchCSRFToken = async () => {
-    if (!session.isAuthenticated) return;
+    if (!session.isAuthenticated) return null;
     
     try {
       const response = await fetch('/api/csrf-token', {
@@ -87,13 +117,133 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
       if (response.ok) {
         const data = await response.json();
         if (data.success && data.csrfToken) {
-          console.log('CSRF token refreshed successfully');
+          csrfTokenRef.current = data.csrfToken;
+          return data.csrfToken;
         }
       }
     } catch (err) {
       console.error('Failed to fetch CSRF token:', err);
     }
+    return null;
   };
+
+  // Fetch fan score data
+  const fetchFanScore = useCallback(async () => {
+    if (!session.isAuthenticated) return;
+
+    try {
+      const response = await fetch('/api/fan-score', {
+        credentials: 'include'
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.scoreData) {
+          const { currentScore } = data.scoreData;
+          setCurrentPoints(currentScore.totalScore || 0);
+          
+          const level = currentScore.level || 1;
+          if (level <= 3) {
+            setCurrentTier('Bronze');
+            setNextTierThreshold(250);
+          } else if (level <= 6) {
+            setCurrentTier('Silver');
+            setNextTierThreshold(2000);
+          } else {
+            setCurrentTier('Gold');
+            setNextTierThreshold(8000);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch fan score:', error);
+    }
+  }, [session.isAuthenticated]);
+
+  // Show toast notification
+  const showToast = useCallback((toastData: ScoreToastData) => {
+    setToasts(prev => [...prev, toastData]);
+  }, []);
+
+  // Dismiss toast
+  const dismissToast = useCallback((index: number) => {
+    setToasts(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  // Award memory function with debouncing
+  const awardMemory = useCallback(async (
+    templateId: string,
+    source: string,
+    points: number,
+    metadata?: Record<string, any>
+  ) => {
+    if (!session.isAuthenticated) {
+      console.warn('User not authenticated, cannot award memory');
+      return;
+    }
+
+    const awardKey = `${templateId}-${source}`;
+    
+    if (awardingRef.current.has(awardKey)) {
+      console.log('Memory award already in progress for:', awardKey);
+      return;
+    }
+
+    awardingRef.current.add(awardKey);
+
+    try {
+      let token = csrfTokenRef.current;
+      if (!token) {
+        token = await fetchCSRFToken();
+      }
+
+      const response = await fetch('/api/memory-wallet/award', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'X-CSRF-Token': token } : {})
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          templateId,
+          source,
+          points,
+          eventId: activeEvent?.id,
+          metadata
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setNewItemsCount(prev => prev + 1);
+        setHudPulse(true);
+        setTimeout(() => setHudPulse(false), 500);
+
+        setCurrentPoints(data.totalPoints || currentPoints + points);
+        
+        showToast({
+          points,
+          activityType: 'memory_collection',
+          title: 'Memory Saved!',
+          description: `+${points} pts`,
+          duration: 3000
+        });
+
+        fetchFanScore();
+      } else if (response.status === 409) {
+        console.log('Memory already collected from this source');
+      } else {
+        console.error('Failed to award memory:', data.message);
+      }
+    } catch (error) {
+      console.error('Error awarding memory:', error);
+    } finally {
+      setTimeout(() => {
+        awardingRef.current.delete(awardKey);
+      }, 1000);
+    }
+  }, [session.isAuthenticated, activeEvent, currentPoints, fetchCSRFToken, fetchFanScore, showToast]);
 
   // Optimized events fetching (only for admins when needed)
   const fetchEvents = async () => {
@@ -145,12 +295,13 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     }
   };
 
-  // Lazy initialization for admin features
+  // Initialize CSRF token and fan score for authenticated users
   useEffect(() => {
-    if (session.isAuthenticated && session.isAdmin && activeView === 'dashboard') {
+    if (session.isAuthenticated) {
       fetchCSRFToken();
+      fetchFanScore();
     }
-  }, [session.isAuthenticated, session.isAdmin, activeView]);
+  }, [session.isAuthenticated, fetchFanScore]);
 
   // Refresh active event periodically (only for audience view)
   useEffect(() => {
@@ -319,9 +470,54 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     setCurrentLane(null);
   };
 
-  const handleCardClick = (card: EventLaneCard) => {
+  const handleCardClick = useCallback((card: EventLaneCard) => {
     console.log('Card clicked:', card);
-  };
+    
+    const pointsMap: Record<string, number> = {
+      'live-ar': 50,
+      'qr-scan': 20,
+      'f&b': 10,
+      'merch': 20,
+      'user-media': 10,
+      'ai-create': 10,
+    };
+    
+    const points = pointsMap[card.type] || 0;
+    
+    if (points > 0 && session.isAuthenticated) {
+      const templateId = `template-${card.type}`;
+      const source = card.id;
+      
+      if (isDemoMode || card.type === 'qr-scan' || card.type === 'live-ar') {
+        awardMemory(templateId, source, points, {
+          action: 'open',
+          cardType: card.type,
+          cardTitle: card.title
+        });
+      }
+    }
+    
+    if (card.type === 'qr-scan') {
+      setIsQRScannerOpen(true);
+    }
+  }, [session.isAuthenticated, isDemoMode, awardMemory]);
+  
+  const handleQRResult = useCallback((result: { text: string }) => {
+    console.log('QR scan result:', result.text);
+    setIsQRScannerOpen(false);
+    
+    if (session.isAuthenticated) {
+      awardMemory('template-qr-scan', `qr-${Date.now()}`, 20, {
+        action: 'scan',
+        qrData: result.text
+      });
+    }
+  }, [session.isAuthenticated, awardMemory]);
+  
+  const handleQRError = useCallback((error: string) => {
+    console.error('QR scan error:', error);
+    setIsQRScannerOpen(false);
+  }, []);
 
   const handleQuickAction = (action: 'scan' | 'map' | 'schedule' | 'offers') => {
     console.log('Quick action:', action);
@@ -429,10 +625,40 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
           />
         )}
         
+        {session?.isAuthenticated && (
+          <div className="fixed top-4 right-4 z-50">
+            <GlobalHUD
+              newItemsCount={newItemsCount}
+              currentPoints={currentPoints}
+              currentTier={currentTier}
+              nextTierThreshold={nextTierThreshold}
+              isDemoMode={isDemoMode}
+              showDemoToggle={true}
+              onWalletClick={() => router.push('/memory-wallet')}
+              onQuickScan={() => setIsQRScannerOpen(true)}
+              onToggleDemo={() => setIsDemoMode(prev => !prev)}
+              onPulse={hudPulse}
+            />
+          </div>
+        )}
+        
+        <ScoreToast
+          toasts={toasts}
+          onDismiss={dismissToast}
+          position="top-right"
+        />
+        
+        <QRScanner
+          isOpen={isQRScannerOpen}
+          onClose={() => setIsQRScannerOpen(false)}
+          onResult={handleQRResult}
+          onError={handleQRError}
+        />
+        
         <HelpSystem userRole="audience" />
         
         {session?.isAuthenticated && session?.isAdmin && (
-          <div className="fixed top-20 right-4 z-50">
+          <div className="fixed top-32 right-4 z-40">
             <Button
               variant="ghost"
               size="sm"
