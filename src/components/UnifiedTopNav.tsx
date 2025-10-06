@@ -361,17 +361,6 @@ export default function UnifiedTopNav({
               </button>
             )}
 
-            {/* Environment Pill */}
-            <div
-              className={`hidden md:flex items-center px-3 py-1.5 rounded-full ${
-                envMode === "Prod"
-                  ? "bg-green-500/20 text-green-400 border border-green-400/30"
-                  : "bg-yellow-500/20 text-yellow-400 border border-yellow-400/30"
-              } backdrop-blur-md`}
-            >
-              <span className="text-xs font-medium">{envMode}</span>
-            </div>
-
             {/* User Profile Menu */}
             {user ? (
               <div className="relative">
