@@ -293,8 +293,8 @@ export default function UserScoreModal({ isOpen, onClose, source = 'tier_pill' }
             <div className="space-y-3">
               {loading ? (
                 <div className="text-white/60 text-sm">Loading recommendations...</div>
-              ) : (
-                scoreDetails?.recommendations.slice(0, 5).map((rec) => (
+              ) : (scoreDetails?.recommendations && scoreDetails.recommendations.length > 0) ? (
+                scoreDetails.recommendations.slice(0, 5).map((rec) => (
                   <div
                     key={rec.id}
                     className="flex items-center justify-between p-3 rounded-lg bg-slate-800/50 hover:bg-slate-800 transition cursor-pointer"
@@ -310,6 +310,11 @@ export default function UserScoreModal({ isOpen, onClose, source = 'tier_pill' }
                     <ChevronRight className="w-4 h-4 text-white/40" />
                   </div>
                 ))
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-white/60 text-sm mb-2">Great start!</p>
+                  <p className="text-xs text-white/50">Complete activities to unlock recommendations</p>
+                </div>
               )}
             </div>
           </div>
@@ -320,13 +325,8 @@ export default function UserScoreModal({ isOpen, onClose, source = 'tier_pill' }
             <div className="space-y-2">
               {loading ? (
                 <div className="text-white/60 text-sm">Loading activity...</div>
-              ) : scoreDetails?.recentActivity.length === 0 ? (
-                <div className="text-center py-6">
-                  <p className="text-white/60 text-sm mb-4">No recent activity</p>
-                  <p className="text-xs text-white/50">Start exploring to earn points!</p>
-                </div>
-              ) : (
-                scoreDetails?.recentActivity.map((activity) => (
+              ) : (scoreDetails?.recentActivity && scoreDetails.recentActivity.length > 0) ? (
+                scoreDetails.recentActivity.map((activity) => (
                   <div
                     key={activity.id}
                     className="flex items-center justify-between py-2 border-b border-slate-700/30 last:border-0"
@@ -340,6 +340,11 @@ export default function UserScoreModal({ isOpen, onClose, source = 'tier_pill' }
                     <div className="text-sm font-semibold text-fuchsia-400">+{activity.points}</div>
                   </div>
                 ))
+              ) : (
+                <div className="text-center py-6">
+                  <p className="text-white/60 text-sm mb-4">No recent activity</p>
+                  <p className="text-xs text-white/50">Start exploring to earn points!</p>
+                </div>
               )}
             </div>
           </div>

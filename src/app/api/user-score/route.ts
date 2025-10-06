@@ -193,16 +193,27 @@ async function handleGET(request: NextRequest) {
       momentum,
       diversity,
       highlights: highlights.length > 0 ? highlights : ['Keep exploring to unlock highlights!'],
-      recommendations,
-      recentActivity: formattedActivity,
+      recommendations: recommendations.length > 0 ? recommendations : [],
+      recentActivity: formattedActivity || [],
     });
 
   } catch (error) {
     console.error('User score calculation error:', error);
-    return NextResponse.json(
-      { error: 'Failed to calculate user score' },
-      { status: 500 }
-    );
+    // Return safe defaults even on error
+    return NextResponse.json({
+      userScore: 0,
+      momentum: {
+        last7Days: 0,
+        percentChange: 0,
+      },
+      diversity: {
+        uniqueTypes: 0,
+        totalTypes: 12,
+      },
+      highlights: ['Start your journey to unlock highlights!'],
+      recommendations: [],
+      recentActivity: [],
+    });
   }
 }
 
