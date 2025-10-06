@@ -27,7 +27,7 @@ import { eq, sql, and, desc, asc, or, gte, lte, inArray } from "drizzle-orm";
 
 type AdminRole = typeof adminRoles.$inferSelect;
 type UserRole = typeof userRoles.$inferSelect;
-type MemoryTemplate = typeof memoryTemplates.$inferSelect;
+export type MemoryTemplate = typeof memoryTemplates.$inferSelect;
 type RewardRule = typeof rewardRules.$inferSelect;
 
 // Interface for storage operations
@@ -280,7 +280,7 @@ export interface AuditLogFilters {
   offset?: number;
 }
 
-type AuditLog = typeof auditLogs.$inferSelect;
+export type AuditLog = typeof auditLogs.$inferSelect;
 
 export class DatabaseStorage implements IStorage {
   // Admin seeding functionality
@@ -709,6 +709,9 @@ export class DatabaseStorage implements IStorage {
       .values({
         filename,
         content,
+        contentType: 'backup',
+        contentId: filename,
+        versionNumber: 1,
         createdBy: userId,
       })
       .returning();
@@ -1452,7 +1455,7 @@ export class DatabaseStorage implements IStorage {
         FROM chapter_tree
       `);
 
-      const maxDepth = result.rows[0]?.max_depth || 0;
+      const maxDepth = (result.rows[0]?.max_depth as number) || 0;
       if (maxDepth >= 5) {
         return { valid: false, error: 'Maximum hierarchy depth of 5 levels would be exceeded' };
       }
@@ -1475,7 +1478,7 @@ export class DatabaseStorage implements IStorage {
           WHERE id = ${parentId}
         `);
 
-        const descendantCount = parseInt(childResult.rows[0]?.count || '0');
+        const descendantCount = parseInt((childResult.rows[0]?.count as string) || '0');
         if (descendantCount > 0) {
           return { valid: false, error: 'Circular reference detected: parent is a descendant of this chapter' };
         }
@@ -2291,14 +2294,11 @@ export class DatabaseStorage implements IStorage {
 }
 
 // Type definitions for compatibility
-export type MediaAsset = typeof mediaAssets.$inferSelect;
 export type ContentBackup = typeof contentBackups.$inferSelect;
 export type Chapter = typeof chapters.$inferSelect;
 export type SubChapter = typeof subChapters.$inferSelect;
 export type StoryCard = typeof storyCards.$inferSelect;
 export type CustomButton = typeof customButtons.$inferSelect;
 export type UserProgress = typeof userProgress.$inferSelect;
-export type MemoryTemplate = typeof memoryTemplates.$inferSelect;
-export type AuditLog = typeof auditLogs.$inferSelect;
 
 export const storage = new DatabaseStorage();
