@@ -17,6 +17,38 @@ import {
 // Enums
 export const cardScopeEnum = pgEnum('card_scope', ['story', 'event']);
 
+// Featured Rules enums
+export const ruleContextEnum = pgEnum('rule_context', [
+  'event_hub',
+  'story_chapter', 
+  'before',
+  'after',
+  'rewards'
+]);
+
+export const tierRequirementEnum = pgEnum('tier_requirement', [
+  'Bronze',
+  'Silver',
+  'Gold',
+  'any'
+]);
+
+export const zoneEnum = pgEnum('zone', [
+  'main-stage',
+  'lobby',
+  'vip-lounge',
+  'food-court',
+  'merchandise',
+  'any'
+]);
+
+export const conditionTypeEnum = pgEnum('condition_type', [
+  'tier_requirement',
+  'zone',
+  'time_window',
+  'custom'
+]);
+
 // Session storage table.
 // (IMPORTANT) This table is mandatory for Replit Auth, don't drop it.
 export const sessions = pgTable(
@@ -316,6 +348,70 @@ export const cardTags = pgTable("card_tags", {
     uniqueCardTag: uniqueIndex("card_tags_unique").on(table.cardId, table.tag),
   };
 });
+
+// Featured Rules System - Dynamic card featuring and prioritization
+export const featuredRules = pgTable("featured_rules", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Card and context
+  cardId: varchar("card_id").references(() => cards.id).notNull(),
+  context: ruleContextEnum("context").notNull(),
+  
+  // Rule metadata
+  name: varchar("name").notNull(),
+  description: text("description"),
+  
+  // Priority and ordering
+  priority: integer("priority").default(0),
+  pinned: boolean("pinned").default(false),
+  popularityBoost: integer("popularity_boost").default(0),
+  
+  // Time window (inline for fast queries)
+  startsAt: timestamp("starts_at"),
+  endsAt: timestamp("ends_at"),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  
+  // Audit fields
+  createdBy: varchar("created_by").references(() => users.id),
+  updatedBy: varchar("updated_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  cardIdIndex: index("featured_rules_card_id_idx").on(table.cardId),
+  contextIndex: index("featured_rules_context_idx").on(table.context),
+  isActiveIndex: index("featured_rules_is_active_idx").on(table.isActive),
+  startsAtIndex: index("featured_rules_starts_at_idx").on(table.startsAt),
+  endsAtIndex: index("featured_rules_ends_at_idx").on(table.endsAt),
+  priorityIndex: index("featured_rules_priority_idx").on(table.priority),
+}));
+
+export const featuredRuleConditions = pgTable("featured_rule_conditions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  ruleId: varchar("rule_id").references(() => featuredRules.id).notNull(),
+  conditionType: conditionTypeEnum("condition_type").notNull(),
+  conditionData: jsonb("condition_data").notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  ruleIdIndex: index("featured_rule_conditions_rule_id_idx").on(table.ruleId),
+  conditionTypeIndex: index("featured_rule_conditions_type_idx").on(table.conditionType),
+}));
+
+export const featuredRuleAssignments = pgTable("featured_rule_assignments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  ruleId: varchar("rule_id").references(() => featuredRules.id).notNull(),
+  cardAssignmentId: varchar("card_assignment_id").references(() => cardAssignments.id).notNull(),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  ruleIdIndex: index("featured_rule_assignments_rule_id_idx").on(table.ruleId),
+  cardAssignmentIdIndex: index("featured_rule_assignments_card_assignment_id_idx").on(table.cardAssignmentId),
+  uniqueRuleAssignment: uniqueIndex("unique_rule_card_assignment").on(table.ruleId, table.cardAssignmentId),
+}));
 
 // Custom buttons table - flexible buttons for various parent types
 export const customButtons = pgTable("custom_buttons", {
