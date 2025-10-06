@@ -127,7 +127,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
                   {/* Wallet */}
                   <button
                     onClick={handleOpenWallet}
-                    className="relative inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:shadow-sm transition"
+                    className="relative z-30 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:shadow-sm transition"
                     aria-label="Open Memory Wallet"
                   >
                     <WalletCards className="w-5 h-5 text-slate-700 dark:text-slate-200" />
@@ -142,7 +142,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
                       e.stopPropagation();
                       setUserScoreOpen(true);
                     }}
-                    className="relative group flex items-center gap-2 px-3 py-2 rounded-xl bg-fuchsia-600 text-white shadow hover:bg-fuchsia-700 hover:shadow-lg active:scale-95 transition-all cursor-pointer"
+                    className="relative z-30 group flex items-center gap-2 px-3 py-2 rounded-xl bg-fuchsia-600 text-white shadow hover:bg-fuchsia-700 hover:shadow-lg active:scale-95 transition-all cursor-pointer"
                     aria-label="View your score and progress"
                     title={`Click to view your score • ${tier} • ${points} pts`}
                   >
@@ -156,7 +156,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
                   {/* Quick QR */}
                   <button
                     onClick={handleOpenQR}
-                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600 transition"
+                    className="relative z-30 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-900 text-white hover:bg-black dark:bg-slate-700 dark:hover:bg-slate-600 transition"
                     aria-label="Scan QR Code"
                   >
                     <ScanLine className="w-5 h-5" />
