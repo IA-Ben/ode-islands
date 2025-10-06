@@ -174,6 +174,11 @@ export async function setupAuth(app: Express) {
       callbackUrl.searchParams.set('code', code as string);
       callbackUrl.searchParams.set('state', state as string);
       
+      // WORKAROUND: Add iss parameter if missing (Replit OAuth doesn't send it)
+      if (!callbackUrl.searchParams.has('iss')) {
+        callbackUrl.searchParams.set('iss', config.serverMetadata().issuer);
+      }
+      
       // Exchange code for tokens
       const tokens = await client.authorizationCodeGrant(
         config,
