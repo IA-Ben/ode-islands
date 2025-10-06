@@ -12,6 +12,7 @@ import { EventLane, type EventLaneCard } from '@/components/event/EventLane';
 import { GlobalHUD, type Tier } from '@/components/event/GlobalHUD';
 import ScoreToast from '@/components/ScoreToast';
 import type { ScoreToastData } from '@/@typings/fanScore';
+import { selectFeaturedCards, type FeaturedCardWithRules, type UserContext } from '@/lib/event/cardSelection';
 import dynamic from 'next/dynamic';
 
 const EventDashboard = dynamic(() => import('@/components/EventDashboard'), {
@@ -320,17 +321,127 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     [theme.colors.primary]
   );
 
-  const mockFeaturedCards: FeaturedCard[] = useMemo(() => [
+  const featuredCardsPool: FeaturedCardWithRules[] = useMemo(() => [
     {
-      id: 'featured-1',
+      id: 'featured-hero-welcome',
       size: 'L',
       title: 'Welcome to Ode Islands',
       subtitle: 'Tonight\'s Experience',
       imageUrl: '/images/ode-islands-hero.jpg',
       ctaLabel: 'Explore Now',
-      ctaAction: () => console.log('Featured card clicked')
-    }
+      ctaAction: () => console.log('Welcome card clicked'),
+      analyticsTag: 'featured-hero-welcome',
+      layoutHint: 'hero',
+      rules: {
+        pinned: true,
+        tierRequirement: 'any',
+        popularity: 245,
+      },
+    },
+    {
+      id: 'featured-ar-experience',
+      size: 'L',
+      title: 'Live AR Experience',
+      subtitle: 'Immerse Yourself',
+      imageUrl: '/images/ar-experience.jpg',
+      ctaLabel: 'Try Now',
+      ctaAction: () => handleEnterLane('interact'),
+      analyticsTag: 'featured-ar-experience',
+      layoutHint: 'hero',
+      rules: {
+        pinned: false,
+        timeWindow: {
+          startTime: new Date(Date.now() - 3600000),
+          endTime: new Date(Date.now() + 7200000),
+        },
+        tierRequirement: 'Bronze',
+        zone: 'main-stage',
+        popularity: 189,
+      },
+    },
+    {
+      id: 'featured-vip-upgrade',
+      size: 'M',
+      title: 'VIP Lounge Access',
+      subtitle: 'Exclusive for Gold Members',
+      imageUrl: '/images/vip-lounge.jpg',
+      ctaLabel: 'Enter VIP',
+      ctaAction: () => handleEnterLane('rewards'),
+      analyticsTag: 'featured-vip-upgrade',
+      layoutHint: 'carousel',
+      rules: {
+        pinned: false,
+        tierRequirement: 'Gold',
+        zone: 'vip-lounge',
+        popularity: 134,
+      },
+    },
+    {
+      id: 'featured-limited-merch',
+      size: 'M',
+      title: 'Limited Edition Merch',
+      subtitle: 'Available Tonight Only',
+      imageUrl: '/images/merch-promo.jpg',
+      ctaLabel: 'Shop Now',
+      ctaAction: () => handleEnterLane('rewards'),
+      analyticsTag: 'featured-limited-merch',
+      layoutHint: 'carousel',
+      rules: {
+        pinned: false,
+        timeWindow: {
+          startTime: new Date(Date.now() - 1800000),
+          endTime: new Date(Date.now() + 3600000),
+        },
+        tierRequirement: 'Silver',
+        popularity: 156,
+      },
+    },
+    {
+      id: 'featured-photo-contest',
+      size: 'M',
+      title: 'Photo Contest',
+      subtitle: 'Win Exclusive Prizes',
+      imageUrl: '/images/photo-contest.jpg',
+      ctaLabel: 'Upload Photo',
+      ctaAction: () => handleEnterLane('interact'),
+      analyticsTag: 'featured-photo-contest',
+      layoutHint: 'carousel',
+      rules: {
+        pinned: false,
+        tierRequirement: 'Bronze',
+        popularity: 98,
+      },
+    },
+    {
+      id: 'featured-backstage-tour',
+      size: 'M',
+      title: 'Backstage Tour',
+      subtitle: 'Silver & Gold Only',
+      imageUrl: '/images/backstage.jpg',
+      ctaLabel: 'Book Tour',
+      ctaAction: () => console.log('Backstage tour clicked'),
+      analyticsTag: 'featured-backstage-tour',
+      layoutHint: 'carousel',
+      rules: {
+        pinned: false,
+        tierRequirement: 'Silver',
+        zone: 'any',
+        popularity: 76,
+      },
+    },
   ], []);
+
+  const userContext: UserContext = useMemo(() => ({
+    currentTier,
+    currentTime: new Date(),
+    userZone: undefined,
+  }), [currentTier]);
+
+  const selectedFeaturedCards = useMemo(() => {
+    const result = selectFeaturedCards(featuredCardsPool, userContext);
+    console.log('Selected featured cards:', result);
+    return result.layoutHint === 'fallback' ? [] : result.selectedCards;
+  }, [featuredCardsPool, userContext]);
 
   const mockNowNextItems: NowNextItem[] = useMemo(() => [
     {
@@ -604,7 +715,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
         {view === 'hub' && (
           <EventHub
             onEnterLane={handleEnterLane}
-            featuredCards={mockFeaturedCards}
+            featuredCards={selectedFeaturedCards}
             nowNextItems={mockNowNextItems}
             onQuickAction={handleQuickAction}
           />
