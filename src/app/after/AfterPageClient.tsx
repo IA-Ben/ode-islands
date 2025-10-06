@@ -6,8 +6,6 @@ import UnifiedTopNav from "@/components/UnifiedTopNav";
 import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageLayout';
 import AnimateText from '@/components/AnimateText';
 import { useTheme } from '@/contexts/ThemeContext';
-import { AfterHeader } from '@/components/AfterHeader';
-import { SectionScaffold } from '@/components/SectionScaffold';
 import { useFanScore } from '@/hooks/useFanScore';
 import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
@@ -18,7 +16,6 @@ const MemoryWalletModern = lazy(() => import("@/components/MemoryWalletModern"))
 const CollectionGrid = lazy(() => import("@/components/CollectionGrid"));
 const ScoreProgressPanel = lazy(() => import("@/components/ScoreProgressPanel"));
 const Leaderboard = lazy(() => import("@/components/Leaderboard"));
-const ScoreBadge = lazy(() => import("@/components/ScoreBadge"));
 
 const ComponentSkeleton = ({ height = "400px" }: { height?: string }) => (
   <div className={`${surfaces.cardGlass} rounded-2xl border border-slate-700/50 p-8 animate-pulse`} style={{ minHeight: height }}>
@@ -80,7 +77,6 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
   const { theme } = useTheme();
   const { scoreData } = useFanScore();
   const [activeTab, setActiveTab] = useState<'overview' | 'message' | 'wallet' | 'gallery' | 'merch' | 'community' | 'certificates' | 'fan-score' | 'insights' | 'memories' | 'memory-wallet'>('overview');
-  const [lane, setLane] = useState<'recap' | 'create' | 'offers'>('recap');
   const [animateIn, setAnimateIn] = useState(false);
   const [cmsConfig, setCmsConfig] = useState<AfterExperienceConfig | null>(null);
   const [isLoadingCms, setIsLoadingCms] = useState(true);
@@ -393,16 +389,7 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
                     Your Achievement Legacy
                   </AnimateText>
                 </h3>
-                <p className="text-white/80 text-lg mb-8">Celebrate your accomplishments and see how you rank in the community</p>
-                
-                <div className="flex justify-center mb-6">
-                  <ScoreBadge 
-                    showLevel={true}
-                    showPosition={true}
-                    compact={false}
-                    className="transform transition-all duration-300 hover:scale-105"
-                  />
-                </div>
+                <p className="text-white/80 text-lg">Celebrate your accomplishments and see how you rank in the community</p>
               </div>
             </div>
             
@@ -527,61 +514,6 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
             <Suspense fallback={<ComponentSkeleton height="400px" />}>
               <HeroRecapCard className="w-full" />
             </Suspense>
-            
-            <div 
-              className="text-center"
-              style={{
-                opacity: 0,
-                animation: animateIn ? 'animButtonIn 0.8s 1.2s ease forwards' : 'none'
-              }}
-            >
-              <div 
-                className={`inline-flex items-center px-6 py-3 rounded-full text-lg font-bold mb-8 ${surfaces.subtleGlass} border border-slate-700/50 shadow-lg`}
-                style={{
-                  opacity: 0,
-                  animation: animateIn ? 'animButtonIn 0.6s 1.5s ease forwards' : 'none'
-                }}
-              >
-                <svg className="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                </svg>
-                <span className="text-white">After Phase Complete</span>
-              </div>
-              
-              <div 
-                className="mb-12"
-                style={{
-                  opacity: 0,
-                  animation: animateIn ? 'animButtonIn 0.8s 1.8s ease forwards' : 'none'
-                }}
-              >
-                <div className="flex items-center justify-center mb-8">
-                  <Suspense fallback={<div className="w-32 h-32 bg-white/20 rounded-full animate-pulse"></div>}>
-                    <ScoreBadge 
-                      compact={false}
-                      showLevel={true}
-                      showPosition={true}
-                      onClick={() => setActiveTab('fan-score')}
-                      className="transform hover:scale-110 transition-all duration-300 cursor-pointer shadow-2xl"
-                    />
-                  </Suspense>
-                </div>
-                <button
-                  onClick={() => setActiveTab('fan-score')}
-                  className={`group inline-flex items-center space-x-2 text-white/80 hover:text-white transition-all duration-300 text-lg font-medium ${surfaces.subtleGlass} px-6 py-3 rounded-xl border border-slate-700/50 hover:bg-white/20 hover:border-fuchsia-500/50`}
-                >
-                  <span className="flex items-center">
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" />
-                    </svg>
-                    View Complete Achievement Legacy
-                  </span>
-                  <svg className="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </button>
-              </div>
-            </div>
             <div 
               className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
               style={{
@@ -733,43 +665,6 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
     }
   };
 
-  const renderLaneContent = () => {
-    switch (lane) {
-      case 'recap':
-        return (
-          <SectionScaffold>
-            <Suspense fallback={<div className="p-8 text-white/60">Loading recap...</div>}>
-              <HeroRecapCard />
-              <EventMemoriesGallery />
-            </Suspense>
-          </SectionScaffold>
-        );
-      
-      case 'create':
-        return (
-          <SectionScaffold>
-            <div className="p-8 text-center text-white/60">
-              <h3 className="text-2xl font-bold mb-4">Create & Share</h3>
-              <p>AI-assisted edits and exports coming soon</p>
-            </div>
-          </SectionScaffold>
-        );
-      
-      case 'offers':
-        return (
-          <SectionScaffold>
-            <div className="p-8 text-center text-white/60">
-              <h3 className="text-2xl font-bold mb-4">Special Offers</h3>
-              <p>Upcoming events and exclusive offers coming soon</p>
-            </div>
-          </SectionScaffold>
-        );
-      
-      default:
-        return null;
-    }
-  };
-
   return (
     <>
       <UnifiedTopNav
@@ -784,13 +679,6 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
         onOpenQR={handleOpenQR}
         onSwitchMode={handleSwitchMode}
       />
-      <AfterHeader
-        lane={lane}
-        setLane={setLane}
-        openShareComposer={() => {}}
-      />
-      
-      {renderLaneContent()}
       
       {activeTab !== 'overview' ? (
         <ImmersivePageLayout
@@ -914,7 +802,7 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
           {renderContent()}
         </ImmersivePageLayout>
       ) : (
-        <div className="min-h-screen bg-slate-950 pt-32 pb-16 px-4">
+        <div className="min-h-screen bg-slate-950 pt-8 pb-16 px-4">
           <div className="max-w-7xl mx-auto">
             {renderContent()}
           </div>

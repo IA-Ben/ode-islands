@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import AnimateText from './AnimateText';
+import { surfaces, components } from '@/lib/admin/designTokens';
 
 interface JourneyEvent {
   id: string;
@@ -205,7 +206,7 @@ export default function HeroRecapCard({ className = '', onShare }: HeroRecapCard
 
   if (loading) {
     return (
-      <div className={`bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 ${className}`}>
+      <div className={`${surfaces.cardGlass} rounded-2xl border border-slate-700/50 p-8 ${className}`}>
         <div className="animate-pulse">
           <div className="h-6 bg-white/20 rounded w-3/4 mb-4"></div>
           <div className="h-4 bg-white/10 rounded w-1/2 mb-6"></div>
@@ -221,7 +222,7 @@ export default function HeroRecapCard({ className = '', onShare }: HeroRecapCard
 
   if (error || !recapData) {
     return (
-      <div className={`bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 ${className}`}>
+      <div className={`${surfaces.cardGlass} rounded-2xl border border-slate-700/50 p-8 ${className}`}>
         <div className="text-center">
           <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg className="w-8 h-8 text-white/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -232,7 +233,7 @@ export default function HeroRecapCard({ className = '', onShare }: HeroRecapCard
           <p className="text-white/60 mb-4">We couldn't load your journey recap at the moment.</p>
           <button
             onClick={fetchRecapData}
-            className="px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-colors"
+            className={`px-4 py-2 ${surfaces.subtleGlass} hover:bg-white/20 rounded-lg text-white transition-colors border border-slate-700/50`}
           >
             Try Again
           </button>
@@ -245,7 +246,7 @@ export default function HeroRecapCard({ className = '', onShare }: HeroRecapCard
 
   return (
     <div 
-      className={`bg-white/10 backdrop-blur-lg rounded-2xl border border-white/20 p-8 ${className}`}
+      className={`${surfaces.cardGlass} rounded-2xl border border-slate-700/50 p-8 ${className}`}
       style={{
         opacity: 0,
         animation: animateIn ? 'animButtonIn 0.8s 0.2s ease forwards' : 'none'
@@ -267,7 +268,7 @@ export default function HeroRecapCard({ className = '', onShare }: HeroRecapCard
         </div>
         <button
           onClick={generateShareableImage}
-          className="flex items-center space-x-2 px-4 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-white transition-colors group"
+          className={`flex items-center space-x-2 px-4 py-2 ${surfaces.subtleGlass} hover:bg-white/20 rounded-lg text-white transition-colors group border border-slate-700/50`}
           style={{
             opacity: 0,
             animation: animateIn ? 'animButtonIn 0.6s 1.2s ease forwards' : 'none'
@@ -288,19 +289,19 @@ export default function HeroRecapCard({ className = '', onShare }: HeroRecapCard
           animation: animateIn ? 'animButtonIn 0.8s 1.0s ease forwards' : 'none'
         }}
       >
-        <div className="bg-white/10 rounded-xl p-4 text-center">
+        <div className={`${surfaces.subtleGlass} rounded-xl p-4 text-center border border-slate-700/30`}>
           <div className="text-2xl font-bold text-white mb-1">{recapData.completedChapters}</div>
           <div className="text-white/60 text-sm">Chapters</div>
         </div>
-        <div className="bg-white/10 rounded-xl p-4 text-center">
+        <div className={`${surfaces.subtleGlass} rounded-xl p-4 text-center border border-slate-700/30`}>
           <div className="text-2xl font-bold text-white mb-1">{recapData.totalKeepsakes}</div>
           <div className="text-white/60 text-sm">Keepsakes</div>
         </div>
-        <div className="bg-white/10 rounded-xl p-4 text-center">
+        <div className={`${surfaces.subtleGlass} rounded-xl p-4 text-center border border-slate-700/30`}>
           <div className="text-2xl font-bold text-white mb-1">{recapData.pollsAnswered}</div>
           <div className="text-white/60 text-sm">Polls</div>
         </div>
-        <div className="bg-white/10 rounded-xl p-4 text-center">
+        <div className={`${surfaces.subtleGlass} rounded-xl p-4 text-center border border-slate-700/30`}>
           <div className="text-2xl font-bold text-white mb-1">{recapData.tasksCompleted}</div>
           <div className="text-white/60 text-sm">Tasks</div>
         </div>
