@@ -2,35 +2,294 @@ import type { RequestHandler } from "express";
 import { storage } from "./storage";
 
 export const PERMISSIONS = {
-  // Content permissions
+  // Story/Content permissions
+  'story:view': 'View stories and chapters',
+  'story:create': 'Create new stories and chapters',
+  'story:edit': 'Edit existing stories and chapters',
+  'story:publish': 'Publish stories and chapters',
+  'story:delete': 'Delete stories and chapters',
+  
+  // Events permissions
+  'events:view': 'View events',
+  'events:create': 'Create new events',
+  'events:edit': 'Edit existing events',
+  'events:publish': 'Publish events',
+  'events:delete': 'Delete events',
+  'events:operate': 'Operate live events (start/stop/moderate)',
+  
+  // Cards permissions
+  'cards:view': 'View story cards',
+  'cards:create': 'Create new cards',
+  'cards:edit': 'Edit existing cards',
+  'cards:publish': 'Publish cards',
+  'cards:delete': 'Delete cards',
+  
+  // Rewards permissions
+  'rewards:view': 'View reward rules',
+  'rewards:create': 'Create new reward rules',
+  'rewards:edit': 'Edit reward rules',
+  'rewards:configure': 'Configure reward settings',
+  'rewards:delete': 'Delete reward rules',
+  
+  // Orders permissions (for merchandise/tickets)
+  'orders:view': 'View orders',
+  'orders:create': 'Create new orders',
+  'orders:edit': 'Edit existing orders',
+  'orders:fulfill': 'Fulfill orders',
+  'orders:delete': 'Delete orders',
+  
+  // Analytics permissions
+  'analytics:view': 'View analytics and reports',
+  'analytics:export': 'Export analytics data',
+  'analytics:advanced': 'Access advanced analytics features',
+  
+  // User management permissions
+  'users:view': 'View user list and profiles',
+  'users:edit': 'Edit user details and roles',
+  'users:manage_wallet': 'Manage user memory wallets',
+  'users:manual_award': 'Manually award memories/rewards',
+  'users:delete': 'Delete users',
+  
+  // Settings permissions
+  'settings:view': 'View system settings',
+  'settings:edit': 'Edit system settings',
+  'settings:advanced': 'Access advanced system settings',
+  
+  // Media permissions (legacy, keeping for backward compatibility)
+  'media:view': 'View media library',
+  'media:upload': 'Upload media files',
+  'media:edit': 'Edit media metadata',
+  'media:delete': 'Delete media files',
+  
+  // QR Code permissions
+  'qr:view': 'View QR codes',
+  'qr:manage': 'Manage QR codes and validation',
+  
+  // System permissions (highest level)
+  'system:admin': 'Full system access',
+  'system:settings': 'Modify system settings',
+  'system:roles': 'Manage roles and permissions',
+  
+  // Legacy content permissions (keeping for backward compatibility)
   'content:view': 'View content in CMS',
   'content:create': 'Create new content',
   'content:edit': 'Edit existing content',
   'content:delete': 'Delete content',
   'content:publish': 'Publish content',
-  
-  // Media permissions
-  'media:view': 'View media library',
-  'media:upload': 'Upload media files',
-  'media:delete': 'Delete media files',
-  
-  // User management
-  'users:view': 'View user list',
-  'users:edit': 'Edit user roles',
-  'users:delete': 'Delete users',
-  
-  // System permissions
-  'system:admin': 'Full system access',
-  'system:settings': 'Modify system settings',
-  'system:roles': 'Manage roles and permissions',
 };
 
 export const ROLE_LEVELS = {
-  'content_viewer': 1,
-  'content_editor': 5,
-  'content_admin': 8,
+  'owner': 10,
+  'admin': 9,
+  'producer': 7,
+  'operator': 5,
+  'analyst': 3,
+  'support': 2,
+  
+  // Legacy roles (backward compatibility - map to new roles)
   'super_admin': 10,
+  'content_admin': 9,
+  'content_editor': 7,
+  'content_viewer': 3,
 };
+
+export const ROLE_PERMISSIONS: Record<string, string[]> = {
+  'owner': [
+    'system:admin',
+    'system:settings',
+    'system:roles',
+    'story:*',
+    'events:*',
+    'cards:*',
+    'rewards:*',
+    'orders:*',
+    'analytics:*',
+    'users:*',
+    'settings:*',
+    'media:*',
+    'qr:*',
+    'content:*',
+  ],
+  
+  'admin': [
+    'system:settings',
+    'story:*',
+    'events:*',
+    'cards:*',
+    'rewards:*',
+    'orders:*',
+    'analytics:*',
+    'users:view',
+    'users:edit',
+    'users:manage_wallet',
+    'users:manual_award',
+    'settings:view',
+    'settings:edit',
+    'media:*',
+    'qr:*',
+    'content:*',
+  ],
+  
+  'producer': [
+    'story:view',
+    'story:create',
+    'story:edit',
+    'story:publish',
+    'story:delete',
+    'events:view',
+    'events:create',
+    'events:edit',
+    'events:publish',
+    'cards:view',
+    'cards:create',
+    'cards:edit',
+    'cards:publish',
+    'cards:delete',
+    'rewards:view',
+    'rewards:create',
+    'rewards:edit',
+    'analytics:view',
+    'users:view',
+    'settings:view',
+    'media:view',
+    'media:upload',
+    'media:edit',
+    'content:view',
+    'content:create',
+    'content:edit',
+    'content:publish',
+  ],
+  
+  'operator': [
+    'story:view',
+    'story:publish',
+    'events:view',
+    'events:operate',
+    'cards:view',
+    'cards:edit',
+    'rewards:view',
+    'orders:view',
+    'orders:fulfill',
+    'analytics:view',
+    'users:view',
+    'users:manage_wallet',
+    'users:manual_award',
+    'qr:view',
+    'qr:manage',
+    'media:view',
+    'content:view',
+  ],
+  
+  'analyst': [
+    'story:view',
+    'events:view',
+    'cards:view',
+    'rewards:view',
+    'orders:view',
+    'analytics:view',
+    'analytics:export',
+    'users:view',
+    'settings:view',
+    'media:view',
+    'content:view',
+  ],
+  
+  'support': [
+    'story:view',
+    'events:view',
+    'cards:view',
+    'users:view',
+    'analytics:view',
+    'content:view',
+  ],
+  
+  // Legacy role mappings (backward compatibility)
+  'super_admin': [
+    'system:admin',
+    'system:settings',
+    'system:roles',
+    'story:*',
+    'events:*',
+    'cards:*',
+    'rewards:*',
+    'orders:*',
+    'analytics:*',
+    'users:*',
+    'settings:*',
+    'media:*',
+    'qr:*',
+    'content:*',
+  ],
+  
+  'content_admin': [
+    'system:settings',
+    'story:*',
+    'events:*',
+    'cards:*',
+    'rewards:*',
+    'orders:*',
+    'analytics:*',
+    'users:view',
+    'users:edit',
+    'users:manage_wallet',
+    'users:manual_award',
+    'settings:view',
+    'settings:edit',
+    'media:*',
+    'qr:*',
+    'content:*',
+  ],
+  
+  'content_editor': [
+    'story:view',
+    'story:create',
+    'story:edit',
+    'story:publish',
+    'events:view',
+    'events:create',
+    'events:edit',
+    'cards:view',
+    'cards:create',
+    'cards:edit',
+    'analytics:view',
+    'users:view',
+    'settings:view',
+    'media:view',
+    'media:upload',
+    'media:edit',
+    'content:view',
+    'content:create',
+    'content:edit',
+    'content:publish',
+  ],
+  
+  'content_viewer': [
+    'story:view',
+    'events:view',
+    'cards:view',
+    'rewards:view',
+    'orders:view',
+    'analytics:view',
+    'users:view',
+    'media:view',
+    'content:view',
+  ],
+};
+
+export function getRolePermissions(roleName: string): string[] {
+  return ROLE_PERMISSIONS[roleName] || [];
+}
+
+export function getAllPermissionsForUser(userRoles: { name: string; level: number }[]): string[] {
+  const allPermissions = new Set<string>();
+  
+  for (const role of userRoles) {
+    const rolePermissions = getRolePermissions(role.name);
+    rolePermissions.forEach(perm => allPermissions.add(perm));
+  }
+  
+  return Array.from(allPermissions);
+}
 
 function matchesWildcard(permission: string, pattern: string): boolean {
   if (pattern === permission) return true;
