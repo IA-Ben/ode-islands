@@ -266,62 +266,18 @@ export async function getSessionFromHeaders(request: NextRequest): Promise<Sessi
   }
 }
 
-// Server-side user fetching for Server Components
+// Server-side user fetching for Server Components - BYPASSED
 // Uses next/headers cookies() instead of NextRequest
 export async function getServerUser() {
-  try {
-    const cookieStore = await cookies();
-    const sessionCookie = cookieStore.get('auth-session');
-    
-    if (!sessionCookie) {
-      return null;
-    }
-
-    // Verify JWT token cryptographically using RS256 public key
-    const decoded = jwt.verify(sessionCookie.value, JWT_PUBLIC_KEY, { algorithms: ['RS256'] }) as JWTPayload;
-    
-    // Verify server-side session exists (defense in depth)
-    const isServerSessionValid = await verifyServerSession(decoded.sessionId);
-    if (!isServerSessionValid) {
-      return null;
-    }
-    
-    // Verify user still exists and hasn't been disabled
-    const user = await db
-      .select()
-      .from(users)
-      .where(eq(users.id, decoded.userId))
-      .limit(1);
-
-    if (user.length === 0) {
-      // User was deleted, invalidate session
-      await db.delete(sessions).where(eq(sessions.sid, decoded.sessionId));
-      return null;
-    }
-
-    const foundUser = user[0];
-    
-    // Fetch user permissions from RBAC system
-    const permissions = await storage.getUserPermissions(foundUser.id);
-
-    return {
-      id: foundUser.id,
-      email: foundUser.email ?? '',
-      firstName: foundUser.firstName ?? '',
-      lastName: foundUser.lastName ?? '',
-      isAdmin: foundUser.isAdmin ?? false,
-      permissions,
-    };
-  } catch (error) {
-    if (error instanceof jwt.JsonWebTokenError) {
-      console.warn('Invalid JWT token:', error.message);
-    } else if (error instanceof jwt.TokenExpiredError) {
-      console.warn('Expired JWT token');
-    } else {
-      console.error('Server user fetch error:', error);
-    }
-    return null;
-  }
+  // Authentication bypassed - return mock admin user
+  return {
+    id: 'dev-user',
+    email: 'dev@example.com',
+    firstName: 'Dev',
+    lastName: 'User',
+    isAdmin: true,
+    permissions: ['*'], // All permissions
+  };
 }
 
 // Helper to create authenticated response with secure JWT cookie

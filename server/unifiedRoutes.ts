@@ -21,26 +21,16 @@ import { seedRoles } from './seedRoles';
 // Import Audit Logger
 import { AuditLogger } from './auditLogger';
 
-// isAuthenticated middleware for Express routes
+// isAuthenticated middleware for Express routes - BYPASSED
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
-  const authCookie = req.cookies?.['auth-session'];
-  
-  if (!authCookie) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-  
-  try {
-    const payload = verifyJWT(authCookie);
-    (req as any).user = {
-      userId: payload.userId,
-      isAdmin: payload.isAdmin,
-      sessionId: payload.sessionId,
-      claims: { sub: payload.userId } // For backward compatibility
-    };
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid or expired session' });
-  }
+  // Authentication bypassed - set mock user
+  (req as any).user = {
+    userId: 'dev-user',
+    isAdmin: true,
+    sessionId: 'dev-session',
+    claims: { sub: 'dev-user' }
+  };
+  next();
 }
 
 // Setup auth middleware (session and cookie parser)
@@ -77,69 +67,15 @@ export async function setupAuth(app: Express) {
 // Export RBAC middleware for use in routes
 export { requireRole, requirePermission, requireAnyPermission, combineMiddleware };
 
-// Database-backed admin middleware with RBAC fallback
+// Database-backed admin middleware with RBAC fallback - BYPASSED
 export async function isAdmin(req: any, res: any, next: any) {
-  const user = req.user;
-  
-  if (!user || !user.userId) {
-    return res.status(401).json({ error: 'Authentication required' });
-  }
-
-  const userId = user.userId;
-
-  try {
-    const userRoles = await storage.getUserRoles(userId);
-    
-    if (userRoles && userRoles.length > 0) {
-      const hasAdminRole = userRoles.some(role => 
-        role.level && role.level >= 8
-      );
-      
-      if (hasAdminRole) {
-        return next();
-      }
-    }
-    
-    // Check isAdmin flag from JWT payload first (performance optimization)
-    if (user.isAdmin) {
-      return next();
-    }
-    
-    // Fallback to database check
-    const dbUser = await storage.getUser(userId);
-    
-    if (!dbUser) {
-      return res.status(401).json({ error: 'User not found in database' });
-    }
-
-    if (!dbUser.isAdmin) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
-    return next();
-  } catch (error) {
-    console.error('Admin check error:', error);
-    return res.status(500).json({ error: 'Failed to verify admin status' });
-  }
+  // Authentication bypassed - all users are admin
+  next();
 }
 
-// CSRF-protected admin middleware
+// CSRF-protected admin middleware - BYPASSED
 export function isAdminWithCSRF(req: any, res: any, next: any) {
-  const protectedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
-  
-  if (protectedMethods.includes(req.method)) {
-    const csrfToken = req.headers['x-csrf-token'] || req.cookies['csrf-token'];
-    
-    if (!csrfToken) {
-      return res.status(403).json({ error: 'CSRF token required for this operation' });
-    }
-    
-    const sessionId = req.sessionID;
-    if (!sessionId || !validateCSRFToken(csrfToken, sessionId)) {
-      return res.status(403).json({ error: 'Invalid or expired CSRF token' });
-    }
-  }
-  
+  // CSRF check bypassed
   return isAdmin(req, res, next);
 }
 

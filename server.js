@@ -109,20 +109,14 @@ app.prepare().then(async () => {
     }
   });
 
-  // Enforce required environment variables for production security
-  if (!process.env.SESSION_SECRET) {
-    console.error('FATAL: SESSION_SECRET environment variable is required');
-    process.exit(1);
-  }
-  
+  // Database check for production
   if (!dev && !process.env.DATABASE_URL) {
     console.error('FATAL: DATABASE_URL environment variable is required in production');
     process.exit(1);
   }
 
-  // Initialize Replit Auth with Passport BEFORE other routes
-  const { setupAuth } = await import('./server/replitAuth.ts');
-  await setupAuth(server);
+  // Authentication bypassed per user request
+  console.log('⚠️  Authentication disabled - all routes are publicly accessible');
 
   // Import and setup unified routes for non-auth endpoints
   const { registerUnifiedRoutes, isAuthenticated, isAdmin } = await import('./server/unifiedRoutes.ts');
