@@ -413,6 +413,28 @@ export default function UnifiedTopNav({
                           </span>
                         )}
                       </div>
+                      {showModeSwitch && (
+                        <button
+                          onClick={() => {
+                            onSwitchMode(mode === "app" ? "admin" : "app");
+                            setMenuOpen(false);
+                          }}
+                          role="menuitem"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400"
+                        >
+                          {mode === "app" ? (
+                            <>
+                              <Shield className="w-4 h-4" />
+                              Switch to Admin
+                            </>
+                          ) : (
+                            <>
+                              <ArrowLeftRight className="w-4 h-4" />
+                              Switch to App
+                            </>
+                          )}
+                        </button>
+                      )}
                       <button
                         onClick={handleSignOut}
                         role="menuitem"

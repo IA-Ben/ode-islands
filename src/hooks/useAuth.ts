@@ -9,12 +9,13 @@ interface User {
 
 // Authentication bypassed - always return authenticated admin user
 export function useAuth() {
-  const mockUser: User = {
+  const mockUser: User & { permissions?: string[] } = {
     id: 'dev-user',
     email: 'dev@example.com',
     firstName: 'Dev',
     lastName: 'User',
     isAdmin: true,
+    permissions: ['*', 'system:admin', 'content:view', 'content:edit', 'content:delete', 'content:publish'],
   };
 
   return {
