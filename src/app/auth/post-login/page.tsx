@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { apiGet } from '@/lib/csrfUtils';
 
 export default function PostLoginPage() {
-  const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
 
   useEffect(() => {
@@ -21,15 +19,13 @@ export default function PostLoginPage() {
           const params = new URLSearchParams(window.location.search);
           const returnTo = params.get('returnTo') || '/event';
           
-          // Small delay to ensure state propagates
-          setTimeout(() => {
-            router.replace(returnTo);
-          }, 100);
+          // Force full page reload to ensure all components re-mount with fresh session
+          window.location.href = returnTo;
         } else {
           // No user data - redirect to login
           setStatus('error');
           setTimeout(() => {
-            router.replace('/api/login');
+            window.location.href = '/api/login';
           }, 1000);
         }
       } catch (error) {
@@ -37,13 +33,13 @@ export default function PostLoginPage() {
         setStatus('error');
         // Redirect to home on error
         setTimeout(() => {
-          router.replace('/');
+          window.location.href = '/';
         }, 1000);
       }
     }
 
     refreshUserAndRedirect();
-  }, [router]);
+  }, []);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
