@@ -1,0 +1,258 @@
+Objective
+
+After Replit Auth, the app must recognise the user (no more “Log in” loop).
+
+Remove duplicate/legacy auth code and standardise on one session cookie + /api/me.
+
+Enforce RBAC on Admin routes. Support local + prod domains.
+
+Deliverables
+
+Single source of truth for auth (no legacy files).
+
+/auth/login → Replit redirect, /api/auth/callback/replit handler.
+
+HttpOnly session cookie set correctly (SameSite/Secure/Domain).
+
+/api/me returns the current user & roles.
+
+UI refresh of user state right after callback.
+
+RBAC guards on Admin routes & Settings.
+
+Test checklist passing (below).
+
+Remove legacy/duplicate auth
+
+Delete/replace any of the following if present:
+
+/pages/api/auth/[...].*, /api/login, /api/logout variants not used.
+
+Old providers (Clerk/Auth0/etc.) if Replit Auth is the only IdP.
+
+Client-side token storage in localStorage/sessionStorage.
+
+Multiple cookies (token, auth, sessionId) → keep only session.
+
+Environment variables (Replit Secrets)
+REPLIT_AUTH_CLIENT_ID=xxxxx
+REPLIT_AUTH_CLIENT_SECRET=xxxxx
+REPLIT_AUTH_ISSUER=https://replit.com
+APP_URL=https://<your-app-url>         # e.g. https://ode.repl.co or custom domain
+JWT_PRIVATE_KEY=-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----
+JWT_PUBLIC_KEY=-----BEGIN PUBLIC KEY-----\n...\n-----END PUBLIC KEY-----
+NODE_ENV=production                    # or development
+
+Routes & server logic
+1) /auth/login
+
+Redirect to Replit Auth with state + code_challenge (PKCE). Store state & verifier in a short-lived HttpOnly temp cookie.
+
+// app/auth/login/route.ts (Next.js App Router) or equivalent Express route
+import { cookies } from "next/headers";
+import crypto from "crypto";
+
+export async function GET() {
+  const state = crypto.randomBytes(16).toString("hex");
+  const verifier = crypto.randomBytes(32).toString("base64url");
+  const challenge = crypto.createHash("sha256").update(verifier).digest("base64url");
+
+  cookies().set("pkce_state", state, { httpOnly: true, sameSite: "lax", path: "/" });
+  cookies().set("pkce_verifier", verifier, { httpOnly: true, sameSite: "lax", path: "/" });
+
+  const authUrl = new URL(`${process.env.REPLIT_AUTH_ISSUER}/auth`);
+  authUrl.searchParams.set("client_id", process.env.REPLIT_AUTH_CLIENT_ID!);
+  authUrl.searchParams.set("redirect_uri", `${process.env.APP_URL}/api/auth/callback/replit`);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("scope", "openid email profile");
+  authUrl.searchParams.set("state", state);
+  authUrl.searchParams.set("code_challenge", challenge);
+  authUrl.searchParams.set("code_challenge_method", "S256");
+
+  return Response.redirect(authUrl.toString(), 302);
+}
+
+2) /api/auth/callback/replit
+
+Verify state.
+
+Exchange code for tokens at Replit.
+
+Lookup/create user → build session JWT (15 min) and set HttpOnly session cookie.
+
+Redirect back to the app (remember last route if available).
+
+// app/api/auth/callback/replit/route.ts
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+
+function sameSite() {
+  return process.env.NODE_ENV === "development" ? "lax" : ("none" as const);
+}
+function secure() {
+  return process.env.NODE_ENV !== "development";
+}
+
+export async function GET(req: Request) {
+  const url = new URL(req.url);
+  const code = url.searchParams.get("code");
+  const state = url.searchParams.get("state");
+  const jar = cookies();
+  const savedState = jar.get("pkce_state")?.value;
+  const verifier = jar.get("pkce_verifier")?.value;
+
+  if (!code || !state || state !== savedState) {
+    return new Response("Invalid state", { status: 400 });
+  }
+
+  // TODO: exchange `code` + `verifier` with Replit token endpoint
+  // const tokens = await fetch(TOKEN_URL, { ... })
+
+  // TODO: fetch user info from Replit (id, email, name, roles if any)
+  const user = { id: "u123", email: "dev@example.com", roles: ["admin"] };
+
+  const session = jwt.sign(
+    { sub: user.id, email: user.email, roles: user.roles },
+    process.env.JWT_PRIVATE_KEY!,
+    { algorithm: "RS256", expiresIn: "15m" }
+  );
+
+  jar.set("session", session, {
+    httpOnly: true,
+    secure: secure(),
+    sameSite: sameSite(),
+    path: "/",
+    // domain: ".yourdomain.com" // ONLY if app lives on subdomains; never set on localhost
+  });
+
+  // Clean temp cookies
+  jar.delete("pkce_state");
+  jar.delete("pkce_verifier");
+
+  // Optional: set refresh token in HttpOnly cookie (server endpoint to rotate)
+  // jar.set("refresh", refreshToken, {...})
+
+  return Response.redirect(`${process.env.APP_URL}/auth/post-login`, 302);
+}
+
+3) /auth/post-login (client refresh)
+
+Immediately revalidate /api/me and refresh the router so the header stops showing “Log in”.
+
+// app/auth/post-login/page.tsx
+"use client";
+import { useEffect } from "react";
+import { useRouter } from "next/navigation";
+import useSWR, { mutate } from "swr";
+
+export default function PostLogin() {
+  const router = useRouter();
+  useEffect(() => {
+    mutate("/api/me");
+    router.replace("/app/event"); // or last visited route
+  }, []);
+  return null;
+}
+
+4) /api/me
+
+Returns the current user (read JWT from session cookie).
+
+// app/api/me/route.ts
+import { cookies } from "next/headers";
+import jwt from "jsonwebtoken";
+
+export async function GET() {
+  const jar = cookies();
+  const token = jar.get("session")?.value;
+  if (!token) return Response.json({ user: null }, { status: 200 });
+  try {
+    const user = jwt.verify(token, process.env.JWT_PUBLIC_KEY!, { algorithms: ["RS256"], clockTolerance: 5 });
+    return Response.json({ user });
+  } catch {
+    return Response.json({ user: null }, { status: 200 });
+  }
+}
+
+5) RBAC middleware (Admin guard)
+
+Deny unauthorised users at the server edge.
+
+// app/admin/(.*)/middleware.ts (or global middleware with path check)
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import jwt from "jsonwebtoken";
+
+const ALLOWED = new Set(["owner","admin","producer","operator","analyst","support"]);
+
+export function middleware(req: NextRequest) {
+  if (!req.nextUrl.pathname.startsWith("/admin")) return NextResponse.next();
+
+  const cookie = req.cookies.get("session")?.value;
+  if (!cookie) return NextResponse.redirect(new URL("/auth/login", req.url));
+
+  try {
+    const user: any = jwt.verify(cookie, process.env.JWT_PUBLIC_KEY!, { algorithms: ["RS256"], clockTolerance: 5 });
+    const ok = (user.roles ?? []).some((r: string) => ALLOWED.has(r));
+    if (!ok) return NextResponse.redirect(new URL("/no-access", req.url));
+    return NextResponse.next();
+  } catch {
+    return NextResponse.redirect(new URL("/auth/login", req.url));
+  }
+}
+
+Client header: fetch user & show correct state
+
+On AppShell load, call /api/me (SSR or SWR).
+
+If user, show Profile/Wallet/Tier and hide “Log in”.
+
+If not, show “Log in”.
+
+// example SWR fetcher
+const { data } = useSWR("/api/me", (u) => fetch(u).then(r => r.json()));
+const user = data?.user;
+
+Cookie attributes (do this right)
+
+Local dev: SameSite=Lax, Secure=false, no Domain.
+
+Prod, same-site (same domain): SameSite=Lax, Secure=true.
+
+Prod, cross-site (IdP on different domain): SameSite=None; Secure, set Domain=.yourdomain.com only if Admin/App share parent domain.
+
+Clean-up checklist
+
+Remove any storage of tokens in JS-accessible storage.
+
+Remove unused /logout variants; provide a single logout that clears session (and refresh if used) then redirects home.
+
+Delete old providers and config not used by Replit Auth.
+
+Ensure clock sync (NTP) in the container to avoid JWT “nbf”/“exp” drift.
+
+Tests (must pass)
+
+Login loop: click Log in → Replit → back → /api/me returns user; header shows user (no manual refresh).
+
+Cookie visible: session appears in browser devtools (not struck out); correct SameSite/Secure.
+
+Admin RBAC: /admin:
+
+unauthenticated → redirected to /auth/login
+
+authenticated without roles → /no-access
+
+admin → loads Admin UI
+
+Callback errors: wrong state → 400; no session cookie set.
+
+Local vs Prod: both environments set correct cookie attributes.
+
+Logout: clears cookie; /api/me → user:null.
+
+Rollback
+
+Keep previous auth files in a legacy-auth/ folder for 1 release. If needed, flip back by routing /auth/* to legacy handlers.
+
+If you need, I can tailor the token exchange call for Replit’s exact OAuth endpoints and add a silent refresh token flow; for now this prompt gets you off the “Log in” loop and cleans up duplicate auth.
