@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./simplifiedAuth";
 import { withAdminAuthAndCSRF, withCSRFProtection, validateCSRFToken } from "./auth";
 
 // Import enterprise services
@@ -26,16 +26,13 @@ export { requireRole, requirePermission, requireAnyPermission, combineMiddleware
 
 // Database-backed admin middleware with RBAC fallback
 export async function isAdmin(req: any, res: any, next: any) {
-  if (!req.isAuthenticated()) {
+  const user = req.user;
+  
+  if (!user || !user.userId) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  const user = req.user;
-  const userId = user?.claims?.sub;
-
-  if (!userId) {
-    return res.status(401).json({ error: 'Invalid user session' });
-  }
+  const userId = user.userId;
 
   try {
     const userRoles = await storage.getUserRoles(userId);
@@ -50,6 +47,12 @@ export async function isAdmin(req: any, res: any, next: any) {
       }
     }
     
+    // Check isAdmin flag from JWT payload first (performance optimization)
+    if (user.isAdmin) {
+      return next();
+    }
+    
+    // Fallback to database check
     const dbUser = await storage.getUser(userId);
     
     if (!dbUser) {

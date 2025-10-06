@@ -34,6 +34,7 @@
     "@testing-library/user-event": "^14.6.1",
     "@types/bcryptjs": "^2.4.6",
     "@types/connect-pg-simple": "^7.0.3",
+    "@types/cookie-parser": "^1.4.9",
     "@types/cookie-signature": "^1.1.2",
     "@types/express": "^5.0.3",
     "@types/express-session": "^1.18.2",

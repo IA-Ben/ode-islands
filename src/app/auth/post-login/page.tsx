@@ -10,7 +10,7 @@ export default function PostLoginPage() {
     async function refreshUserAndRedirect() {
       try {
         // Force a fresh fetch of user data to ensure session is recognized
-        const response = await apiGet('/api/auth/user');
+        const response = await apiGet('/api/me');
         
         if (response) {
           setStatus('success');

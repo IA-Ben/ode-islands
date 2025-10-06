@@ -18,7 +18,7 @@ export function useAuth() {
   useEffect(() => {
     async function checkAuth() {
       try {
-        const response = await apiGet<User | { user: User }>('/api/auth/user');
+        const response = await apiGet<User | { user: User }>('/api/me');
         if (response) {
           // Handle both formats: direct user object or wrapped response
           const actualUser = 'user' in response ? response.user : response;
