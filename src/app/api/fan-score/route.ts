@@ -22,6 +22,9 @@ async function handleGET(request: NextRequest) {
     // Get session information for authorization
     const session = (request as any).session;
 
+    if (!session?.userId) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
