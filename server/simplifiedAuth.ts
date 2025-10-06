@@ -169,17 +169,20 @@ export async function setupAuth(app: Express) {
       const { codeVerifier, returnTo } = pkceData;
       pkceStore.delete(state as string);
       
-      // Exchange code for tokens
-      const callbackParams = new URLSearchParams({
-        code: code as string,
-        state: state as string
-      });
+      // Build full callback URL with query parameters (required for openid-client v6)
+      const callbackUrl = new URL(redirectUri);
+      callbackUrl.searchParams.set('code', code as string);
+      callbackUrl.searchParams.set('state', state as string);
       
-      const tokens = await client.authorizationCodeGrant(config, new URL(redirectUri), {
-        pkceCodeVerifier: codeVerifier,
-        expectedState: state as string,
-        [client.skipSubjectCheck]: true
-      }, callbackParams);
+      // Exchange code for tokens
+      const tokens = await client.authorizationCodeGrant(
+        config,
+        callbackUrl,
+        {
+          pkceCodeVerifier: codeVerifier,
+          expectedState: state as string
+        }
+      );
       
       const claims = tokens.claims();
       
