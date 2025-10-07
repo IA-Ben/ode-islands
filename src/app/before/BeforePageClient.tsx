@@ -8,6 +8,9 @@ import UnifiedTopNav from "@/components/UnifiedTopNav";
 import { useFanScore } from "@/hooks/useFanScore";
 import LoadingScreen from "@/components/LoadingScreen";
 import VenueMapModal from "@/components/before/VenueMapModal";
+import OpeningFlow from "@/components/before/OpeningFlow";
+import DiscoverCollageHeader from "@/components/before/DiscoverCollageHeader";
+import FeatureReel from "@/components/before/FeatureReel";
 import dynamic from "next/dynamic";
 import data from "../data/ode-islands.json";
 
@@ -156,6 +159,8 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
+  const [showOpeningFlow, setShowOpeningFlow] = useState(true);
+  const [openingFlowComplete, setOpeningFlowComplete] = useState(false);
   
   // Calculate tier from fan score level first
   const points = scoreData?.currentScore?.totalScore || 0;
@@ -563,9 +568,106 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     return cards;
   };
 
+  // Mock Opening Flow Configuration
+  const openingFlowConfig = {
+    animation: {
+      type: "video" as const,
+      assetUrl: "https://storage.googleapis.com/odeislands/video/opening-animation.mp4",
+      durationCapSec: 5,
+      skippable: true,
+      caption: "Welcome to Ode Islands"
+    },
+    introHero: {
+      videoUrl: "https://storage.googleapis.com/odeislands/video/intro-hero.mp4",
+      posterImage: "https://storage.googleapis.com/odeislands/img/intro-hero-poster.jpg",
+      loop: true,
+      muteDefault: true,
+      title: "Welcome to the Journey",
+      subTitle: "Experience the world of Ode Islands",
+      ctaPrimary: {
+        label: "Begin Your Journey",
+        deeplink: "/before?view=discover"
+      },
+      ctaSecondary: {
+        label: "Watch Trailer",
+        deeplink: "/before/trailer"
+      },
+      reduceMotionFallback: "posterImage" as const,
+      showOnStages: ["before"]
+    }
+  };
+
+  // Mock Discover Configuration
+  const discoverConfig = {
+    tabHeader: {
+      image: "https://storage.googleapis.com/odeislands/img/discover-collage.jpg",
+      alt: "Discover Ode Islands",
+      tagline: "Explore the worlds, stories, and secrets",
+      overlayScrim: "dark" as const
+    },
+    featureReel: [
+      {
+        type: "chapter" as const,
+        cardId: "chapter-1",
+        headline: "Begin Your Journey",
+        subcopy: "Dive into the immersive story of Ode Islands",
+        badge: "Chapter 1",
+        imageUrl: "https://storage.googleapis.com/odeislands/img/chapter-1-hero.jpg"
+      },
+      {
+        type: "teaser" as const,
+        cardId: "trailer-1",
+        headline: "Official Trailer",
+        subcopy: "Get a sneak peek of what awaits",
+        badge: "Watch Now",
+        imageUrl: "https://storage.googleapis.com/odeislands/img/trailer-hero.jpg"
+      },
+      {
+        type: "ar" as const,
+        cardId: "ar-home-1",
+        headline: "AR Experience",
+        subcopy: "Bring the magic home with AR",
+        badge: "Try Now",
+        imageUrl: "https://storage.googleapis.com/odeislands/img/ar-hero.jpg"
+      }
+    ]
+  };
+
+  const handleOpeningFlowComplete = () => {
+    setShowOpeningFlow(false);
+    setOpeningFlowComplete(true);
+  };
+
+  const handleOpeningFlowNavigate = (deeplink: string) => {
+    if (deeplink.startsWith('/before?view=')) {
+      const view = deeplink.split('view=')[1];
+      setCurrentView(view as any);
+    } else {
+      router.push(deeplink);
+    }
+  };
+
+  const handleFeatureReelItemClick = (item: any) => {
+    if (item.type === "chapter") {
+      router.push(`/before/${item.cardId}`);
+    } else {
+      console.log("Feature reel item clicked:", item);
+    }
+  };
+
   return (
     <>
       {isNavigating && <LoadingScreen />}
+      
+      {/* Opening Flow */}
+      {showOpeningFlow && !openingFlowComplete && (
+        <OpeningFlow
+          config={openingFlowConfig}
+          currentStage="before"
+          onComplete={handleOpeningFlowComplete}
+          onNavigate={handleOpeningFlowNavigate}
+        />
+      )}
       
       <div className="min-h-screen bg-slate-900">
         <UnifiedTopNav
@@ -683,6 +785,27 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
           />
         ) : (
           <>
+            {/* Discover Collage Header & Feature Reel */}
+            {currentView === "discover" && (
+              <>
+                <DiscoverCollageHeader
+                  image={discoverConfig.tabHeader.image}
+                  alt={discoverConfig.tabHeader.alt}
+                  tagline={discoverConfig.tabHeader.tagline}
+                  overlayScrim={discoverConfig.tabHeader.overlayScrim}
+                />
+                
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-24 mb-12 relative z-10">
+                  <FeatureReel
+                    items={discoverConfig.featureReel}
+                    autoScroll={true}
+                    autoScrollInterval={5000}
+                    onItemClick={handleFeatureReelItemClick}
+                  />
+                </div>
+              </>
+            )}
+
             {/* Discover Intra-Tabs Navigation */}
             {currentView === "discover" && (
               <div className="sticky top-[72px] z-40 bg-slate-900/95 backdrop-blur-md border-b border-white/5">
