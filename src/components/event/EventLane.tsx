@@ -38,6 +38,7 @@ interface EventLaneProps {
   cards: EventLaneCard[];
   onBack: () => void;
   onCardClick: (card: EventLaneCard) => void;
+  isAdmin?: boolean; // Optional: only show admin links when true
 }
 
 const laneConfig = {
@@ -110,9 +111,16 @@ const cardTypeIcons: Record<string, any> = {
   "f&b": Coffee,
 };
 
-export function EventLane({ lane, cards, onBack, onCardClick }: EventLaneProps) {
+export function EventLane({ lane, cards, onBack, onCardClick, isAdmin = false }: EventLaneProps) {
   const config = laneConfig[lane];
   const LaneIcon = config.icon;
+  
+  // Admin configuration mapping for each lane
+  const adminConfigLinks: Record<string, string> = {
+    info: '/admin/cards?scope=event&lane=info',
+    interact: '/admin/cards?scope=event&lane=interact',
+    rewards: '/admin/cards?scope=event&lane=rewards',
+  };
   
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
@@ -309,10 +317,23 @@ export function EventLane({ lane, cards, onBack, onCardClick }: EventLaneProps) 
                 <LaneIcon className={`w-10 h-10 ${config.iconColor}`} />
               </div>
               <div className="text-center space-y-2">
-                <h3 className="text-xl font-bold text-white">No cards yet</h3>
-                <p className="text-sm text-slate-400">
-                  Check back later for {config.title.toLowerCase()} content
+                <h3 className="text-xl font-bold text-white">No content yet</h3>
+                <p className="text-sm text-slate-400 mb-6">
+                  Check back later for new {config.title.toLowerCase()} content
                 </p>
+                
+                {/* Admin Configuration Link - Only shown to admins */}
+                {isAdmin && (
+                  <a
+                    href={adminConfigLinks[lane]}
+                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br ${config.gradientBg} border ${config.borderColor} ${config.hoverBorder} text-white hover:scale-105 transition-all duration-200 font-medium shadow-lg ${config.shadowColor}`}
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                    </svg>
+                    <span>Configure in Admin</span>
+                  </a>
+                )}
               </div>
             </div>
           )}

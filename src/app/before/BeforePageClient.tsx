@@ -580,6 +580,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
             cards={getLaneCards()}
             onBack={handleBackToHub}
             onCardClick={handleCardClick}
+            isAdmin={user?.permissions?.includes('*') || false}
           />
         )}
       </div>

@@ -739,6 +739,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
             }
             onBack={handleBackToHub}
             onCardClick={handleCardClick}
+            isAdmin={session.isAdmin}
           />
         )}
         

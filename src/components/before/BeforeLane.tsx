@@ -27,6 +27,7 @@ interface BeforeLaneProps {
   cards: BeforeLaneCard[];
   onBack: () => void;
   onCardClick: (action: string, card: BeforeLaneCard) => void;
+  isAdmin?: boolean; // Optional: only show admin links when true
 }
 
 const laneConfig = {
@@ -97,7 +98,7 @@ const laneConfig = {
 };
 
 
-export function BeforeLane({ lane, cards, onBack, onCardClick }: BeforeLaneProps) {
+export function BeforeLane({ lane, cards, onBack, onCardClick, isAdmin = false }: BeforeLaneProps) {
   const config = laneConfig[lane];
   const LaneIcon = config.icon;
   
@@ -228,16 +229,18 @@ export function BeforeLane({ lane, cards, onBack, onCardClick }: BeforeLaneProps
               <h3 className="text-2xl font-bold text-white mb-2">No content yet</h3>
               <p className="text-slate-400 mb-6">Check back later for new {config.title.toLowerCase()} content</p>
               
-              {/* Admin Configuration Link */}
-              <a
-                href={adminConfigLinks[lane]}
-                className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br ${config.gradientBg} border ${config.borderColor} ${config.hoverBorder} text-white hover:scale-105 transition-all duration-200 font-medium shadow-lg ${config.shadowColor}`}
-              >
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                </svg>
-                <span>Configure in Admin</span>
-              </a>
+              {/* Admin Configuration Link - Only shown to admins */}
+              {isAdmin && (
+                <a
+                  href={adminConfigLinks[lane]}
+                  className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br ${config.gradientBg} border ${config.borderColor} ${config.hoverBorder} text-white hover:scale-105 transition-all duration-200 font-medium shadow-lg ${config.shadowColor}`}
+                >
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                  </svg>
+                  <span>Configure in Admin</span>
+                </a>
+              )}
             </div>
           )}
         </div>
