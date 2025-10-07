@@ -7,7 +7,6 @@ import Footer from "@/components/Footer";
 import UnifiedTopNav from "@/components/UnifiedTopNav";
 import { useFanScore } from '@/hooks/useFanScore';
 import LoadingScreen from '@/components/LoadingScreen';
-import { ArrowLeft } from "lucide-react";
 import type { CardData } from '@/@typings';
 import data from "../../data/ode-islands.json";
 import dynamic from 'next/dynamic';
@@ -228,13 +227,15 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
     <>
       {isNavigating && <LoadingScreen />}
       <div className={`w-full h-screen relative overflow-hidden transition-opacity duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
-        {/* Pink Circle Return Button */}
+        {/* Pink Logo Circle Return Button */}
         <button
           onClick={handleReturn}
           className="fixed top-6 left-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 hover:from-fuchsia-600 hover:to-fuchsia-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
-          aria-label="Return to previous page"
+          aria-label="Return to Discover"
         >
-          <ArrowLeft className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+          <div className="text-xl font-bold text-white group-hover:scale-110 transition-transform">
+            OI
+          </div>
         </button>
         
         <UserScoreModal
