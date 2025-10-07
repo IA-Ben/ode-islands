@@ -15,9 +15,11 @@ export interface PhotoDropCardData {
 interface PhotoDropCardProps {
   data: PhotoDropCardData;
   onViewGallery?: () => void;
+  onDownloadPhotos?: () => void;
+  onShareGallery?: () => void;
 }
 
-export function PhotoDropCard({ data, onViewGallery }: PhotoDropCardProps) {
+export function PhotoDropCard({ data, onViewGallery, onDownloadPhotos, onShareGallery }: PhotoDropCardProps) {
   return (
     <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 hover:border-blue-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-blue-500/10">
       {/* Photo Grid Preview */}
@@ -77,11 +79,17 @@ export function PhotoDropCard({ data, onViewGallery }: PhotoDropCardProps) {
             <ArrowRight className="w-4 h-4" />
           </button>
           
-          <button className="p-2.5 rounded-xl bg-white/10 text-white hover:bg-white/15 transition-all duration-200 border border-white/10">
+          <button 
+            onClick={onDownloadPhotos}
+            className="p-2.5 rounded-xl bg-white/10 text-white hover:bg-white/15 transition-all duration-200 border border-white/10"
+          >
             <Download className="w-5 h-5" />
           </button>
           
-          <button className="p-2.5 rounded-xl bg-white/10 text-white hover:bg-white/15 transition-all duration-200 border border-white/10">
+          <button 
+            onClick={onShareGallery}
+            className="p-2.5 rounded-xl bg-white/10 text-white hover:bg-white/15 transition-all duration-200 border border-white/10"
+          >
             <Share2 className="w-5 h-5" />
           </button>
         </div>
