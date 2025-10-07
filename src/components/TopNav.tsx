@@ -215,16 +215,43 @@ export default function TopNav({ currentPhase }: TopNavProps) {
                     {menuOpen && (
                       <div
                         role="menu"
-                        className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden z-20"
+                        className="absolute right-0 mt-2 w-64 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg overflow-hidden z-20"
                       >
-                        <button
-                          onClick={handleSignOut}
-                          role="menuitem"
-                          className="w-full text-left px-3 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-900 dark:text-white"
-                        >
-                          <LogOut className="w-4 h-4" />
-                          Sign out
-                        </button>
+                        {/* User Info Header */}
+                        <div className="px-4 py-3 border-b border-slate-200 dark:border-slate-700">
+                          <div className="font-medium text-slate-900 dark:text-white">{userName}</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">{userEmail}</div>
+                          {isAdmin && (
+                            <div className="mt-2">
+                              <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-fuchsia-600 text-white text-xs font-semibold">
+                                Admin
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Menu Items */}
+                        <div className="py-1">
+                          {isAdmin && (
+                            <button
+                              onClick={handleOpenAdmin}
+                              role="menuitem"
+                              className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-900 dark:text-white"
+                            >
+                              <Shield className="w-4 h-4" />
+                              Admin Area
+                            </button>
+                          )}
+                          
+                          <button
+                            onClick={handleSignOut}
+                            role="menuitem"
+                            className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-900 dark:text-white border-t border-slate-200 dark:border-slate-700"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Sign out
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
