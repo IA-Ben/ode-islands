@@ -89,7 +89,7 @@ export function MediaUpload({ onUploadComplete, csrfToken }: MediaUploadProps) {
       });
 
       xhr.addEventListener('load', () => {
-        if (xhr.status === 200) {
+        if (xhr.status >= 200 && xhr.status < 300) {
           updateFile(uploadFile.id, { status: 'completed', progress: 100 });
           setTimeout(() => removeFile(uploadFile.id), 2000);
           onUploadComplete();
@@ -109,7 +109,7 @@ export function MediaUpload({ onUploadComplete, csrfToken }: MediaUploadProps) {
         updateFile(uploadFile.id, { status: 'error', error: 'Network error during upload' });
       });
 
-      xhr.open('POST', '/api/cms/media/upload');
+      xhr.open('POST', '/api/cms/media');
       xhr.setRequestHeader('X-CSRF-Token', csrfToken);
       xhr.send(formData);
     } catch (error: any) {

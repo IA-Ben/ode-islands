@@ -1,6 +1,104 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '../../../../../server/auth';
 import { storage } from '../../../../../server/storage';
+import { ObjectStorageService } from '../../../../../server/objectStorage';
+import { randomUUID, createHash } from 'crypto';
+
+export const POST = withAuth(async (request: NextRequest, session: any) => {
+  try {
+    if (!session?.user?.isAdmin) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 403 }
+      );
+    }
+
+    const formData = await request.formData();
+    const file = formData.get('file') as File;
+    
+    if (!file) {
+      return NextResponse.json(
+        { error: 'No file provided' },
+        { status: 400 }
+      );
+    }
+
+    // Validate file size (100MB max for general media)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      return NextResponse.json(
+        { error: `File too large. Maximum size is ${maxSize / (1024 * 1024)}MB` },
+        { status: 400 }
+      );
+    }
+
+    // Determine file type category
+    const fileType = file.type.startsWith('image/') ? 'image' :
+                     file.type.startsWith('video/') ? 'video' :
+                     file.type.startsWith('audio/') ? 'audio' :
+                     'document';
+
+    // Upload to Replit Object Storage
+    const objectStorageService = new ObjectStorageService();
+    const privateDir = objectStorageService.getPrivateObjectDir();
+    const fileId = randomUUID();
+    const storageKey = `${privateDir}/media/${fileId}/${file.name}`;
+    
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    
+    // Parse storage path and upload using parseObjectPath utility
+    const { objectStorageClient, parseObjectPath } = await import('../../../../../server/objectStorage');
+    const { bucketName, objectName } = parseObjectPath(storageKey);
+    
+    const bucket = objectStorageClient.bucket(bucketName);
+    const blob = bucket.file(objectName);
+    
+    await blob.save(buffer, {
+      metadata: { contentType: file.type }
+    });
+    
+    const publicUrl = `/api/media${storageKey}`;
+    const checksum = createHash('md5').update(buffer).digest('hex');
+
+    // Save to media assets table
+    const mediaAsset = await storage.createMediaAsset({
+      title: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
+      storageKey: storageKey,
+      cloudUrl: publicUrl,
+      checksum: checksum,
+      fileType: fileType,
+      mimeType: file.type,
+      fileSize: file.size,
+      altText: '',
+      description: '',
+      tags: [],
+      uploadedBy: session.userId,
+    });
+
+    return NextResponse.json({
+      success: true,
+      media: {
+        id: mediaAsset.id,
+        title: mediaAsset.title,
+        fileName: file.name,
+        fileType: mediaAsset.fileType,
+        fileSize: mediaAsset.fileSize,
+        url: mediaAsset.cloudUrl,
+        thumbnailUrl: mediaAsset.cloudUrl,
+        uploadedBy: session.userId,
+        createdAt: mediaAsset.createdAt,
+      }
+    }, { status: 201 });
+
+  } catch (error: any) {
+    console.error('Media upload error:', error);
+    return NextResponse.json(
+      { error: 'Failed to upload media', details: error.message },
+      { status: 500 }
+    );
+  }
+});
 
 export const GET = withAuth(async (request: NextRequest, session: any) => {
   try {

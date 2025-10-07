@@ -8,7 +8,7 @@ import {
   BookOpen, 
   Calendar, 
   CreditCard, 
-  Gift, 
+  Database, 
   Wallet, 
   Users, 
   ShoppingCart, 
@@ -65,10 +65,10 @@ const navItems: NavItem[] = [
     permissions: ['cards:view', 'cards:create', 'cards:edit'] 
   },
   { 
-    label: 'Rewards', 
-    href: '/admin/rewards', 
-    icon: Gift, 
-    permissions: ['rewards:view', 'rewards:create'] 
+    label: 'Content', 
+    href: '/admin/cms', 
+    icon: Database, 
+    permissions: ['content:view', 'content:create', 'content:edit'] 
   },
   { 
     label: 'Wallet', 
