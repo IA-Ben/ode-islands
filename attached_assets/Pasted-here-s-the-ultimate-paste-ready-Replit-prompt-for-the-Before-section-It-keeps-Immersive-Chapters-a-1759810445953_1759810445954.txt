@@ -1,0 +1,227 @@
+here’s the ultimate, paste-ready Replit prompt for the Before section. It keeps Immersive Chapters as tiles (with full-screen reader), adds more engagement features, and stays 100% CMS + card-driven with the standard sub-menu under the top bar. No code or architecture—UX + functionality only.
+
+REPLIT PROMPT — BEFORE (Ultimate, Engagement-First)
+0) Purpose
+
+Turn Before into a high-energy warm-up space that builds hype, readiness, and community—without leaking Event/After modules. Everything is cards from the CMS, with time/geo/personalisation rules and optional award hooks (points + Memory).
+
+1) Navigation & Frame
+
+Top bar (shared): Before | Event | After • Wallet (badge) • Tier pill • Scan • Profile.
+
+Sub-menu (sticky pills, standardised): Featured | Plan | Discover | Community.
+
+Hero utility row: Quick Actions (Scan, Map, Schedule, Offers, Tickets) + countdown (if dated).
+
+Featured rail: 1–3 modules by Before Featured Rules (priority + conditions).
+
+2) Lanes & Core Content (cards only)
+A) PLAN (practical, time/geo aware)
+
+Tickets / Check-in (teaser) — buy or Add to Wallet; entry countdown chip.
+
+Venue & Travel — planning vs on-site hints; “Leave by {time}”.
+
+Schedule Preview — “Your night at a glance”; pin favourites.
+
+What to Bring / Safety — checklist, access notes, quick contacts.
+
+F&B Pre-Load — preload credit → small bonus.
+
+Merch Pre-Order — collect on site; tier discount chip.
+
+B) DISCOVER (story, hype, creative)
+
+Immersive Chapters (Tiles) — cover, hook, length badge; tap → full-screen reader (swipe; pink logo circle = back).
+
+Continue Chapter — progress ring (“2 mins left”).
+
+Official Trailer / Teasers — autoplay muted; share.
+
+Lore & Worldbuilding — micro-reads, concept art, audio beds.
+
+Character Spotlight (At-home AR) — safe home-mode scenes.
+
+Daily Drop — 24-hour rotating snippet (music/clip/art).
+
+C) COMMUNITY (participation & social)
+
+Creator Challenge (AI Remix) — weekly prompt; publish with tag.
+
+Pre-Event AR Hunt — city/home tasks; QR or geo unlock.
+
+Polls & Predictions — vote; reveal live %.
+
+Refer-a-Friend — personal code/link; track progress.
+
+Friends Going — opt-in presence; “invite a friend”.
+
+Community Leaderboard — top streaks/quests (privacy-safe).
+
+3) Extra Engagement Modules (Before-only, CMS toggleable)
+Quests, Streaks, and Progress
+
+Warm-Up Questline — 3–5 bite-size tasks (e.g., “Watch trailer”, “Pin a favourite”, “Try an AR preview”).
+
+Displays steps, estimated time, and reward.
+
+Award hook on completion.
+
+Streaks Card — daily check-in or creation streak; protective grace day option.
+
+Social & Co-ordination
+
+Group Planner — share meeting time/gate; see when everyone’s “ready”.
+
+Outfit/Pack Builder — checklist + inspiration; save/share look.
+
+Playful Challenges
+
+Trivia & Lore Quiz — 5 questions; Perfect Score badge.
+
+Prediction Markets (light) — pick outcomes; reveal post-event.
+
+Puzzle/ARG Teaser — decrypt a hint; QR reveals a Memory.
+
+Content Drops & Exclusives
+
+Behind-the-Scenes Capsule — short dev diary / rehearsal shot.
+
+Soundcheck Playlist — add to library; bonus if saved.
+
+Limited Poster Maker — brand-locked templates for social.
+
+Access & Inclusivity
+
+Accessibility Planner — tailored routes, timings, contacts.
+
+Calm Mode — sensory info, quiet zones, timings.
+
+All above are cards with standard fields + optional award and visibility rules.
+
+4) Immersive Chapter — Full-Screen Reader (recap)
+
+Tap Chapter Tile → full-screen, swipe left/right through sub-chapters.
+
+Pink logo circle fixed top-left = back to menu (restores tab + scroll).
+
+Top progress bar (segments); action tray (react/share/Save to Wallet when earned); captions on by default; reduced-motion friendly.
+
+Branching uses choice overlay; remembers path.
+
+Award hooks fire on onOpen|onComplete|onShare|minScore; token flies to Wallet, toast shows +points.
+
+5) Targeting & Timing (visibility rules)
+Stage gating
+
+All Before cards: stage:["before"] (mandatory).
+
+Time windows (relative to event)
+
+T−7d → T−72h: Tickets, Travel planning, Trailer, Quests start.
+
+T−72h → T−6h: What to Bring/Safety, Schedule Preview, Daily Drops.
+
+T−6h → T−0: Check-in teaser, On-site hints, Group Planner.
+
+Location
+
+homeRadius vs venueFence — adjusts copy and priority (no Event-only actions).
+
+Personalisation
+
+hasTicket, tier, firstTimer, accessibilityPref, favourites[], momentumScore (recent activity).
+
+Examples:
+
+No ticket → Tickets pinned in Plan.
+
+Silver/Gold → early entry chip on Check-in, merch perks.
+
+First-timer → onboarding tips card.
+
+Accessibility on → Accessibility Planner rises.
+
+Priority & Pinning
+
+Safety overrides > entry window Check-in > time-critical > CMS order.
+
+Badges: Soon, Now, Pinned, Saved; Countdown where relevant.
+
+6) Rewards & Meta-Progress
+
+Award hook on any card: enabled, templateId, trigger(onOpen|onComplete|onShare|minScore), cooldownSec, oneTime.
+
+Suggested Before weights (copy only):
+
+Trailer watch + share (+10), AR home capture (+20), Quiz perfect (+20), Questline complete (+50), Invite signup (+30).
+
+Sets & Badges: “Warm-Up Set” (Daily Drop, Trailer, Quiz, AR); completion awards a bonus Memory.
+
+7) CMS Controls (non-technical)
+
+For each card:
+
+Basics: title, subtitle, art, size (S/M/L), lane, order.
+
+Visibility: stage, timeWindowRelative, geoZones, persona (ticket/tier/firstTimer/accessibility), priority, pinned.
+
+Actions: deep links (Story chapter, reader, AR, QR, external).
+
+Award: toggle + config (as above).
+
+Copy variants: per tier; on-site vs off-site; first-timer.
+
+Analytics tag.
+
+Global:
+
+Before Featured Rules (priority + conditions) to fill Featured rail (Before cards only).
+
+Quick Actions selection for Hero utility row.
+
+Hints & microcopy (first-time swipe/exit, quest tips, safety copy).
+
+8) Analytics (minimum)
+
+before_open, before_lane_view {lane}
+
+featured_impression {cardId}
+
+chapter_tile_open {storyId,chapterId}, reader_card_view {cardId,index}, reader_exit {method}
+
+quest_start|quest_complete {questId}, streak_day_checkin
+
+ar_home_launch|capture, quiz_complete {score}, prediction_submit
+
+tickets_cta, checkin_pass_add, travel_plan_view
+
+refer_link_copy|refer_conversion, group_plan_create
+
+award_memory {templateId}, points_earned {delta,reason}
+
+9) States & Edge Cases
+
+Event day: countdown flips to “Arrive by {time}”; Check-in teaser emphasised; Safety always available.
+
+Offline: cached cards/media; queue shares; show AR unavailable if offline.
+
+Privacy: face-consent reminder before public share; Friends Going opt-in.
+
+Accessibility: reduce-motion variant; captions default on; high-contrast compliant.
+
+10) Acceptance Criteria
+
+Before page shows only Before-eligible cards via stage:["before"] and the card whitelist.
+
+Immersive Chapters appear as tiles in Discover; tap opens the full-screen reader; pink logo circle returns to the same tab + scroll.
+
+Plan cards time/geo/personalise correctly (Tickets, Travel, Schedule, Safety).
+
+New engagement modules (Quests, Streaks, Leaderboard, Creator Challenge, Daily Drop, Trivia, AR Hunt, Group Planner, Refer) are available as cards with visibility rules and optional award hooks.
+
+Featured rail populates from Before Featured Rules only; dynamic and tier-aware.
+
+Awarded points/memories update the Wallet badge and Tier pill on return.
+
+All analytics listed are emitted; a11y & offline behaviours hold.
