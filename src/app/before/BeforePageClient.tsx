@@ -228,9 +228,17 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     }
   };
 
-  // Extract chapter tiles from JSON data
+  // Extract chapter tiles from JSON data with tags for BTS/Concept Art categorization
   const getChapterTiles = (): BeforeLaneCard[] => {
     const chapters = Object.keys(chapterData);
+    
+    // Define which chapters should appear in which categories
+    const chapterTags: Record<string, string[]> = {
+      "chapter-playcanvas": ["bts"], // PlayCanvas chapter is BTS/technical demo
+      "chapter-2": ["concept-art"], // Chapter 2 showcases concept art
+      // chapter-1 and chapter-3 are pure story chapters (no extra tags)
+    };
+    
     return chapters.map((chapterId, index) => {
       const firstCard = chapterData[chapterId][0];
       const title = firstCard?.text?.title || `Chapter ${index + 1}`;
@@ -243,6 +251,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
         subtitle,
         size: "M" as const,
         description: `Experience the ${chapterId.replace('-', ' ')} of your journey`,
+        tags: chapterTags[chapterId] || [], // Add tags if defined
       };
     });
   };
@@ -529,10 +538,17 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
       return cards.filter(card => {
         switch (discoverTab) {
           case "bts":
-            return card.type === "bts-video" || card.type === "bts-playlist";
+            // Show BTS card types OR immersive chapters tagged with "bts"
+            return card.type === "bts-video" || 
+                   card.type === "bts-playlist" ||
+                   (card.type === "immersive-chapter" && card.tags?.includes("bts"));
           case "concept-art":
-            return card.type === "concept-art-gallery" || card.type === "concept-art-spotlight";
+            // Show Concept Art card types OR immersive chapters tagged with "concept-art"
+            return card.type === "concept-art-gallery" || 
+                   card.type === "concept-art-spotlight" ||
+                   (card.type === "immersive-chapter" && card.tags?.includes("concept-art"));
           case "stories":
+            // Show all immersive chapters (regardless of tags)
             return card.type === "immersive-chapter" || card.type === "continue-chapter";
           default:
             return true;

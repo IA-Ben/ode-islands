@@ -20,6 +20,7 @@ export interface BeforeLaneCard {
   icon?: string;
   imageUrl?: string;
   description?: string;
+  tags?: string[]; // Tags for categorization (e.g., "bts", "concept-art")
 }
 
 interface BeforeLaneProps {
