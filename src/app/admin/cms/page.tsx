@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BeforeLaneManager } from '@/components/cms/BeforeLaneManager';
-import { BTSSeriesManager } from '@/components/cms/BTSSeriesManager';
-import { ConceptArtManager } from '@/components/cms/ConceptArtManager';
+import { BeforeLaneManagerFull } from '@/components/cms/BeforeLaneManagerFull';
+import { BTSSeriesManagerFull } from '@/components/cms/BTSSeriesManagerFull';
+import { ConceptArtManagerFull } from '@/components/cms/ConceptArtManagerFull';
 import { FeaturedRulesBuilder } from '@/components/cms/FeaturedRulesBuilder';
+import { BeforeHeroManager } from '@/components/cms/BeforeHeroManager';
 import { MediaLibrary } from '@/components/cms/MediaLibrary';
 import AddChapterModal from '@/components/cms/AddChapterModal';
 import { ChapterReorderList } from '@/components/cms/ChapterReorderList';
@@ -110,6 +111,7 @@ export default function CMSPage() {
       title: 'Before Experience',
       icon: BookOpen,
       items: [
+        { id: 'hero-settings', label: 'Hero Settings', icon: Sparkles, description: 'Configure hero image/video and animation' },
         { id: 'before-lanes', label: 'Lane Management', icon: LayoutGrid, description: 'Manage Plan, Discover, Community & BTS lanes' },
         { id: 'bts-series', label: 'BTS Video Series', icon: Video, description: 'Create video playlists and episodes' },
         { id: 'concept-art', label: 'Concept Art Galleries', icon: ImageIcon, description: 'Manage art collections and layouts' },
@@ -307,11 +309,12 @@ export default function CMSPage() {
       <div className="flex-1 overflow-y-auto">
         <div className="max-w-7xl mx-auto p-8">
           {/* Section Content */}
-          {selectedSection === 'before-lanes' && <BeforeLaneManager csrfToken={csrfToken} />}
-          {selectedSection === 'bts-series' && <BTSSeriesManager csrfToken={csrfToken} />}
-          {selectedSection === 'concept-art' && <ConceptArtManager csrfToken={csrfToken} />}
+          {selectedSection === 'hero-settings' && <BeforeHeroManager csrfToken={csrfToken} />}
+          {selectedSection === 'before-lanes' && <BeforeLaneManagerFull csrfToken={csrfToken} />}
+          {selectedSection === 'bts-series' && <BTSSeriesManagerFull csrfToken={csrfToken} />}
+          {selectedSection === 'concept-art' && <ConceptArtManagerFull csrfToken={csrfToken} />}
           {selectedSection === 'featured-rules' && <FeaturedRulesBuilder csrfToken={csrfToken} />}
-          {selectedSection === 'media-library' && <MediaLibrary />}
+          {selectedSection === 'media-library' && <MediaLibrary csrfToken={csrfToken} />}
           {selectedSection === 'search' && <AdvancedSearch />}
           {selectedSection === 'card-library' && (
             <div className="space-y-6">
