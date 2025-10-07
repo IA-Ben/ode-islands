@@ -76,7 +76,7 @@ export function BeforeHub({
             <button
               onClick={() => {
                 setActiveTab("plan");
-                scrollToSection("plan");
+                onEnterLane("plan");
               }}
               className={`flex-shrink-0 px-6 py-2 rounded-full font-medium transition-all duration-200 ${
                 activeTab === "plan"
@@ -89,7 +89,7 @@ export function BeforeHub({
             <button
               onClick={() => {
                 setActiveTab("discover");
-                scrollToSection("discover");
+                onEnterLane("discover");
               }}
               className={`flex-shrink-0 px-6 py-2 rounded-full font-medium transition-all duration-200 ${
                 activeTab === "discover"
@@ -102,7 +102,7 @@ export function BeforeHub({
             <button
               onClick={() => {
                 setActiveTab("community");
-                scrollToSection("community");
+                onEnterLane("community");
               }}
               className={`flex-shrink-0 px-6 py-2 rounded-full font-medium transition-all duration-200 ${
                 activeTab === "community"
@@ -115,7 +115,7 @@ export function BeforeHub({
             <button
               onClick={() => {
                 setActiveTab("bts");
-                scrollToSection("bts");
+                onEnterLane("bts");
               }}
               className={`flex-shrink-0 px-6 py-2 rounded-full font-medium transition-all duration-200 ${
                 activeTab === "bts"
