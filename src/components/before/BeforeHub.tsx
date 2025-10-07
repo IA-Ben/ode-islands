@@ -181,7 +181,7 @@ export function BeforeHub({
         </section>
 
         {/* Featured Section */}
-        {featuredCards.length > 0 && (
+        {featuredCards.length > 0 ? (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
             <div className="mb-4">
               <h2 className="text-xl font-bold text-white">Featured</h2>
@@ -229,6 +229,26 @@ export function BeforeHub({
                   </div>
                 </button>
               ))}
+            </div>
+          </section>
+        ) : (
+          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
+            <div className="text-center py-12 px-4">
+              <div className="w-16 h-16 rounded-2xl bg-fuchsia-500/20 flex items-center justify-center mx-auto mb-4">
+                <Sparkles className="w-8 h-8 text-fuchsia-400" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">No Featured Content</h3>
+              <p className="text-slate-400 mb-6">Configure featured cards to highlight key experiences</p>
+              
+              <a
+                href="/admin/cms/featured?context=before"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-fuchsia-700 text-white hover:scale-105 transition-all duration-200 font-medium shadow-lg hover:shadow-fuchsia-500/40"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" />
+                </svg>
+                <span>Configure Featured Rules</span>
+              </a>
             </div>
           </section>
         )}

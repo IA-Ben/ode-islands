@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { BeforeHub } from "@/components/before/BeforeHub";
 import { BeforeLane, type BeforeLaneCard } from "@/components/before/BeforeLane";
@@ -9,6 +9,73 @@ import { useFanScore } from "@/hooks/useFanScore";
 import LoadingScreen from "@/components/LoadingScreen";
 import dynamic from "next/dynamic";
 import data from "../data/ode-islands.json";
+
+// Hook to fetch cards from API
+function useBeforeCards(lane: "plan" | "discover" | "community" | "bts" | null) {
+  const [cards, setCards] = useState<BeforeLaneCard[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [fetchSucceeded, setFetchSucceeded] = useState(false);
+  const activeLaneRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!lane) {
+      setCards([]);
+      setFetchSucceeded(false);
+      setLoading(false);
+      return;
+    }
+
+    // Track the active lane to prevent race conditions
+    activeLaneRef.current = lane;
+
+    const fetchCards = async () => {
+      const currentLane = lane; // Capture lane value for this fetch
+      setLoading(true);
+      setFetchSucceeded(false);
+      
+      try {
+        const response = await fetch(`/api/before/cards?lane=${currentLane}`);
+        
+        // Ignore response if lane changed while fetching
+        if (activeLaneRef.current !== currentLane) {
+          return;
+        }
+        
+        if (response.ok) {
+          const data = await response.json();
+          // Transform API cards to BeforeLaneCard format
+          const transformedCards: BeforeLaneCard[] = data.cards.map((card: any) => ({
+            id: card.id,
+            type: card.type,
+            title: card.title,
+            subtitle: card.subtitle || undefined,
+            size: card.size || "M",
+            imageUrl: card.imageUrl || undefined,
+            description: card.summary || undefined,
+          }));
+          setCards(transformedCards);
+          setFetchSucceeded(true); // Mark fetch as successful even if empty
+        }
+      } catch (error) {
+        // Ignore error if lane changed while fetching
+        if (activeLaneRef.current !== currentLane) {
+          return;
+        }
+        console.error('Error fetching before cards:', error);
+        setFetchSucceeded(false); // Mark fetch as failed
+      } finally {
+        // Only update loading state if still on same lane
+        if (activeLaneRef.current === currentLane) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchCards();
+  }, [lane]);
+
+  return { cards, loading, fetchSucceeded };
+}
 
 const UserScoreModal = dynamic(() => import('@/components/UserScoreModal'), {
   ssr: false,
@@ -49,6 +116,10 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
+  
+  // Fetch cards from API based on current lane view
+  const laneToFetch = currentView !== "hub" ? currentView : null;
+  const { cards: apiCards, loading: cardsLoading, fetchSucceeded } = useBeforeCards(laneToFetch);
 
   // Restore view from URL params on mount
   useEffect(() => {
@@ -367,18 +438,29 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   };
 
   const getLaneCards = () => {
-    switch (currentView) {
-      case "plan":
-        return planCards;
-      case "discover":
-        return discoverCards;
-      case "community":
-        return communityCards;
-      case "bts":
-        return btsCards;
-      default:
-        return [];
+    // If fetch succeeded, use API cards (even if empty - will show empty state with admin link)
+    if (fetchSucceeded) {
+      return apiCards;
     }
+    
+    // Only fallback to stub data if fetch failed (not if database is empty)
+    if (!fetchSucceeded && !cardsLoading) {
+      switch (currentView) {
+        case "plan":
+          return planCards;
+        case "discover":
+          return discoverCards;
+        case "community":
+          return communityCards;
+        case "bts":
+          return btsCards;
+        default:
+          return [];
+      }
+    }
+    
+    // Return empty during loading
+    return [];
   };
 
   return (

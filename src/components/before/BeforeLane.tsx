@@ -101,6 +101,14 @@ export function BeforeLane({ lane, cards, onBack, onCardClick }: BeforeLaneProps
   const config = laneConfig[lane];
   const LaneIcon = config.icon;
   
+  // Admin configuration mapping for each lane
+  const adminConfigLinks: Record<string, string> = {
+    plan: '/admin/cards?scope=event&lane=plan',
+    discover: '/admin/cards?scope=event&lane=discover',
+    community: '/admin/cards?scope=event&lane=community',
+    bts: '/admin/cards?scope=event&lane=bts',
+  };
+  
   const [isPulling, setIsPulling] = useState(false);
   const [pullDistance, setPullDistance] = useState(0);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -218,7 +226,18 @@ export function BeforeLane({ lane, cards, onBack, onCardClick }: BeforeLaneProps
                 <LaneIcon className={`w-10 h-10 ${config.iconColor}`} />
               </div>
               <h3 className="text-2xl font-bold text-white mb-2">No content yet</h3>
-              <p className="text-slate-400">Check back later for new {config.title.toLowerCase()} content</p>
+              <p className="text-slate-400 mb-6">Check back later for new {config.title.toLowerCase()} content</p>
+              
+              {/* Admin Configuration Link */}
+              <a
+                href={adminConfigLinks[lane]}
+                className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-gradient-to-br ${config.gradientBg} border ${config.borderColor} ${config.hoverBorder} text-white hover:scale-105 transition-all duration-200 font-medium shadow-lg ${config.shadowColor}`}
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                <span>Configure in Admin</span>
+              </a>
             </div>
           )}
         </div>
