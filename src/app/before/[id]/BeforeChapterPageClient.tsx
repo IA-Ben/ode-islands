@@ -6,6 +6,7 @@ import { LazyClientCardWrapper } from '@/components/LazyComponentWrapper';
 import Footer from "@/components/Footer";
 import UnifiedTopNav from "@/components/UnifiedTopNav";
 import { useFanScore } from '@/hooks/useFanScore';
+import LoadingScreen from '@/components/LoadingScreen';
 import type { CardData } from '@/@typings';
 import data from "../../data/ode-islands.json";
 import dynamic from 'next/dynamic';
@@ -44,21 +45,32 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
   const [index, setIndex] = useState<number>(0);
   const [loadedCards, setLoadedCards] = useState<number>(1); // Start with only first card loaded
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Page fade-in effect
+  useEffect(() => {
+    const timer = setTimeout(() => setPageReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Navigation handlers for UnifiedTopNav
   const handlePhaseChange = (phase: "before" | "event" | "after") => {
-    switch (phase) {
-      case 'before':
-        router.push('/before');
-        break;
-      case 'event':
-        router.push('/event');
-        break;
-      case 'after':
-        router.push('/after');
-        break;
-    }
+    setIsNavigating(true);
+    setTimeout(() => {
+      switch (phase) {
+        case 'before':
+          router.push('/before');
+          break;
+        case 'event':
+          router.push('/event');
+          break;
+        case 'after':
+          router.push('/after');
+          break;
+      }
+    }, 300);
   };
 
   const handleOpenWallet = () => {
@@ -198,28 +210,30 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
   }
 
   return (
-    <div className="w-full h-screen relative overflow-hidden">
-      <UnifiedTopNav
-        mode="app"
-        user={user}
-        currentPhase="before"
-        onPhaseChange={handlePhaseChange}
-        walletNewCount={0}
-        points={points}
-        tier={tier}
-        onOpenWallet={handleOpenWallet}
-        onOpenQR={handleOpenQR}
-        onOpenScore={handleOpenScore}
-        onSwitchMode={handleSwitchMode}
-      />
-      
-      <UserScoreModal
-        isOpen={isUserScoreOpen}
-        onClose={() => setIsUserScoreOpen(false)}
-        source="tier_pill"
-      />
-      
-      <div
+    <>
+      {isNavigating && <LoadingScreen />}
+      <div className={`w-full h-screen relative overflow-hidden transition-opacity duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
+        <UnifiedTopNav
+          mode="app"
+          user={user}
+          currentPhase="before"
+          onPhaseChange={handlePhaseChange}
+          walletNewCount={0}
+          points={points}
+          tier={tier}
+          onOpenWallet={handleOpenWallet}
+          onOpenQR={handleOpenQR}
+          onOpenScore={handleOpenScore}
+          onSwitchMode={handleSwitchMode}
+        />
+        
+        <UserScoreModal
+          isOpen={isUserScoreOpen}
+          onClose={() => setIsUserScoreOpen(false)}
+          source="tier_pill"
+        />
+        
+        <div
         ref={containerRef}
         className={`scroll-container w-full h-full snap-y snap-mandatory scrollbar-hide ${
           interacted ? "overflow-y-auto" : "overflow-y-hidden"
@@ -247,14 +261,15 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
         )}
       </div>
       
-      <Footer
-        index={index}
-        currentCard={cards[index]}
-        totalCards={cards.length}
-        interacted={interacted}
-        onFirst={onFirst}
-        onNext={onNext}
-      />
-    </div>
+        <Footer
+          index={index}
+          currentCard={cards[index]}
+          totalCards={cards.length}
+          interacted={interacted}
+          onFirst={onFirst}
+          onNext={onNext}
+        />
+      </div>
+    </>
   );
 }

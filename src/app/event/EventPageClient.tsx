@@ -15,6 +15,7 @@ import ScoreToast from '@/components/ScoreToast';
 import type { ScoreToastData } from '@/@typings/fanScore';
 import { selectFeaturedCards, type FeaturedCardWithRules, type UserContext } from '@/lib/event/cardSelection';
 import { useFanScore } from '@/hooks/useFanScore';
+import LoadingScreen from '@/components/LoadingScreen';
 import dynamic from 'next/dynamic';
 
 const EventDashboard = dynamic(() => import('@/components/EventDashboard'), {
@@ -92,20 +93,31 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   const [events, setEvents] = useState<LiveEvent[]>(initialData.events);
   const [session] = useState<SessionData>(initialData.session);
   const [activeEvent, setActiveEvent] = useState<LiveEvent | null>(initialData.activeEvent);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [pageReady, setPageReady] = useState(false);
   
+  // Page fade-in effect
+  useEffect(() => {
+    const timer = setTimeout(() => setPageReady(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
+
   // Navigation handlers for UnifiedTopNav
   const handlePhaseChange = (phase: "before" | "event" | "after") => {
-    switch (phase) {
-      case 'before':
-        router.push('/before');
-        break;
-      case 'event':
-        router.push('/event');
-        break;
-      case 'after':
-        router.push('/after');
-        break;
-    }
+    setIsNavigating(true);
+    setTimeout(() => {
+      switch (phase) {
+        case 'before':
+          router.push('/before');
+          break;
+        case 'event':
+          router.push('/event');
+          break;
+        case 'after':
+          router.push('/after');
+          break;
+      }
+    }, 300);
   };
 
   const handleOpenWallet = () => {
@@ -681,22 +693,24 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     
     return (
       <>
-        <UnifiedTopNav
-          mode="app"
-          user={user}
-          currentPhase="event"
-          onPhaseChange={handlePhaseChange}
-          walletNewCount={newItemsCount}
-          points={points}
-          tier={tier}
-          onOpenWallet={handleOpenWallet}
-          onOpenQR={handleOpenQR}
-          onOpenScore={handleOpenScore}
-          onSwitchMode={handleSwitchMode}
-          isDemoMode={isDemoMode}
-          onToggleDemo={() => setIsDemoMode(prev => !prev)}
-        />
-        {view === 'hub' && (
+        {isNavigating && <LoadingScreen />}
+        <div className={`transition-opacity duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
+          <UnifiedTopNav
+            mode="app"
+            user={user}
+            currentPhase="event"
+            onPhaseChange={handlePhaseChange}
+            walletNewCount={newItemsCount}
+            points={points}
+            tier={tier}
+            onOpenWallet={handleOpenWallet}
+            onOpenQR={handleOpenQR}
+            onOpenScore={handleOpenScore}
+            onSwitchMode={handleSwitchMode}
+            isDemoMode={isDemoMode}
+            onToggleDemo={() => setIsDemoMode(prev => !prev)}
+          />
+          {view === 'hub' && (
           <EventHub
             onEnterLane={handleEnterLane}
             featuredCards={selectedFeaturedCards}
@@ -739,7 +753,8 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
           source="tier_pill"
         />
         
-        <HelpSystem userRole="audience" />
+          <HelpSystem userRole="audience" />
+        </div>
       </>
     );
   }

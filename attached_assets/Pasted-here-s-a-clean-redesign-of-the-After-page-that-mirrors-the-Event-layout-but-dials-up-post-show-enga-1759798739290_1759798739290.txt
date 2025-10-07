@@ -1,0 +1,220 @@
+here’s a clean redesign of the After page that mirrors the Event layout, but dials up post-show engagement. Every feature is CMS-driven.
+
+After — Product Goals
+
+Turn the post-event window into a creative, social, and commerce moment.
+
+Reward return visits, nudge tier progression, and seed next attendance.
+
+IA & Navigation (unified with Event)
+
+Top bar (shared): Before | Event | After • Wallet (badge) • Tier pill • Scan • Profile.
+
+After sub-nav (sticky pill bar): Recap | Create | Offers (can add Community later).
+
+After Home (top-level): Quick Actions (Share highlights, Remix clip, Claim perks) + Featured modules (time- and tier-aware) + entry chips to the three lanes.
+
+Layout Pattern
+
+Hero strip (contextual): “Welcome back, Ben” • last earned Memory preview • “{N} pts to Silver”.
+
+Featured rail (1–3 modules from CMS rules).
+
+Lane content: vertical card rails, snap-scroll, pull-to-refresh.
+
+Global HUD: Wallet badge pulse on new Memory.
+
+Module Catalogue (all CMS-configurable)
+A) Recap lane
+
+Smart Highlights Reel
+
+What: Auto-curated 15–45s edit of Ben’s best captures + official clips.
+
+CMS: templateId, duration options, brand end-slate, soundtrack choices, watermark toggle.
+
+Actions: Play → Save to device → Share → (opt) Save to Wallet (+points).
+
+Memory Timeline
+
+What: Chronological grid of earned Memories with micro-stories.
+
+CMS: grouping (act/zone), caption rules, “newly earned” glow duration.
+
+Actions: Open detail → Share → Mint (if enabled).
+
+Set Completion & Badges
+
+What: Shows progress to Memory sets; unlock bonus when complete.
+
+CMS: set definitions, bonus templateId, bonus points.
+
+Actions: “Find missing” deep-links to Event map pins or Story content.
+
+At-Home AR Encore
+
+What: Safe “home mode” AR scenes featuring characters earned.
+
+CMS: sceneIds, safety copy, cooldown, awardMemory(templateId?) on first run.
+
+Actions: Launch AR → Capture → Share → Wallet.
+
+Official Photo Drop
+
+What: Venue/photographer selects tagged shots; user can claim theirs.
+
+CMS: album source, claim rules (email/QR), watermark, claim window.
+
+Actions: Claim → Save → Share → (opt) Wallet.
+
+NPS & Review Pulse
+
+What: Lightweight rating + one-tap public review link.
+
+CMS: survey copy, targets, destinations (GMB/TripAdvisor), incentive (points).
+
+Actions: Rate → (opt) award points.
+
+B) Create lane
+
+Remix Studio (AI)
+
+What: One-tap edits: Autocut, Autocaption (UK English), stylised looks.
+
+CMS: prompt seeds, caption styles, max length, brand safety.
+
+Actions: Generate → Review → Share → awardMemory(templateId?).
+
+Poster & Cover Art Maker
+
+What: Templates for IG Story/Feed, TikTok cover, phone wallpaper.
+
+CMS: template list, fonts, export sizes, required logo lock-ups.
+
+Actions: Customise → Export → Share.
+
+Story Epilogues
+
+What: Short Story sub-chapters that unlock only After (credits, lore).
+
+CMS: link existing Story content; schedule windows; rewards.
+
+Actions: Read/Watch → awardMemory on completion.
+
+Duet/Collab Prompt
+
+What: Prompts to duet with official audio/loop.
+
+CMS: audio packs, copy, hash-tags, moderation flags.
+
+Actions: Record → Post → award points on share detection.
+
+C) Offers lane
+
+Perks & Redemptions
+
+What: Tier-gated discounts and freebies (48h window).
+
+CMS: perk rules per tier, expiry window, redemption codes/QR, usage limits.
+
+Actions: Redeem → Order flow (mock or live).
+
+Next Show / Season Pass
+
+What: Personalised recommendations and priority access.
+
+CMS: event catalogue, priority logic (tier/time/geo), waitlist toggles.
+
+Actions: Notify me • Book (deep-link) • Share invite.
+
+Refer-A-Friend
+
+What: Unique link/code; both sides get points/discounts.
+
+CMS: reward amounts, cooldowns, max redemptions, fraud rules.
+
+Actions: Copy link → Track progress.
+
+Merch After-Drop
+
+What: Limited run items tied to the show (24–72h).
+
+CMS: catalogue, tier price breaks, stock counts, ship/collect rules.
+
+Actions: Add → Checkout → awardMemory(templateId?).
+
+F&B Thank-You Voucher
+
+What: One-time voucher for partner venues within a week.
+
+CMS: partners, geo radius, time window, QR format, terms.
+
+Actions: Add to Wallet → Redeem.
+
+Personalisation & Rules
+
+Featured selection: CMS Featured Rules (priority) using conditions: time since event, tier ≥, points momentum, zones/home geo, popularity.
+
+Copy variants: short punchy lines for Bronze vs. Gold.
+
+Context: If user skipped sharing at Event, foreground Remix Studio; if they shared lots, foreground Perks/Next Show.
+
+CMS Controls (per module)
+
+Each module has:
+
+enabled toggle, lane assignment (Recap/Create/Offers), order, visibility (tier/time/geo), and award hook where relevant:
+
+award.enabled, templateId, trigger(onOpen|onComplete|onShare), cooldownSec, oneTime.
+
+Content fields (copy, art, templates, assets), scheduling, analytics tag.
+
+Global:
+
+Featured Rules for After Home.
+
+Recommendations library (titles, deeplinks) for dynamic nudges.
+
+Perks matrix (text only) per tier.
+
+Analytics (key events)
+
+after_open, after_lane_view {lane}
+
+highlights_play|share, remix_generate|share, poster_export
+
+ar_home_launch|capture, nps_submit
+
+perk_redeem, next_show_cta, refer_link_copy, merch_purchase
+
+memory_awarded {templateId}, points_earned {delta, reason}
+
+States & Edge Cases
+
+No media: swap Smart Highlights for “Start with Remix Studio (import or pick best stills)”.
+
+Offline: show cached Memories and drafts; queue shares for retry.
+
+Tier-up in After: confetti pulse + perk spotlight card.
+
+Privacy: face-consent reminder before public share; clear policy link.
+
+Acceptance Criteria
+
+After Home renders with Quick Actions + Featured modules from CMS rules.
+
+Three lanes Recap / Create / Offers share the same card UI as Event; all modules are CMS-driven.
+
+Any configured module can award a Memory/points via the standard award hook.
+
+Tier pill opens User Score (as previously specified) and progress matches points earned on After actions.
+
+Personalisation (time since event, tier) changes Featured selection and copy.
+
+All actions emit analytics; Wallet badge updates instantly on awards.
+
+Visual language matches Event (dark glass, rounded pills, motion, a11y).
+
+If you’d like, I can convert this into a CMS seed (modules + featured rules + copy) so you can preview the After page with sample content.
+
+Thinking
