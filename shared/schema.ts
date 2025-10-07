@@ -2037,6 +2037,162 @@ export const gallerySettings = pgTable("gallery_settings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Before Engagement: Quests & Streaks System
+export const questDefinitions = pgTable("quest_definitions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  
+  // Quest identity
+  name: varchar("name").notNull(),
+  description: text("description"),
+  questType: varchar("quest_type").notNull(), // 'warmup', 'daily', 'weekly', 'special'
+  
+  // Visibility and targeting
+  phase: varchar("phase"), // 'before', 'event', 'after'
+  targetTier: varchar("target_tier"), // null=all, 'bronze', 'silver', 'gold'
+  
+  // Timing
+  availableFrom: timestamp("available_from"),
+  availableUntil: timestamp("available_until"),
+  estimatedMinutes: integer("estimated_minutes"), // Estimated completion time
+  
+  // Rewards
+  pointsReward: integer("points_reward").default(0),
+  memoryTemplateId: varchar("memory_template_id").references(() => memoryTemplates.id),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  displayOrder: integer("display_order").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  eventIdIndex: index("quest_definitions_event_id_idx").on(table.eventId),
+  phaseIndex: index("quest_definitions_phase_idx").on(table.phase),
+  isActiveIndex: index("quest_definitions_is_active_idx").on(table.isActive),
+}));
+
+export const questSteps = pgTable("quest_steps", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  questId: varchar("quest_id").references(() => questDefinitions.id).notNull(),
+  
+  // Step configuration
+  stepOrder: integer("step_order").notNull(),
+  description: text("description").notNull(),
+  actionType: varchar("action_type").notNull(), // 'view_card', 'complete_chapter', 'watch_video', 'share', 'custom'
+  actionTarget: varchar("action_target"), // Card ID, chapter ID, etc.
+  actionConfig: jsonb("action_config"), // Additional action parameters
+  
+  // Display
+  iconName: varchar("icon_name"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  questIdIndex: index("quest_steps_quest_id_idx").on(table.questId),
+  stepOrderIndex: index("quest_steps_step_order_idx").on(table.stepOrder),
+}));
+
+export const userQuestProgress = pgTable("user_quest_progress", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  questId: varchar("quest_id").references(() => questDefinitions.id).notNull(),
+  
+  // Progress tracking
+  currentStep: integer("current_step").default(0),
+  completedSteps: jsonb("completed_steps").default([]), // Array of completed step IDs
+  isCompleted: boolean("is_completed").default(false),
+  
+  // Timestamps
+  startedAt: timestamp("started_at").defaultNow(),
+  completedAt: timestamp("completed_at"),
+  lastProgressAt: timestamp("last_progress_at").defaultNow(),
+}, (table) => ({
+  userIdIndex: index("user_quest_progress_user_id_idx").on(table.userId),
+  questIdIndex: index("user_quest_progress_quest_id_idx").on(table.questId),
+  isCompletedIndex: index("user_quest_progress_is_completed_idx").on(table.isCompleted),
+  uniqueUserQuest: uniqueIndex("user_quest_progress_unique").on(table.userId, table.questId),
+}));
+
+export const userStreaks = pgTable("user_streaks", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  
+  // Streak data
+  streakType: varchar("streak_type").notNull(), // 'daily_checkin', 'creation', 'engagement'
+  currentStreak: integer("current_streak").default(0),
+  longestStreak: integer("longest_streak").default(0),
+  
+  // Tracking
+  lastCheckIn: timestamp("last_check_in"),
+  graceUsed: boolean("grace_used").default(false), // Whether grace day was used
+  
+  // Metadata
+  metadata: jsonb("metadata"), // Additional streak-specific data
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  userIdIndex: index("user_streaks_user_id_idx").on(table.userId),
+  eventIdIndex: index("user_streaks_event_id_idx").on(table.eventId),
+  streakTypeIndex: index("user_streaks_streak_type_idx").on(table.streakType),
+  uniqueUserStreak: uniqueIndex("user_streaks_unique").on(table.userId, table.eventId, table.streakType),
+}));
+
+export const cardRewards = pgTable("card_rewards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  cardId: varchar("card_id").references(() => cards.id).notNull(),
+  
+  // Reward configuration
+  enabled: boolean("enabled").default(true),
+  trigger: varchar("trigger").notNull(), // 'onOpen', 'onComplete', 'onShare', 'minScore'
+  
+  // Reward details
+  pointsAward: integer("points_award").default(0),
+  memoryTemplateId: varchar("memory_template_id").references(() => memoryTemplates.id),
+  rewardRuleId: varchar("reward_rule_id").references(() => rewardRules.id),
+  
+  // Constraints
+  cooldownSeconds: integer("cooldown_seconds"),
+  oneTimeOnly: boolean("one_time_only").default(false),
+  minScore: integer("min_score"), // For quiz/score-based triggers
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  cardIdIndex: index("card_rewards_card_id_idx").on(table.cardId),
+  enabledIndex: index("card_rewards_enabled_idx").on(table.enabled),
+  triggerIndex: index("card_rewards_trigger_idx").on(table.trigger),
+}));
+
+// Before Lanes System - Organized lanes for Before phase (plan, discover, community, bts)
+export const beforeLanes = pgTable("before_lanes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Event reference (optional - can be global or event-specific)
+  eventId: varchar("event_id").references(() => liveEvents.id),
+  
+  // Lane configuration
+  laneKey: varchar("lane_key").notNull(), // 'plan', 'discover', 'community', 'bts'
+  title: varchar("title").notNull(),
+  description: text("description"),
+  iconName: varchar("icon_name"),
+  
+  // Positioning and status
+  order: integer("order").default(0),
+  isActive: boolean("is_active").default(true),
+  
+  // Audit fields
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  eventIdIndex: index("before_lanes_event_id_idx").on(table.eventId),
+  laneKeyIndex: index("before_lanes_lane_key_idx").on(table.laneKey),
+  isActiveIndex: index("before_lanes_is_active_idx").on(table.isActive),
+  orderIndex: index("before_lanes_order_idx").on(table.order),
+  uniqueEventLane: uniqueIndex("before_lanes_unique").on(table.eventId, table.laneKey),
+}));
+
 // Note: Enterprise featureFlags table is defined earlier in the file with comprehensive functionality
 
 // Export all types
@@ -2119,3 +2275,17 @@ export type InteractiveChoice = typeof interactiveChoices.$inferSelect;
 export type UpsertInteractiveChoice = typeof interactiveChoices.$inferInsert;
 export type ChoiceResponse = typeof choiceResponses.$inferSelect;
 export type UpsertChoiceResponse = typeof choiceResponses.$inferInsert;
+
+// Before Engagement Types
+export type QuestDefinition = typeof questDefinitions.$inferSelect;
+export type UpsertQuestDefinition = typeof questDefinitions.$inferInsert;
+export type QuestStep = typeof questSteps.$inferSelect;
+export type UpsertQuestStep = typeof questSteps.$inferInsert;
+export type UserQuestProgress = typeof userQuestProgress.$inferSelect;
+export type UpsertUserQuestProgress = typeof userQuestProgress.$inferInsert;
+export type UserStreak = typeof userStreaks.$inferSelect;
+export type UpsertUserStreak = typeof userStreaks.$inferInsert;
+export type CardReward = typeof cardRewards.$inferSelect;
+export type UpsertCardReward = typeof cardRewards.$inferInsert;
+export type BeforeLane = typeof beforeLanes.$inferSelect;
+export type UpsertBeforeLane = typeof beforeLanes.$inferInsert;
