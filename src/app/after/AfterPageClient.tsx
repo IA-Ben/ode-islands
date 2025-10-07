@@ -140,6 +140,14 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
       size: "M",
       description: "Auto-generated highlight reel of your best moments",
     },
+    {
+      id: "r5",
+      type: "photo-drop",
+      title: "Official Photo Drop",
+      subtitle: "NEW PHOTOS",
+      size: "L",
+      description: "Professional event photos available for download and sharing",
+    },
   ];
 
   const createCards: AfterLaneCard[] = [
@@ -172,8 +180,24 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
       type: "photo-editor",
       title: "Photo Editor",
       subtitle: "ENHANCE",
-      size: "M",
+      size: "S",
       description: "Edit and enhance your captured photos with filters and effects",
+    },
+    {
+      id: "c5",
+      type: "smart-video-editor",
+      title: "Smart Video Editor",
+      subtitle: "AI POWERED",
+      size: "M",
+      description: "Create professional highlight reels with AI-powered editing, captions, and effects",
+    },
+    {
+      id: "c6",
+      type: "at-home-ar",
+      title: "At-Home AR Experience",
+      subtitle: "IMMERSIVE",
+      size: "L",
+      description: "Bring the magic home with exclusive AR experiences you can enjoy anywhere",
     },
   ];
 
@@ -201,6 +225,22 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
       subtitle: "EARN POINTS",
       size: "S",
       description: "Share your experience and earn bonus points",
+    },
+    {
+      id: "o4",
+      type: "merch",
+      title: "Exclusive Merchandise",
+      subtitle: "LIMITED TIME",
+      size: "M",
+      description: "Official event merchandise with special after-show pricing",
+    },
+    {
+      id: "o5",
+      type: "nps-review",
+      title: "Share Your Feedback",
+      subtitle: "EARN REWARDS",
+      size: "L",
+      description: "Help us improve! Complete a quick survey and earn bonus points",
     },
   ];
 

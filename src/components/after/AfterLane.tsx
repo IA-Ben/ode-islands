@@ -16,7 +16,11 @@ import {
   Calendar,
   Ticket,
   Gift,
-  RefreshCw
+  RefreshCw,
+  Smartphone,
+  ShoppingBag,
+  MessageSquare,
+  Sparkles
 } from "lucide-react";
 
 export interface AfterLaneCard {
@@ -94,17 +98,21 @@ const cardTypeIcons: Record<string, any> = {
   "highlights-reel": Film,
   "set-completion": CheckCircle2,
   "badges": Trophy,
+  "photo-drop": ImageIcon,
   // Create lane
   "story-epilogues": BookOpen,
   "poster-maker": Palette,
   "remix-studio": Film,
   "photo-editor": ImageIcon,
+  "smart-video-editor": Wand2,
+  "at-home-ar": Smartphone,
   // Offers lane
   "tier-perks": Trophy,
   "next-show": Calendar,
   "referrals": Users,
-  "merch": Ticket,
+  "merch": ShoppingBag,
   "season-pass": Gift,
+  "nps-review": MessageSquare,
 };
 
 export function AfterLane({ lane, cards, onBack, onCardClick }: AfterLaneProps) {
