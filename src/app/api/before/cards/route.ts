@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '../../../../../server/db';
-import { cards, cardAssignments, mediaAssets, featuredRules, featuredRuleConditions } from '../../../../../shared/schema';
+import { cards, cardAssignments, mediaAssets, featuredRules, featuredRuleConditions, beforeLanes } from '../../../../../shared/schema';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 
 interface UserContext {
@@ -183,7 +183,7 @@ export async function GET(request: NextRequest) {
           imageUrl: row.imageMedia?.cloudUrl || null,
           isFeatured: true,
           priority: rule.priority,
-          isPinned: rule.isPinned || false,
+          isPinned: rule.pinned || false,
         });
         
         // Limit to 3 featured cards
@@ -197,14 +197,36 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // Filter by lane if specified
+    // Filter by lane if specified - look up lane by laneKey first
     if (lane) {
-      conditions.push(
-        and(
-          eq(cardAssignments.parentType, 'before_lane'),
-          eq(cardAssignments.parentId, lane)
+      // Find the lane record by laneKey
+      const [laneRecord] = await db
+        .select()
+        .from(beforeLanes)
+        .where(
+          and(
+            eq(beforeLanes.laneKey, lane),
+            eq(beforeLanes.isActive, true)
+          )
         )
-      );
+        .limit(1);
+      
+      if (laneRecord) {
+        conditions.push(
+          and(
+            eq(cardAssignments.parentType, 'before_lane'),
+            eq(cardAssignments.parentId, laneRecord.id)
+          )
+        );
+      } else {
+        // Lane not found, return empty results
+        return NextResponse.json({
+          cards: [],
+          count: 0,
+          type: `lane:${lane}`,
+          message: `Lane '${lane}' not found or inactive`,
+        });
+      }
     }
 
     query = query.where(and(...conditions));
