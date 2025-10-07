@@ -103,7 +103,7 @@ export function AfterHub({
                       <div className="w-full bg-white/10 rounded-full h-2">
                         <div 
                           className="bg-gradient-to-r from-fuchsia-500 to-purple-500 h-2 rounded-full transition-all duration-500"
-                          style={{ width: `${Math.min((1 - welcomeData.pointsToNextTier / 500) * 100, 100)}%` }}
+                          style={{ width: `${Math.max(0, Math.min((1 - welcomeData.pointsToNextTier / 500) * 100, 100))}%` }}
                         />
                       </div>
                     </div>
