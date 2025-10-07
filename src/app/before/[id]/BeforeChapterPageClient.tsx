@@ -36,6 +36,7 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
 
   const [interacted, setInteracted] = useState<boolean>(false);
   const [index, setIndex] = useState<number>(0);
+  const [loadedCards, setLoadedCards] = useState<number>(1); // Start with only first card loaded
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Navigation handlers for UnifiedTopNav
@@ -111,7 +112,12 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
     const newIndex = Math.min(cards.length - 1, index + 1);
     setIndex(newIndex);
     scrollToCard(newIndex);
-  }, [interacted, index, cards.length, scrollToCard]);
+    
+    // Progressively load next cards (load 2 cards ahead)
+    if (newIndex + 2 > loadedCards) {
+      setLoadedCards(Math.min(cards.length, newIndex + 2));
+    }
+  }, [interacted, index, cards.length, scrollToCard, loadedCards]);
 
   const onFirst = useCallback(() => {
     setIndex(0);
@@ -208,13 +214,18 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
         onTouchMove={interacted ? undefined : (e) => e.preventDefault()}
         onWheel={interacted ? undefined : (e) => e.preventDefault()}
       >
-        {cards.map((card, cardIndex) => (
+        {cards.slice(0, loadedCards).map((card, cardIndex) => (
           <div key={cardIndex} className="snap-start w-full">
             <LazyClientCardWrapper 
               componentProps={{ data: card, active: cardIndex === index }}
             />
           </div>
         ))}
+        {loadedCards < cards.length && (
+          <div className="snap-start w-full h-screen flex items-center justify-center bg-black">
+            <div className="w-12 h-12 rounded-full border-4 border-fuchsia-500/30 border-t-fuchsia-500 animate-spin" />
+          </div>
+        )}
       </div>
       
       <Footer
