@@ -14,7 +14,11 @@ export default function BeforePage() {
   return (
     <div className="w-full h-screen bg-gradient-to-br from-slate-950 via-fuchsia-950/20 to-slate-950 flex items-center justify-center">
       <div className="flex flex-col items-center gap-4">
-        <div className="w-16 h-16 rounded-full border-4 border-fuchsia-500/30 border-t-fuchsia-500 animate-spin" />
+        <div className="flex items-center justify-center gap-2">
+          <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+          <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+          <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+        </div>
         <div className="text-white/60 text-sm">Loading experience...</div>
       </div>
     </div>

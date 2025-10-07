@@ -256,7 +256,11 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
         ))}
         {loadedCards < cards.length && (
           <div className="snap-start w-full h-screen flex items-center justify-center bg-black">
-            <div className="w-12 h-12 rounded-full border-4 border-fuchsia-500/30 border-t-fuchsia-500 animate-spin" />
+            <div className="flex items-center justify-center gap-2">
+              <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" style={{ animationDelay: '0ms' }} />
+              <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" style={{ animationDelay: '150ms' }} />
+              <div className="w-2 h-2 bg-fuchsia-400 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+            </div>
           </div>
         )}
       </div>
