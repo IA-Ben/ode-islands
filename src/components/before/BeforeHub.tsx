@@ -26,7 +26,7 @@ export function BeforeHub({
   onQuickAction,
   eventDate,
 }: BeforeHubProps) {
-  const [activeTab, setActiveTab] = useState<"featured" | "plan" | "discover" | "community" | "bts">("featured");
+  const [activeTab, setActiveTab] = useState<"featured" | "plan" | "discover" | "community">("featured");
 
   const handleQuickAction = (action: "scan" | "map" | "schedule" | "offers" | "tickets") => {
     if (onQuickAction) {
@@ -47,7 +47,7 @@ export function BeforeHub({
     return `${hours}h until event`;
   };
 
-  const scrollToSection = (section: "plan" | "discover" | "community" | "bts") => {
+  const scrollToSection = (section: "plan" | "discover" | "community") => {
     const element = document.getElementById(`section-${section}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -111,19 +111,6 @@ export function BeforeHub({
               }`}
             >
               Community
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab("bts");
-                onEnterLane("bts");
-              }}
-              className={`flex-shrink-0 px-6 py-2 rounded-full font-medium transition-all duration-200 ${
-                activeTab === "bts"
-                  ? "bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/25"
-                  : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              BTS
             </button>
           </nav>
         </div>
