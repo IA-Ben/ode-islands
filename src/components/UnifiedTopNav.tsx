@@ -308,15 +308,15 @@ export default function UnifiedTopNav({
                 {/* Wallet */}
                 <button
                   onClick={onOpenWallet}
-                  className="relative inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:shadow-sm transition focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400"
+                  className="relative inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-fuchsia-400 dark:hover:border-fuchsia-500 hover:shadow-md hover:shadow-fuchsia-500/10 hover:scale-105 active:scale-95 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400"
                   aria-label="Open Memory Wallet"
                 >
-                  <WalletCards className="w-5 h-5 text-slate-700 dark:text-slate-200" />
+                  <WalletCards className="w-5 h-5 text-slate-700 dark:text-slate-200 group-hover:text-fuchsia-600 transition-colors" />
                   <span className="hidden sm:inline text-sm font-medium text-slate-900 dark:text-white">
                     Wallet
                   </span>
                   {walletNewCount > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-fuchsia-600 text-white text-xs font-bold rounded-full flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-fuchsia-600 text-white text-xs font-bold rounded-full flex items-center justify-center shadow-lg shadow-fuchsia-500/50 animate-pulse">
                       {walletNewCount}
                     </span>
                   )}
