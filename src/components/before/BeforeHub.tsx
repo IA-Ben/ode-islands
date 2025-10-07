@@ -75,19 +75,6 @@ export function BeforeHub({
             </button>
             <button
               onClick={() => {
-                setActiveTab("plan");
-                onEnterLane("plan");
-              }}
-              className={`flex-shrink-0 px-6 py-2 rounded-full font-medium transition-all duration-200 ${
-                activeTab === "plan"
-                  ? "bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/25"
-                  : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
-              }`}
-            >
-              Plan
-            </button>
-            <button
-              onClick={() => {
                 setActiveTab("discover");
                 onEnterLane("discover");
               }}
@@ -111,6 +98,19 @@ export function BeforeHub({
               }`}
             >
               Community
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("plan");
+                onEnterLane("plan");
+              }}
+              className={`flex-shrink-0 px-6 py-2 rounded-full font-medium transition-all duration-200 ${
+                activeTab === "plan"
+                  ? "bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/25"
+                  : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              Plan
             </button>
           </nav>
         </div>
