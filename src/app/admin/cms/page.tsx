@@ -2,9 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-// import { SampleDataControl } from '@/components/SampleDataControl';
 import type { CardData } from '@/@typings';
 import odeIslandsData from '../../data/ode-islands.json';
 import AddChapterModal from '@/components/cms/AddChapterModal';
@@ -67,22 +64,15 @@ export default function CMSPage() {
   const checkAuth = async () => {
     try {
       console.log('Checking authentication status...');
-      const response = await fetch('/api/auth/status');
-      console.log('Auth status response:', response.status, response.statusText);
+      const response = await fetch('/api/auth/user');
+      console.log('Auth user response:', response.status, response.statusText);
       
       if (response.ok) {
-        const statusData = await response.json();
-        console.log('Auth status received:', statusData);
-        
-        if (statusData.authenticated) {
-          // User is authenticated, now get their user data
-          const userResponse = await fetch('/api/auth/user');
-          if (userResponse.ok) {
-            const userData = await userResponse.json();
-            console.log('User data received:', userData);
-            setUser(userData);
-          }
-        }
+        const userData = await response.json();
+        console.log('User data received:', userData);
+        setUser(userData);
+      } else {
+        setLoginError('Not authenticated');
       }
     } catch (error) {
       console.error('Auth check failed:', error);
