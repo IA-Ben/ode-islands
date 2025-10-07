@@ -12,6 +12,7 @@ import { ChapterReorderList } from '@/components/cms/ChapterReorderList';
 import AdvancedSearch from '@/components/cms/AdvancedSearch';
 import { MediaLibrary } from '@/components/cms/MediaLibrary';
 import StoryCardModal from '@/components/cms/StoryCardModal';
+import { surfaces, colors, typography, components, focus, borders } from '@/lib/admin/designTokens';
 
 type ChapterData = {
   [key: string]: CardData[];
