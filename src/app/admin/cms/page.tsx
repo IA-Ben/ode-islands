@@ -272,10 +272,14 @@ export default function CMSPage() {
   // Show loading state
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
         <div className="text-center">
-          <div className="w-16 h-16 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-          <div className="text-gray-600 text-lg font-medium">Loading CMS...</div>
+          <div className="flex items-center gap-2 justify-center mb-4">
+            <div className="w-3 h-3 bg-fuchsia-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+            <div className="w-3 h-3 bg-fuchsia-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+            <div className="w-3 h-3 bg-fuchsia-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+          </div>
+          <div className="text-slate-300 text-lg font-medium">Loading CMS...</div>
         </div>
       </div>
     );
@@ -284,25 +288,25 @@ export default function CMSPage() {
   // Show login if not authenticated
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
+        <div className={`${surfaces.darkGlass} ${borders.glassBorder} ${borders.radius.xl} p-8 max-w-md w-full`}>
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6">
-              <svg className="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`w-20 h-20 ${colors.gradients.primary} rounded-full flex items-center justify-center mx-auto mb-6`}>
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
               </svg>
             </div>
-            <h1 className="text-2xl font-bold text-gray-900 mb-2">CMS Login Required</h1>
-            <p className="text-gray-600">Please sign in with your admin account</p>
+            <h1 className={`${typography.h2} text-white mb-2`}>CMS Login Required</h1>
+            <p className="text-slate-400">Please sign in with your admin account</p>
           </div>
           {loginError && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-              <p className="text-red-800 text-sm">{loginError}</p>
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4 mb-6">
+              <p className="text-red-400 text-sm">{loginError}</p>
             </div>
           )}
           <a
             href="/api/login"
-            className="w-full flex items-center justify-center px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            className={`${components.buttons.primary} w-full justify-center`}
           >
             Sign in with Replit
           </a>
@@ -314,19 +318,19 @@ export default function CMSPage() {
   // Show access denied for non-admin users
   if (!user.isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-6">
+        <div className={`${surfaces.darkGlass} ${borders.glassBorder} ${borders.radius.xl} p-8 max-w-md w-full text-center`}>
+          <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Access Restricted</h1>
-          <p className="text-gray-600 mb-6">Content management access requires admin permissions</p>
-          <p className="text-sm text-gray-500 mb-6">Logged in as: {user.email}</p>
+          <h1 className={`${typography.h2} text-white mb-2`}>Access Restricted</h1>
+          <p className="text-slate-400 mb-6">Content management access requires admin permissions</p>
+          <p className="text-sm text-slate-500 mb-6">Logged in as: {user.email}</p>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center px-4 py-3 bg-gray-600 hover:bg-gray-700 text-white font-medium rounded-lg transition-colors"
+            className={`${components.buttons.secondary} w-full justify-center`}
           >
             Return to Login
           </button>
@@ -373,22 +377,22 @@ export default function CMSPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-slate-900">
       {/* Professional Administrative Header */}
-      <div className="bg-white border-b border-gray-200 shadow-sm">
+      <div className={`${surfaces.darkGlass} border-b ${borders.glassBorder} sticky top-0 z-40 backdrop-blur`}>
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <div className="text-2xl font-bold text-gray-900">
+              <div className={`${typography.h2} text-white`}>
                 Content Management System
               </div>
             </div>
 
             <div className="text-center flex-1">
-              <div className="text-lg font-semibold text-gray-900">
+              <div className={`${typography.h4} text-white`}>
                 {getPhaseTitle(selectedPhase)}
               </div>
-              <div className="text-sm text-gray-600">
+              <div className="text-sm text-slate-400">
                 {new Date().toLocaleDateString('en-US', { 
                   weekday: 'long', 
                   month: 'short', 
@@ -399,10 +403,10 @@ export default function CMSPage() {
 
             <div className="flex items-center space-x-3">
               <div className="text-right mr-4">
-                <div className="text-sm font-medium text-gray-700">
+                <div className="text-sm font-medium text-slate-200">
                   {user.firstName} {user.lastName}
                 </div>
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-slate-400">
                   {user.email}
                 </div>
               </div>
@@ -410,7 +414,7 @@ export default function CMSPage() {
               <div className="flex space-x-2">
                 <Link 
                   href="/admin/theme"
-                  className="flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-all duration-200"
+                  className={`${components.buttons.primary} text-sm`}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zM21 5a2 2 0 00-2-2h-4a2 2 0 00-2 2v12a4 4 0 004 4h4a2 2 0 002-2V5z" />
@@ -420,7 +424,7 @@ export default function CMSPage() {
 
                 <button
                   onClick={handleLogout}
-                  className="flex items-center px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-medium rounded-lg transition-all duration-200"
+                  className={`${components.buttons.secondary} text-sm`}
                 >
                   <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
