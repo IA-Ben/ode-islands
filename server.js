@@ -62,7 +62,7 @@ app.prepare().then(async () => {
     
     const expressApiPaths = [
       '/api/auth/',
-      '/api/admin/', 
+      // '/api/admin/' - Removed: Now handled by Next.js App Router
       '/api/cms/',
       '/api/content/',
       '/api/scheduler/',
@@ -89,7 +89,7 @@ app.prepare().then(async () => {
     // URL encoding middleware with same logic
     const expressApiPaths = [
       '/api/auth/',
-      '/api/admin/', 
+      // '/api/admin/' - Removed: Now handled by Next.js App Router
       '/api/cms/',
       '/api/content/',
       '/api/scheduler/',
