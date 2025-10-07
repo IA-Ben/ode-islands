@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { storage } from '../../../../../server/storage';
 import { ObjectStorageService } from '../../../../../server/objectStorage';
 import { randomUUID, createHash } from 'crypto';
+import { db } from '../../../../../server/db';
+import { mediaAssets } from '../../../../../shared/schema';
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,16 +60,17 @@ export async function POST(request: NextRequest) {
     const publicUrl = `/api/media${storageKey}`;
     const checksum = createHash('md5').update(buffer).digest('hex');
 
-    // Save to media assets table
-    const mediaAsset = await storage.createMediaAsset({
-      storageKey: storageKey,
+    // Save to media assets table using current schema fields
+    const [mediaAsset] = await db.insert(mediaAssets).values({
+      filename: file.name,
+      originalName: file.name,
       cloudUrl: publicUrl,
+      storageKey: storageKey,
       checksum: checksum,
       fileType: fileType,
       mimeType: file.type,
-      fileSize: file.size,
-      title: file.name.replace(/\.[^/.]+$/, ''), // Remove extension
-    });
+      fileSize: file.size.toString(),
+    }).returning();
 
     return NextResponse.json({
       success: true,
