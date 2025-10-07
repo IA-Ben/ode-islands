@@ -1,28 +1,27 @@
 import { Suspense } from 'react';
-import { headers } from 'next/headers';
 import EventPageClient from './EventPageClient';
 import EventLoadingSkeleton from './EventLoadingSkeleton';
-import { getServerUser } from '../../../server/auth';
 import { db } from '../../../server/db';
 import { liveEvents } from '../../../shared/schema';
-import { eq, and } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+
+// Mock admin user with full permissions (authentication bypassed per project requirements)
+const mockAdminUser = {
+  id: 'mock-admin-user',
+  email: 'dev@odeislands.com',
+  firstName: 'Dev',
+  lastName: 'User',
+  isAdmin: true
+};
 
 // Server component that fetches initial data
 async function getInitialEventData() {
   try {
-    // Fetch user data server-side
-    const user = await getServerUser();
     const sessionData = { 
-      isAuthenticated: !!user, 
-      isAdmin: user?.isAdmin ?? false,
-      userId: user?.id,
-      user: user ? {
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        isAdmin: user.isAdmin
-      } : undefined
+      isAuthenticated: true, 
+      isAdmin: true,
+      userId: mockAdminUser.id,
+      user: mockAdminUser
     };
     
     // Fetch active event for all users (both admin and audience)
@@ -56,7 +55,7 @@ async function getInitialEventData() {
   } catch (error) {
     console.error('Failed to fetch initial event data:', error);
     return {
-      session: { isAuthenticated: false, isAdmin: false },
+      session: { isAuthenticated: true, isAdmin: true, userId: mockAdminUser.id, user: mockAdminUser },
       events: [],
       activeEvent: null,
       userType: 'audience' as const,
