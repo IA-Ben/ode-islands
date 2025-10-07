@@ -3,16 +3,38 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import dynamic from "next/dynamic";
 import type { CardData } from '@/@typings';
 
 import AnimateText from "./AnimateText";
-import Player from "./Player";
-import PlayCanvasViewer from "./PlayCanvasViewer";
-import ARViewer from "./ARViewer";
 import { CardButton } from "./CardButton";
-import PollCard from "./PollCard";
-import QuizCard from "./QuizCard";
 import MemoryCollectionButton from "./MemoryCollectionButton";
+
+// Dynamically import heavy components only when needed
+const Player = dynamic(() => import("./Player"), {
+  loading: () => <div className="w-full h-full bg-black/50 flex items-center justify-center"><div className="text-white">Loading video...</div></div>,
+  ssr: false
+});
+
+const PlayCanvasViewer = dynamic(() => import("./PlayCanvasViewer"), {
+  loading: () => <div className="w-full h-full bg-black/50 flex items-center justify-center"><div className="text-white">Loading 3D viewer...</div></div>,
+  ssr: false
+});
+
+const ARViewer = dynamic(() => import("./ARViewer"), {
+  loading: () => <div className="w-full h-full bg-black/50 flex items-center justify-center"><div className="text-white">Loading AR...</div></div>,
+  ssr: false
+});
+
+const PollCard = dynamic(() => import("./PollCard"), {
+  loading: () => <div className="w-full h-full bg-slate-900 flex items-center justify-center"><div className="text-white">Loading poll...</div></div>,
+  ssr: false
+});
+
+const QuizCard = dynamic(() => import("./QuizCard"), {
+  loading: () => <div className="w-full h-full bg-slate-900 flex items-center justify-center"><div className="text-white">Loading quiz...</div></div>,
+  ssr: false
+});
 
 interface CardProps {
   data: CardData;
@@ -108,7 +130,8 @@ export const Card: React.FC<CardProps> = ({ data, active, cardId, chapterId }) =
               opacity: imageActive ? 1 : 0,
               transition: imageActive ? "opacity 0.3s ease" : "none",
             }}
-            priority
+            priority={active}
+            loading={active ? "eager" : "lazy"}
             onLoad={() => setImageLoad(true)}
           />
         )}
