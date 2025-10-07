@@ -159,8 +159,8 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
-  const [showOpeningFlow, setShowOpeningFlow] = useState(true);
-  const [openingFlowComplete, setOpeningFlowComplete] = useState(false);
+  const [showOpeningFlow, setShowOpeningFlow] = useState(false);
+  const [openingFlowComplete, setOpeningFlowComplete] = useState(true);
   
   // Calculate tier from fan score level first
   const points = scoreData?.currentScore?.totalScore || 0;
