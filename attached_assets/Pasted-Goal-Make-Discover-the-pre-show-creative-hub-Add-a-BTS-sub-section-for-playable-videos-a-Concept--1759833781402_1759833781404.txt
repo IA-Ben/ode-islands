@@ -1,0 +1,167 @@
+Goal
+
+Make Discover the pre-show creative hub. Add a BTS sub-section for playable videos, a Concept Art gallery, and ensure Immersive Stories (chapters) live here as tiles that open the full-screen reader.
+
+IA & Navigation
+
+Top bar (shared): Before | Event | After • Wallet • Tier • Scan • Profile
+
+Before sub-menu: Featured | Plan | Discover | Community
+
+Discover intra-tabs (local pills under Discover header): All | BTS | Concept Art | Stories
+
+Defaults to All (merged feed), with filter pills for quick switching.
+
+Card Catalogue (Discover)
+
+All items are standard Cards with: title, subtitle, art, size(S/M/L), lane:"discover", order, visibility(stage/time/geo/persona), schedule windows, analyticsTag, award{enabled, templateId, trigger, cooldownSec, oneTime}.
+
+1) BTS (Behind-the-Scenes)
+
+BTS Video Card
+
+What: Single playable video tile (teaser, rehearsal, director note).
+
+CMS fields: videoUrl, posterImage, duration, captionsVTT, ratingFlag(safe|intense_audio|flash), credit, seriesId?, chapters[]? (timestamps & labels), allowDownload(bool).
+
+UX: Tap → inline play (muted by default), full-screen on rotate/tap, captions on by default (UK English). “From the vault” badge optional.
+
+Actions: Play/Pause • Full screen • Share • (opt) Save to Wallet on first full watch.
+
+BTS Playlist/Series Card (L)
+
+What: Carousel of 3–6 BTS videos.
+
+CMS: seriesId, videos[] (refs), autoPlayNext(bool), mixOfficialAndUGC(bool).
+
+2) Concept Art
+
+Concept Art Gallery Card
+
+What: Image grid (3–9 thumbs) with pinch-zoom detail.
+
+CMS fields: images[] (url, title, caption, artist, spoilerFlag), coverLayout(mosaic|strip), watermark(bool), downloadable(bool).
+
+UX: Tap → lightbox with swipe, captions, artist credit, optional watermark. Spoiler-flagged images blur until confirmed.
+
+Actions: View • Save (device) • Share • (opt) Save to Wallet on completing gallery.
+
+Concept Art Spotlight Card (S)
+
+What: One hero artwork with short commentary.
+
+CMS: image, commentary, audioNoteUrl?.
+
+3) Immersive Stories
+
+Chapter Tile Card
+
+What: Story/Chapter tile (cover, hook, length badge, progress ring).
+
+CMS fields: storyId, chapterId, cover, hook, lengthBadge, badges(new|staff_pick|tier_gate), resumeProgress.
+
+UX: Tap → Full-Screen Reader (swipe cards; pink logo circle = Back to menu; progress bar; captions; branching).
+
+Actions: Open • Resume • Share • (opt) Save to Wallet when award fires.
+
+Discover Feed & Sorting
+
+All: rank by Featured Rules (time to event, freshness, popularity, tier), then manual order.
+
+BTS / Concept Art / Stories tabs: show type-scoped feeds, preserve global ranking inside scope.
+
+Freshness chips: New, Today, This week based on publishedAt.
+
+Completion chips: “Watched”, “Viewed”, “Continue 2 mins left”.
+
+Visibility & Personalisation (rules)
+
+Stage: all cards must include stage:["before"].
+
+Time windows (examples):
+
+T−14d→T−3d: heavy BTS, Concept Art drops; a few early Stories.
+
+T−3d→T−0: more Stories/Chapters and “final BTS notes”; reveal spoiler-sensitive art nearer T-0.
+
+Geo: home vs venueFence adjusts copy (no Event-only actions).
+
+Persona: tier, firstTimer, accessibilityPref, momentumScore.
+
+First-timer: surface “Start here” BTS explainer + short Story.
+
+Silver/Gold: early access BTS tag.
+
+Playback & Reader UX (consistency)
+
+BTS video: muted autoplay in-feed (optional), tap for sound; captions default ON; content warnings respected; full-screen rotation support.
+
+Concept Art: fast lightbox, swipe gestures, double-tap zoom; spoiler confirm modal when flagged.
+
+Stories: full-screen reader with swipe; persistent pink logo circle (Back to menu); branching via choice overlay; award hooks trigger with Wallet pulse.
+
+CMS Controls (non-technical)
+
+Discover section settings: enable intra-tabs; default tab; “New” thresholds; autoplay toggles.
+
+BTS Video: upload or link; poster; captions; rating flags; series assignment; watermark; allow download toggle; award hook on full watch (optional).
+
+Playlist: series creation, ordering, hero selection.
+
+Concept Art: batch upload; artist credits; spoilers toggle per image; watermark; gallery completion award (optional).
+
+Stories: “Show as tile on Before/Discover” toggle; cover/hook/length; resume state on.
+
+Featured Rules (Before): priority + conditions to lift items into the Featured rail (Before-only content).
+
+Safety, Rights & A11y
+
+Captions mandatory for BTS; transcripts allowed for longform.
+
+Content flags: intense audio, strobe/flash visuals → pre-roll warning.
+
+Credits & rights fields for videos/images; optional watermark on art.
+
+Reduce Motion variant: disable autoplay, use fades.
+
+Rewards & Engagement
+
+Suggested award patterns (configurable via standard hook):
+
+BTS full watch: +10 pts, optional Memory “Backstage Pass”.
+
+Concept Art gallery complete: +10 pts, Memory “Art Print”.
+
+Story chapter complete: +20–50 pts per chapter per rules.
+
+Sets: “Discover Set”: 1 BTS + 1 Art + 1 Story → bonus Memory on completion.
+
+Analytics (minimum)
+
+discover_open, discover_tab_view {tab: all|bts|art|stories}
+
+bts_play_start|complete {id, duration}
+
+art_gallery_open|complete {id, count}
+
+chapter_tile_open|reader_complete {storyId, chapterId}
+
+award_memory {templateId}, points_earned {delta, reason}
+
+featured_impression {cardId}
+
+Acceptance Criteria
+
+Discover shows BTS, Concept Art, and Immersive Stories within the Before section only (stage:["before"]).
+
+In-section pills: All | BTS | Concept Art | Stories filter the feed; Featured Rules can promote items to the top rail.
+
+BTS Video Cards play smoothly with captions; playlist option groups drops; optional award on full watch.
+
+Concept Art Gallery supports lightbox, zoom, captions, spoiler gating, credits, optional award on completion.
+
+Chapter Tiles open the full-screen reader; pink logo circle returns to Discover with scroll/state preserved.
+
+All visibility/personalisation rules (time, geo, persona) function via CMS; no Event/After modules leak into Discover.
+
+Rewards (points/Memory) and analytics fire as specified; a11y and safety flags are respected.

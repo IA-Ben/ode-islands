@@ -148,6 +148,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const { scoreData } = useFanScore();
   
   const [currentView, setCurrentView] = useState<"hub" | "plan" | "discover" | "community" | "bts">("hub");
+  const [discoverTab, setDiscoverTab] = useState<"all" | "bts" | "concept-art" | "stories">("all");
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -487,29 +488,49 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   };
 
   const getLaneCards = () => {
+    let cards: BeforeLaneCard[] = [];
+    
     // If fetch succeeded, use API cards (even if empty - will show empty state with admin link)
     if (fetchSucceeded) {
-      return apiCards;
+      cards = apiCards;
     }
-    
     // Only fallback to stub data if fetch failed (not if database is empty)
-    if (!fetchSucceeded && !cardsLoading) {
+    else if (!fetchSucceeded && !cardsLoading) {
       switch (currentView) {
         case "plan":
-          return planCards;
+          cards = planCards;
+          break;
         case "discover":
-          return discoverCards;
+          cards = discoverCards;
+          break;
         case "community":
-          return communityCards;
+          cards = communityCards;
+          break;
         case "bts":
-          return btsCards;
+          cards = btsCards;
+          break;
         default:
-          return [];
+          cards = [];
       }
     }
     
-    // Return empty during loading
-    return [];
+    // Filter Discover cards by intra-tab
+    if (currentView === "discover" && discoverTab !== "all") {
+      return cards.filter(card => {
+        switch (discoverTab) {
+          case "bts":
+            return card.type === "bts-video" || card.type === "bts-playlist";
+          case "concept-art":
+            return card.type === "concept-art-gallery" || card.type === "concept-art-spotlight";
+          case "stories":
+            return card.type === "immersive-chapter" || card.type === "continue-chapter";
+          default:
+            return true;
+        }
+      });
+    }
+    
+    return cards;
   };
 
   return (
@@ -624,13 +645,45 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
             eventDate={new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)} // 7 days from now
           />
         ) : (
-          <BeforeLane
-            lane={currentView}
-            cards={getLaneCards()}
-            onBack={handleBackToHub}
-            onCardClick={handleCardClick}
-            isAdmin={user?.permissions?.includes('*') || false}
-          />
+          <>
+            {/* Discover Intra-Tabs Navigation */}
+            {currentView === "discover" && (
+              <div className="sticky top-[72px] z-40 bg-slate-900/95 backdrop-blur-md border-b border-white/5">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                  <div className="flex items-center gap-2 py-3 overflow-x-auto scrollbar-hide">
+                    {[
+                      { id: "all", label: "All" },
+                      { id: "bts", label: "BTS" },
+                      { id: "concept-art", label: "Concept Art" },
+                      { id: "stories", label: "Stories" }
+                    ].map((tab) => (
+                      <button
+                        key={tab.id}
+                        onClick={() => setDiscoverTab(tab.id as "all" | "bts" | "concept-art" | "stories")}
+                        className={`
+                          px-5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap
+                          ${discoverTab === tab.id
+                            ? 'bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-600/25'
+                            : 'bg-white/5 text-slate-300 hover:bg-white/10 hover:text-white border border-white/10'
+                          }
+                        `}
+                      >
+                        {tab.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <BeforeLane
+              lane={currentView}
+              cards={getLaneCards()}
+              onBack={handleBackToHub}
+              onCardClick={handleCardClick}
+              isAdmin={user?.permissions?.includes('*') || false}
+            />
+          </>
         )}
       </div>
     </>
