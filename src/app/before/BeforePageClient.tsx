@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { BeforeHub } from "@/components/before/BeforeHub";
 import { BeforeLane, type BeforeLaneCard } from "@/components/before/BeforeLane";
 import UnifiedTopNav from "@/components/UnifiedTopNav";
@@ -36,12 +36,21 @@ interface BeforePageClientProps {
 
 export default function BeforePageClient({ user }: BeforePageClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { scoreData } = useFanScore();
   
   const [currentView, setCurrentView] = useState<"hub" | "plan" | "discover" | "community">("hub");
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
+
+  // Restore view from URL params on mount
+  useEffect(() => {
+    const view = searchParams?.get('view');
+    if (view && (view === 'plan' || view === 'discover' || view === 'community')) {
+      setCurrentView(view);
+    }
+  }, [searchParams]);
 
   // Navigation handlers for UnifiedTopNav
   const handlePhaseChange = (phase: "before" | "event" | "after") => {
@@ -222,8 +231,9 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
 
   const handleCardClick = (action: string, card: BeforeLaneCard) => {
     if (card.type === "immersive-chapter") {
-      // Navigate to the chapter reader
-      router.push(`/before/${card.id}`);
+      // Navigate to the chapter reader with return path
+      const returnPath = `/before?view=${currentView}`;
+      router.push(`/before/${card.id}?returnTo=${encodeURIComponent(returnPath)}`);
     } else {
       // Open card detail modal for non-chapter cards, preserving action
       setSelectedCard({ ...card, action } as BeforeLaneCard);

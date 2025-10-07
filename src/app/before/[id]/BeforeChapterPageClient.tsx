@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { LazyClientCardWrapper } from '@/components/LazyComponentWrapper';
 import Footer from "@/components/Footer";
 import UnifiedTopNav from "@/components/UnifiedTopNav";
 import { useFanScore } from '@/hooks/useFanScore';
 import LoadingScreen from '@/components/LoadingScreen';
+import { ArrowLeft } from "lucide-react";
 import type { CardData } from '@/@typings';
 import data from "../../data/ode-islands.json";
 import dynamic from 'next/dynamic';
@@ -38,6 +39,7 @@ interface BeforeChapterPageClientProps {
 export default function BeforeChapterPageClient({ user }: BeforeChapterPageClientProps) {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { scoreData } = useFanScore();
   const chapterId = params.id as string;
 
@@ -48,6 +50,9 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
   const [isNavigating, setIsNavigating] = useState(false);
   const [pageReady, setPageReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  
+  // Get return path from URL params or default to /before
+  const returnTo = searchParams?.get('returnTo') || '/before';
 
   // Page fade-in effect
   useEffect(() => {
@@ -89,6 +94,10 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
     if (nextMode === 'admin') {
       router.push('/admin');
     }
+  };
+
+  const handleReturn = () => {
+    router.push(decodeURIComponent(returnTo));
   };
 
   // Calculate tier from fan score level
@@ -213,19 +222,14 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
     <>
       {isNavigating && <LoadingScreen />}
       <div className={`w-full h-screen relative overflow-hidden transition-opacity duration-500 ${pageReady ? 'opacity-100' : 'opacity-0'}`}>
-        <UnifiedTopNav
-          mode="app"
-          user={user}
-          currentPhase="before"
-          onPhaseChange={handlePhaseChange}
-          walletNewCount={0}
-          points={points}
-          tier={tier}
-          onOpenWallet={handleOpenWallet}
-          onOpenQR={handleOpenQR}
-          onOpenScore={handleOpenScore}
-          onSwitchMode={handleSwitchMode}
-        />
+        {/* Pink Circle Return Button */}
+        <button
+          onClick={handleReturn}
+          className="fixed top-6 left-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-fuchsia-500 to-fuchsia-600 hover:from-fuchsia-600 hover:to-fuchsia-700 shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center group"
+          aria-label="Return to previous page"
+        >
+          <ArrowLeft className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+        </button>
         
         <UserScoreModal
           isOpen={isUserScoreOpen}
@@ -242,7 +246,6 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
           WebkitOverflowScrolling: interacted ? 'touch' : 'auto',
           overscrollBehavior: 'none',
           touchAction: interacted ? 'pan-y' : 'none',
-          marginTop: '80px',
         }}
         onTouchMove={interacted ? undefined : (e) => e.preventDefault()}
         onWheel={interacted ? undefined : (e) => e.preventDefault()}
