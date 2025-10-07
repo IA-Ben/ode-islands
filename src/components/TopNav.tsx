@@ -93,6 +93,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
   const level = scoreData?.currentScore?.level || 1;
   const tier = getTierName(level);
   const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email : "Guest";
+  const userEmail = user?.email || "";
 
   const tabBase =
     "px-4 py-2 rounded-full text-sm font-medium transition focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400";
