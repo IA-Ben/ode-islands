@@ -494,6 +494,15 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     // If fetch succeeded, use API cards (even if empty - will show empty state with admin link)
     if (fetchSucceeded) {
       cards = apiCards;
+      
+      // Always include immersive chapters in Discover lane (from JSON data)
+      if (currentView === "discover") {
+        const chapterTiles = getChapterTiles();
+        // Merge chapters with API cards, avoiding duplicates by ID
+        const apiCardIds = new Set(apiCards.map(c => c.id));
+        const uniqueChapters = chapterTiles.filter(ch => !apiCardIds.has(ch.id));
+        cards = [...apiCards, ...uniqueChapters];
+      }
     }
     // Only fallback to stub data if fetch failed (not if database is empty)
     else if (!fetchSucceeded && !cardsLoading) {
