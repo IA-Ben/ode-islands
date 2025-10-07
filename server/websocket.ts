@@ -74,10 +74,23 @@ class WebSocketManager {
           
           console.log(`✅ WebSocket authenticated for user: ${ws.userId}`);
           ws.connectionType = 'authenticated';
+          
+          // Track authenticated user
+          if (!this.notificationClients[ws.userId!]) {
+            this.notificationClients[ws.userId!] = new Set();
+          }
+          this.notificationClients[ws.userId!].add(ws);
         } else {
-          console.log('Anonymous WebSocket connection allowed for events');
+          console.log('✅ Anonymous WebSocket connection allowed');
           ws.isAnonymous = true;
           ws.connectionType = 'anonymous_event';
+          
+          // Track anonymous connection with a unique ID to prevent immediate cleanup
+          ws.userId = `anonymous_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+          if (!this.notificationClients[ws.userId]) {
+            this.notificationClients[ws.userId] = new Set();
+          }
+          this.notificationClients[ws.userId].add(ws);
         }
 
         // Handle messages from client

@@ -10,7 +10,7 @@ interface WebSocketMessage {
 }
 
 interface UnifiedWebSocketContextType {
-  connectionStatus: 'connecting' | 'open' | 'closing' | 'closed' | 'error';
+  connectionStatus: 'connecting' | 'open' | 'closing' | 'closed' | 'error' | 'circuit_open';
   lastMessage: WebSocketMessage | null;
   sendMessage: (message: any) => boolean;
   reconnect: () => void;
@@ -31,7 +31,7 @@ interface UnifiedWebSocketProviderProps {
 export function UnifiedWebSocketProvider({ 
   children, 
   url = '/ws',
-  autoConnect = true 
+  autoConnect = false 
 }: UnifiedWebSocketProviderProps) {
   // Use the singleton service instance to prevent multiple connections
   const service = useWebSocketService();
