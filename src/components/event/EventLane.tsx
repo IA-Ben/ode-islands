@@ -180,7 +180,7 @@ export function EventLane({ lane, cards, onBack, onCardClick }: EventLaneProps) 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-900">
       {/* Lane Header */}
       <header className="sticky top-0 z-20 backdrop-blur-lg bg-slate-900/80 border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-4">

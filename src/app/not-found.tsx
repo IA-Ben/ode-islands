@@ -13,7 +13,7 @@ export default function NotFound() {
   if (!mounted) {
     // Return minimal content during SSR to avoid hydration issues
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+      <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-4xl font-bold mb-4">404</h1>
           <p className="text-xl mb-8">Page Not Found</p>
@@ -23,7 +23,7 @@ export default function NotFound() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex items-center justify-center">
+    <div className="min-h-screen bg-slate-900 text-white flex items-center justify-center">
       <div className="text-center max-w-md mx-auto px-4">
         <div className="mb-8">
           <h1 className="text-6xl font-bold mb-4 text-white">404</h1>

@@ -89,7 +89,7 @@ export const Card: React.FC<CardProps> = ({ data, active, cardId, chapterId }) =
     <div
       className="relative w-full overflow-hidden flex-col items-center justify-center text-center h-screen"
       style={{
-        backgroundColor: theme?.background || "black",
+        backgroundColor: theme?.background || "#0f172a",
         height: "100dvh",
         minHeight: "-webkit-fill-available",
       }}

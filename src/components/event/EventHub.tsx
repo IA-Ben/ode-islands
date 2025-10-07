@@ -40,7 +40,7 @@ export function EventHub({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-900">
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
         {/* Quick Actions Bar */}
         <section className="animate-in fade-in slide-in-from-top-4 duration-500">

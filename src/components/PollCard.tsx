@@ -296,7 +296,7 @@ const PollCard: React.FC<PollCardProps> = ({ data, active, cardId, chapterId, th
       <div 
         className="relative w-full h-full flex items-center justify-center"
         style={{
-          backgroundColor: theme?.background || "black",
+          backgroundColor: theme?.background || "#0f172a",
           height: "100dvh",
         }}
       >
@@ -327,7 +327,7 @@ const PollCard: React.FC<PollCardProps> = ({ data, active, cardId, chapterId, th
     <div
       className="relative w-full h-full flex items-center justify-center"
       style={{
-        backgroundColor: theme?.background || "black",
+        backgroundColor: theme?.background || "#0f172a",
         height: "100dvh",
       }}
     >

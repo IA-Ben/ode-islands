@@ -763,7 +763,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
             variant="ghost"
             size="sm"
             onClick={() => setActiveView('audience')}
-            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+            className="bg-slate-900/50 text-white/60 hover:text-white hover:bg-slate-900/70 text-xs block"
           >
             👥 Audience View
           </Button>
@@ -772,7 +772,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
             variant="ghost"
             size="sm"
             onClick={() => setActiveView('interactive')}
-            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+            className="bg-slate-900/50 text-white/60 hover:text-white hover:bg-slate-900/70 text-xs block"
           >
             🎯 Interactive Choices
           </Button>
@@ -826,7 +826,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
             variant="ghost"
             size="sm"
             onClick={() => setActiveView('audience')}
-            className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+            className="bg-slate-900/50 text-white/60 hover:text-white hover:bg-slate-900/70 text-xs block"
           >
             👥 Audience View
           </Button>
@@ -838,7 +838,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
               onClick={() => {
                 fetchEvents().then(() => setActiveView('dashboard'));
               }}
-              className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs block"
+              className="bg-slate-900/50 text-white/60 hover:text-white hover:bg-slate-900/70 text-xs block"
             >
               ⚙️ Operator Console
             </Button>

@@ -178,7 +178,7 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
 
   if (cards.length === 0) {
     return (
-      <div className="w-full h-screen bg-black flex items-center justify-center">
+      <div className="w-full h-screen bg-slate-900 flex items-center justify-center">
         <UnifiedTopNav
           mode="app"
           user={user}

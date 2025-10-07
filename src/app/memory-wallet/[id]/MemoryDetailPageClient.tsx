@@ -148,7 +148,7 @@ export default function MemoryDetailPageClient({ user }: MemoryDetailPageClientP
           onOpenQR={handleOpenQR}
           onSwitchMode={handleSwitchMode}
         />
-        <div className="min-h-screen bg-black pt-20 px-4">
+        <div className="min-h-screen bg-slate-900 pt-20 px-4">
           <div className="max-w-4xl mx-auto">
             {/* Loading Skeleton */}
             <div className="animate-pulse">
@@ -182,7 +182,7 @@ export default function MemoryDetailPageClient({ user }: MemoryDetailPageClientP
           onOpenQR={handleOpenQR}
           onSwitchMode={handleSwitchMode}
         />
-        <div className="min-h-screen bg-black pt-20 px-4">
+        <div className="min-h-screen bg-slate-900 pt-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-red-400 mb-4">{error}</p>
             <Button 
@@ -212,7 +212,7 @@ export default function MemoryDetailPageClient({ user }: MemoryDetailPageClientP
           onOpenQR={handleOpenQR}
           onSwitchMode={handleSwitchMode}
         />
-        <div className="min-h-screen bg-black pt-20 px-4">
+        <div className="min-h-screen bg-slate-900 pt-20 px-4">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-white/60 mb-4">Memory not found</p>
             <Button 
@@ -241,7 +241,7 @@ export default function MemoryDetailPageClient({ user }: MemoryDetailPageClientP
         onOpenQR={handleOpenQR}
         onSwitchMode={handleSwitchMode}
       />
-      <div className="min-h-screen bg-black pt-20 px-4 pb-8">
+      <div className="min-h-screen bg-slate-900 pt-20 px-4 pb-8">
         <div className="max-w-4xl mx-auto">
           {/* Back Button */}
           <button

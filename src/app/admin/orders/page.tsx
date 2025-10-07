@@ -5,7 +5,7 @@ import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
 export default function OrdersPage() {
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-slate-900">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-8">
           <div className="flex items-center justify-between">
