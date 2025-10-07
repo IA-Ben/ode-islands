@@ -7,6 +7,7 @@ import { BeforeLane, type BeforeLaneCard } from "@/components/before/BeforeLane"
 import UnifiedTopNav from "@/components/UnifiedTopNav";
 import { useFanScore } from "@/hooks/useFanScore";
 import LoadingScreen from "@/components/LoadingScreen";
+import VenueMapModal from "@/components/before/VenueMapModal";
 import dynamic from "next/dynamic";
 import data from "../data/ode-islands.json";
 
@@ -151,6 +152,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const [discoverTab, setDiscoverTab] = useState<"all" | "bts" | "concept-art" | "stories">("all");
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
+  const [isVenueMapOpen, setIsVenueMapOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
@@ -439,7 +441,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
           router.push('/tickets');
           break;
         case "venue-travel":
-          router.push('/venue');
+          setIsVenueMapOpen(true);
           break;
         case "schedule-preview":
           router.push('/schedule');
@@ -591,6 +593,11 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
         <MemoryWalletModal
           isOpen={isWalletOpen}
           onClose={() => setIsWalletOpen(false)}
+        />
+
+        <VenueMapModal
+          isOpen={isVenueMapOpen}
+          onClose={() => setIsVenueMapOpen(false)}
         />
 
         {/* Card Detail Modal */}
