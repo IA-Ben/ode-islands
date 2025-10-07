@@ -77,6 +77,42 @@ function useBeforeCards(lane: "plan" | "discover" | "community" | "bts" | null) 
   return { cards, loading, fetchSucceeded };
 }
 
+// Hook to fetch featured cards
+function useFeaturedCards(tier: string) {
+  const [cards, setCards] = useState<BeforeLaneCard[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchFeaturedCards = async () => {
+      setLoading(true);
+      try {
+        const response = await fetch(`/api/before/cards?featured=true&tier=${tier}`);
+        if (response.ok) {
+          const data = await response.json();
+          const transformedCards: BeforeLaneCard[] = data.cards.map((card: any) => ({
+            id: card.id,
+            type: card.type,
+            title: card.title,
+            subtitle: card.subtitle || undefined,
+            size: card.size || "L",
+            imageUrl: card.imageUrl || undefined,
+            description: card.summary || undefined,
+          }));
+          setCards(transformedCards);
+        }
+      } catch (error) {
+        console.error('Error fetching featured cards:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFeaturedCards();
+  }, [tier]);
+
+  return { cards, loading };
+}
+
 const UserScoreModal = dynamic(() => import('@/components/UserScoreModal'), {
   ssr: false,
   loading: () => null
@@ -117,9 +153,22 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
   
+  // Calculate tier from fan score level first
+  const points = scoreData?.currentScore?.totalScore || 0;
+  const level = scoreData?.currentScore?.level || 1;
+  const getTier = (level: number): "Bronze" | "Silver" | "Gold" => {
+    if (level >= 8) return "Gold";
+    if (level >= 4) return "Silver";
+    return "Bronze";
+  };
+  const tier = getTier(level);
+  
   // Fetch cards from API based on current lane view
   const laneToFetch = currentView !== "hub" ? currentView : null;
   const { cards: apiCards, loading: cardsLoading, fetchSucceeded } = useBeforeCards(laneToFetch);
+  
+  // Fetch featured cards for the hub view
+  const { cards: apiFeaturedCards, loading: featuredLoading } = useFeaturedCards(tier);
 
   // Restore view from URL params on mount
   useEffect(() => {
@@ -165,16 +214,17 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     }
   };
 
-  // Calculate tier from fan score level
-  const getTier = (level: number): "Bronze" | "Silver" | "Gold" => {
-    if (level >= 8) return "Gold";
-    if (level >= 4) return "Silver";
-    return "Bronze";
+  // Card click handler - defined early so featured cards can reference it
+  const handleCardClick = (action: string, card: BeforeLaneCard) => {
+    if (card.type === "immersive-chapter") {
+      // Navigate to the chapter reader with return path
+      const returnPath = `/before?view=${currentView}`;
+      router.push(`/before/${card.id}?returnTo=${encodeURIComponent(returnPath)}`);
+    } else {
+      // Open card detail modal for non-chapter cards, preserving action
+      setSelectedCard({ ...card, action } as BeforeLaneCard);
+    }
   };
-
-  const points = scoreData?.currentScore?.totalScore || 0;
-  const level = scoreData?.currentScore?.level || 1;
-  const tier = getTier(level);
 
   // Extract chapter tiles from JSON data
   const getChapterTiles = (): BeforeLaneCard[] => {
@@ -329,8 +379,8 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     },
   ];
 
-  // Featured cards (could come from CMS Featured Rules)
-  const featuredCards = [
+  // Fallback featured cards when CMS is empty
+  const fallbackFeaturedCards = [
     {
       id: "f1",
       size: "L" as const,
@@ -340,17 +390,16 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
       ctaAction: () => router.push('/before/chapter-1'),
     },
   ];
-
-  const handleCardClick = (action: string, card: BeforeLaneCard) => {
-    if (card.type === "immersive-chapter") {
-      // Navigate to the chapter reader with return path
-      const returnPath = `/before?view=${currentView}`;
-      router.push(`/before/${card.id}?returnTo=${encodeURIComponent(returnPath)}`);
-    } else {
-      // Open card detail modal for non-chapter cards, preserving action
-      setSelectedCard({ ...card, action } as BeforeLaneCard);
-    }
-  };
+  
+  // Use CMS featured cards if available, fallback to hardcoded
+  const featuredCards = apiFeaturedCards.length > 0 ? apiFeaturedCards.map(card => ({
+    id: card.id,
+    size: card.size,
+    title: card.title,
+    subtitle: card.subtitle,
+    ctaLabel: "Explore",
+    ctaAction: () => handleCardClick("view", card),
+  })) : fallbackFeaturedCards;
 
   const handleCardAction = (action: string, card: BeforeLaneCard) => {
     setSelectedCard(null);
