@@ -228,15 +228,16 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     }
   };
 
-  // Extract chapter tiles from JSON data with tags for BTS/Concept Art categorization
+  // Extract chapter tiles from JSON data with tags for BTS/Concept Art/Stories categorization
   const getChapterTiles = (): BeforeLaneCard[] => {
     const chapters = Object.keys(chapterData);
     
     // Define which chapters should appear in which categories
     const chapterTags: Record<string, string[]> = {
-      "chapter-playcanvas": ["bts"], // PlayCanvas chapter is BTS/technical demo
+      "chapter-1": ["stories"], // Main story chapter
       "chapter-2": ["concept-art"], // Chapter 2 showcases concept art
-      // chapter-1 and chapter-3 are pure story chapters (no extra tags)
+      "chapter-3": ["stories"], // Main story chapter
+      "chapter-playcanvas": ["bts"], // PlayCanvas chapter is BTS/technical demo
     };
     
     return chapters.map((chapterId, index) => {
@@ -548,8 +549,9 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
                    card.type === "concept-art-spotlight" ||
                    (card.type === "immersive-chapter" && card.tags?.includes("concept-art"));
           case "stories":
-            // Show all immersive chapters (regardless of tags)
-            return card.type === "immersive-chapter" || card.type === "continue-chapter";
+            // Show only immersive chapters explicitly tagged as "stories"
+            return (card.type === "immersive-chapter" && card.tags?.includes("stories")) || 
+                   card.type === "continue-chapter";
           default:
             return true;
         }
