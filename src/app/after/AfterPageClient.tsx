@@ -7,7 +7,13 @@ import { useFanScore } from '@/hooks/useFanScore';
 import { AfterHub, type FeaturedAfterCard, type WelcomeHeroData } from '@/components/after/AfterHub';
 import { AfterLane, type AfterLaneCard } from '@/components/after/AfterLane';
 import LoadingScreen from '@/components/LoadingScreen';
+import dynamic from 'next/dynamic';
 import type { Tier } from '@/components/event/GlobalHUD';
+
+const MemoryWalletModal = dynamic(() => import('@/components/MemoryWalletModal'), {
+  ssr: false,
+  loading: () => null
+});
 
 interface UserData {
   id: string;
@@ -27,6 +33,7 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
   const { scoreData } = useFanScore();
   const [view, setView] = useState<"hub" | "recap" | "create" | "offers">("hub");
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
 
   const handlePhaseChange = (phase: "before" | "event" | "after") => {
     setIsTransitioning(true);
@@ -46,7 +53,7 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
   };
 
   const handleOpenWallet = () => {
-    router.push('/memory-wallet');
+    setIsWalletOpen(true);
   };
 
   const handleOpenQR = () => {
@@ -280,6 +287,11 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
           onSwitchMode={handleSwitchMode}
           tier={tier}
           points={points}
+        />
+
+        <MemoryWalletModal
+          isOpen={isWalletOpen}
+          onClose={() => setIsWalletOpen(false)}
         />
 
         {view === "hub" && (

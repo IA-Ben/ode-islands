@@ -36,6 +36,11 @@ const UserScoreModal = dynamic(() => import('@/components/UserScoreModal'), {
   loading: () => null
 });
 
+const MemoryWalletModal = dynamic(() => import('@/components/MemoryWalletModal'), {
+  ssr: false,
+  loading: () => null
+});
+
 // Types
 interface LiveEvent {
   id: string;
@@ -121,7 +126,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   };
 
   const handleOpenWallet = () => {
-    router.push('/memory-wallet');
+    setIsWalletOpen(true);
   };
 
   const handleOpenQR = () => {
@@ -174,6 +179,9 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   
   // User Score Modal state
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
+  
+  // Memory Wallet Modal state
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
   
   // Demo mode state
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -751,6 +759,11 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
           isOpen={isUserScoreOpen}
           onClose={() => setIsUserScoreOpen(false)}
           source="tier_pill"
+        />
+        
+        <MemoryWalletModal
+          isOpen={isWalletOpen}
+          onClose={() => setIsWalletOpen(false)}
         />
         
           <HelpSystem userRole="audience" />

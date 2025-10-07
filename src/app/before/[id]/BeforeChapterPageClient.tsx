@@ -17,6 +17,11 @@ const UserScoreModal = dynamic(() => import('@/components/UserScoreModal'), {
   loading: () => null
 });
 
+const MemoryWalletModal = dynamic(() => import('@/components/MemoryWalletModal'), {
+  ssr: false,
+  loading: () => null
+});
+
 type ChapterData = {
   [key: string]: CardData[];
 };
@@ -47,6 +52,7 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
   const [index, setIndex] = useState<number>(0);
   const [loadedCards, setLoadedCards] = useState<number>(1); // Start with only first card loaded
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [pageReady, setPageReady] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -79,7 +85,7 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
   };
 
   const handleOpenWallet = () => {
-    router.push('/memory-wallet');
+    setIsWalletOpen(true);
   };
 
   const handleOpenQR = () => {
@@ -235,6 +241,11 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
           isOpen={isUserScoreOpen}
           onClose={() => setIsUserScoreOpen(false)}
           source="tier_pill"
+        />
+        
+        <MemoryWalletModal
+          isOpen={isWalletOpen}
+          onClose={() => setIsWalletOpen(false)}
         />
         
         <div

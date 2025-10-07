@@ -15,6 +15,11 @@ const UserScoreModal = dynamic(() => import('@/components/UserScoreModal'), {
   loading: () => null
 });
 
+const MemoryWalletModal = dynamic(() => import('@/components/MemoryWalletModal'), {
+  ssr: false,
+  loading: () => null
+});
+
 type ChapterData = {
   [key: string]: any[];
 };
@@ -41,6 +46,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   
   const [currentView, setCurrentView] = useState<"hub" | "plan" | "discover" | "community">("hub");
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
+  const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
 
@@ -71,7 +77,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   };
 
   const handleOpenWallet = () => {
-    router.push('/memory-wallet');
+    setIsWalletOpen(true);
   };
 
   const handleOpenQR = () => {
@@ -349,6 +355,11 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
           isOpen={isUserScoreOpen}
           onClose={() => setIsUserScoreOpen(false)}
           source="tier_pill"
+        />
+
+        <MemoryWalletModal
+          isOpen={isWalletOpen}
+          onClose={() => setIsWalletOpen(false)}
         />
 
         {/* Card Detail Modal */}
