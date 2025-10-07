@@ -3,11 +3,15 @@ import { withAuth } from '../../../../../../server/auth';
 import { Storage } from '@google-cloud/storage';
 import { randomUUID } from 'crypto';
 
-const storage = new Storage();
 const INPUT_BUCKET = process.env.GCS_INPUT_BUCKET || 'ode-islands-video-input';
 const OUTPUT_BUCKET = process.env.GCS_OUTPUT_BUCKET || 'ode-islands-video-cdn';
 const CLOUD_RUN_TRANSCODER_URL = process.env.CLOUD_RUN_TRANSCODER_URL || '';
 const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
+
+// Initialize storage lazily to avoid build-time errors
+function getStorage() {
+  return new Storage();
+}
 
 export const POST = withAuth(async (request: NextRequest, session: any) => {
   try {
@@ -48,6 +52,7 @@ export const POST = withAuth(async (request: NextRequest, session: any) => {
     }
     
     // Upload to GCS input bucket
+    const storage = getStorage();
     const bucket = storage.bucket(INPUT_BUCKET);
     const fileName = `pending/${videoId}/${file.name}`;
     const blob = bucket.file(fileName);
@@ -195,6 +200,7 @@ export const GET = withAuth(async (request: NextRequest, session: any) => {
       );
     }
     
+    const storage = getStorage();
     const bucket = storage.bucket(OUTPUT_BUCKET);
     const statusBlob = bucket.file(`videos/${videoId}/status.json`);
     

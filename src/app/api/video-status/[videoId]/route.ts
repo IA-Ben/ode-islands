@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 
-const storage = new Storage();
 const BUCKET_NAME = 'ode-islands-video-cdn';
+
+// Initialize storage lazily to avoid build-time errors
+function getBucket() {
+  const storage = new Storage();
+  return storage.bucket(BUCKET_NAME);
+}
 
 export async function GET(
   request: NextRequest,
@@ -11,7 +16,7 @@ export async function GET(
   const { videoId } = await params;
   
   try {
-    const bucket = storage.bucket(BUCKET_NAME);
+    const bucket = getBucket();
     
     // Check for dual-orientation structure first (landscape/portrait subdirectories)
     const landscapeManifest = bucket.file(`videos/${videoId}/landscape/manifest/master.m3u8`);

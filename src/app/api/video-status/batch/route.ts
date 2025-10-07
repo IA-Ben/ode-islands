@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 
-const storage = new Storage({
-  projectId: process.env.GCS_PROJECT_ID,
-  credentials: process.env.GCS_CREDENTIALS ? JSON.parse(process.env.GCS_CREDENTIALS) : undefined,
-});
-
-const bucket = storage.bucket(process.env.GCS_BUCKET_NAME || '');
-
 interface VideoStatus {
   videoId: string;
   status: 'completed' | 'ready' | 'processing' | 'error';
   has_portrait?: boolean;
 }
 
+// Initialize storage lazily to avoid build-time errors
+function getBucket() {
+  const storage = new Storage({
+    projectId: process.env.GCS_PROJECT_ID,
+    credentials: process.env.GCS_CREDENTIALS ? JSON.parse(process.env.GCS_CREDENTIALS) : undefined,
+  });
+  return storage.bucket(process.env.GCS_BUCKET_NAME || '');
+}
+
 export async function POST(req: NextRequest) {
+  const bucket = getBucket();
   try {
     const { videoIds } = await req.json();
 
