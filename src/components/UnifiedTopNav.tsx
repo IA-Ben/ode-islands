@@ -414,26 +414,30 @@ export default function UnifiedTopNav({
                           </span>
                         )}
                       </div>
-                      {showModeSwitch && (
+                      {user.isAdmin && mode === "app" && (
                         <button
                           onClick={() => {
-                            onSwitchMode(mode === "app" ? "admin" : "app");
+                            window.location.href = "/admin";
                             setMenuOpen(false);
                           }}
                           role="menuitem"
                           className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400"
                         >
-                          {mode === "app" ? (
-                            <>
-                              <Shield className="w-4 h-4" />
-                              Switch to Admin
-                            </>
-                          ) : (
-                            <>
-                              <ArrowLeftRight className="w-4 h-4" />
-                              Switch to App
-                            </>
-                          )}
+                          <LayoutDashboard className="w-4 h-4" />
+                          Admin Dashboard
+                        </button>
+                      )}
+                      {user.isAdmin && mode === "admin" && (
+                        <button
+                          onClick={() => {
+                            window.location.href = "/event";
+                            setMenuOpen(false);
+                          }}
+                          role="menuitem"
+                          className="w-full text-left px-4 py-2 text-sm hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 text-slate-900 dark:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400"
+                        >
+                          <ArrowLeftRight className="w-4 h-4" />
+                          Back to App
                         </button>
                       )}
                       {onToggleDemo && (
