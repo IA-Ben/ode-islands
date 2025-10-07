@@ -1,8 +1,14 @@
-import { getServerUser } from '../../../server/auth';
 import BeforePageClient from './BeforePageClient';
 
-export default async function BeforePage() {
-  const user = await getServerUser();
+// Mock admin user with full permissions (authentication bypassed per project requirements)
+const mockAdminUser = {
+  id: 'mock-admin-user',
+  username: 'Dev User',
+  email: 'dev@odeislands.com',
+  role: 'owner' as const,
+  permissions: ['*'] // Wildcard permission for full access
+};
 
-  return <BeforePageClient user={user} />;
+export default async function BeforePage() {
+  return <BeforePageClient user={mockAdminUser} />;
 }
