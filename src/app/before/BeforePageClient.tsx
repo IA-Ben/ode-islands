@@ -152,6 +152,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [isDemoMode, setIsDemoMode] = useState(false);
   const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
   
   // Calculate tier from fan score level first
@@ -550,6 +551,8 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
           onOpenQR={handleOpenQR}
           onOpenScore={handleOpenScore}
           onSwitchMode={handleSwitchMode}
+          isDemoMode={isDemoMode}
+          onToggleDemo={() => setIsDemoMode(prev => !prev)}
         />
         
         <UserScoreModal
