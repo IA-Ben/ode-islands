@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Image as ImageIcon, Video, Save } from 'lucide-react';
+import { Image as ImageIcon, Video, Save, Upload } from 'lucide-react';
 import { surfaces, components, borders } from '@/lib/admin/designTokens';
+import { DirectMediaUpload } from './DirectMediaUpload';
 
 interface BeforeHeroSettings {
   imageMediaId: string | null;
@@ -16,7 +17,24 @@ interface BeforeHeroManagerProps {
   csrfToken: string;
 }
 
-export function BeforeHeroManager({ csrfToken }: BeforeHeroManagerProps) {
+export function BeforeHeroManager({ csrfToken: initialCsrfToken }: BeforeHeroManagerProps) {
+  const [csrfToken, setCsrfToken] = useState(initialCsrfToken);
+
+  useEffect(() => {
+    // Fetch CSRF token from API if not provided
+    if (!csrfToken) {
+      fetch('/api/csrf-token')
+        .then(res => res.json())
+        .then(data => {
+          if (data.csrfToken) {
+            setCsrfToken(data.csrfToken);
+          } else if (data.data) {
+            setCsrfToken(data.data);
+          }
+        })
+        .catch(err => console.error('Failed to fetch CSRF token:', err));
+    }
+  }, [csrfToken]);
   const [settings, setSettings] = useState<BeforeHeroSettings>({
     imageMediaId: null,
     videoMediaId: null,
@@ -26,6 +44,8 @@ export function BeforeHeroManager({ csrfToken }: BeforeHeroManagerProps) {
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
+  const [showVideoUpload, setShowVideoUpload] = useState(false);
 
   useEffect(() => {
     fetchSettings();
@@ -101,27 +121,73 @@ export function BeforeHeroManager({ csrfToken }: BeforeHeroManagerProps) {
           </h4>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Hero Image Media ID</label>
-            <input
-              type="text"
-              value={settings.imageMediaId || ''}
-              onChange={(e) => setSettings({ ...settings, imageMediaId: e.target.value || null })}
-              placeholder="Enter media ID from Media Library"
-              className="w-full px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20"
-            />
-            <p className="text-xs text-slate-500 mt-1">Background image for hero section</p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-300">Hero Image</label>
+              <button
+                onClick={() => setShowImageUpload(!showImageUpload)}
+                className="text-sm text-fuchsia-400 hover:text-fuchsia-300 flex items-center gap-1"
+              >
+                <Upload className="w-4 h-4" />
+                {showImageUpload ? 'Enter ID' : 'Upload New'}
+              </button>
+            </div>
+
+            {showImageUpload ? (
+              <DirectMediaUpload
+                acceptedTypes="image"
+                csrfToken={csrfToken}
+                onUploadComplete={(mediaAssetId) => {
+                  setSettings({ ...settings, imageMediaId: mediaAssetId });
+                  setShowImageUpload(false);
+                }}
+              />
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={settings.imageMediaId || ''}
+                  onChange={(e) => setSettings({ ...settings, imageMediaId: e.target.value || null })}
+                  placeholder="Enter media ID from Media Library"
+                  className="w-full px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20"
+                />
+                <p className="text-xs text-slate-500 mt-1">Background image for hero section</p>
+              </>
+            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">Hero Video Media ID</label>
-            <input
-              type="text"
-              value={settings.videoMediaId || ''}
-              onChange={(e) => setSettings({ ...settings, videoMediaId: e.target.value || null })}
-              placeholder="Enter media ID from Media Library"
-              className="w-full px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20"
-            />
-            <p className="text-xs text-slate-500 mt-1">Background video for hero section (optional)</p>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm font-medium text-slate-300">Hero Video</label>
+              <button
+                onClick={() => setShowVideoUpload(!showVideoUpload)}
+                className="text-sm text-fuchsia-400 hover:text-fuchsia-300 flex items-center gap-1"
+              >
+                <Upload className="w-4 h-4" />
+                {showVideoUpload ? 'Enter ID' : 'Upload New'}
+              </button>
+            </div>
+
+            {showVideoUpload ? (
+              <DirectMediaUpload
+                acceptedTypes="video"
+                csrfToken={csrfToken}
+                onUploadComplete={(mediaAssetId) => {
+                  setSettings({ ...settings, videoMediaId: mediaAssetId });
+                  setShowVideoUpload(false);
+                }}
+              />
+            ) : (
+              <>
+                <input
+                  type="text"
+                  value={settings.videoMediaId || ''}
+                  onChange={(e) => setSettings({ ...settings, videoMediaId: e.target.value || null })}
+                  placeholder="Enter media ID from Media Library"
+                  className="w-full px-4 py-2 bg-slate-800/50 border border-slate-600 rounded-lg text-white focus:border-fuchsia-500 focus:ring-2 focus:ring-fuchsia-500/20"
+                />
+                <p className="text-xs text-slate-500 mt-1">Background video for hero section (optional)</p>
+              </>
+            )}
           </div>
         </div>
 

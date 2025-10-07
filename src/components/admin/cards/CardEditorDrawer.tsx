@@ -17,6 +17,7 @@ import {
 import { surfaces, pills, focus, colors, interactive, borders, shadows, typography, layout, components } from '@/lib/admin/designTokens';
 import { MediaSelectorModal } from '@/components/cms/MediaSelectorModal';
 import { CMSCardPreview } from '@/components/CMSCardPreview';
+import { DirectMediaUpload } from '@/components/cms/DirectMediaUpload';
 import type { CardData as CMSCardData } from '@/@typings';
 
 export interface CardData {
@@ -102,8 +103,10 @@ export function CardEditorDrawer({ isOpen, onClose, card, onSave }: CardEditorDr
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showMediaSelector, setShowMediaSelector] = useState(false);
+  const [showDirectUpload, setShowDirectUpload] = useState<'image' | 'video' | null>(null);
   const [mediaSelectionType, setMediaSelectionType] = useState<'image' | 'video'>('image');
   const [memoryTemplates, setMemoryTemplates] = useState<any[]>([]);
+  const [csrfToken, setCsrfToken] = useState('');
   
   const [formData, setFormData] = useState<Partial<CardData>>(getDefaultFormData());
 
@@ -114,6 +117,26 @@ export function CardEditorDrawer({ isOpen, onClose, card, onSave }: CardEditorDr
       } else {
         setFormData(getDefaultFormData());
         setActiveTab('basics');
+      }
+      
+      // Get CSRF token from meta tag or API
+      const metaTag = document.querySelector('meta[name="csrf-token"]');
+      const metaToken = metaTag?.getAttribute('content');
+      
+      if (metaToken) {
+        setCsrfToken(metaToken);
+      } else {
+        // Fallback to API if meta tag not found
+        fetch('/api/csrf-token')
+          .then(res => res.json())
+          .then(data => {
+            if (data.csrfToken) {
+              setCsrfToken(data.csrfToken);
+            } else if (data.data) {
+              setCsrfToken(data.data);
+            }
+          })
+          .catch(err => console.error('Failed to fetch CSRF token:', err));
       }
     }
   }, [card, isOpen]);
@@ -371,88 +394,156 @@ export function CardEditorDrawer({ isOpen, onClose, card, onSave }: CardEditorDr
               {/* Image Media */}
               <div>
                 <label className={typography.label}>Image</label>
-                <div className="flex gap-2">
-                  {formData.imageMedia?.publicUrl && (
-                    <img
-                      src={formData.imageMedia.publicUrl}
-                      alt={formData.imageMedia.title}
-                      className="w-24 h-24 object-cover rounded-lg"
+                
+                {showDirectUpload === 'image' ? (
+                  <div className="space-y-2">
+                    <DirectMediaUpload
+                      acceptedTypes="image"
+                      csrfToken={csrfToken}
+                      onUploadComplete={(mediaAssetId, mediaUrl) => {
+                        handleInputChange('imageMediaId', mediaAssetId);
+                        setFormData((prev) => ({
+                          ...prev,
+                          imageMedia: {
+                            id: mediaAssetId,
+                            publicUrl: mediaUrl,
+                            title: 'Uploaded Image',
+                          },
+                        }));
+                        setShowDirectUpload(null);
+                      }}
                     />
-                  )}
-                  <button
-                    onClick={() => {
-                      setMediaSelectionType('image');
-                      setShowMediaSelector(true);
-                    }}
-                    className={`
-                      ${components.buttonSecondary}
-                      flex items-center gap-2
-                    `}
-                  >
-                    <Upload className="w-4 h-4" />
-                    {formData.imageMedia ? 'Change Image' : 'Select Image'}
-                  </button>
-                  {formData.imageMedia && (
                     <button
-                      onClick={() => handleMediaSelect(null)}
-                      className={`
-                        ${pills.base}
-                        ${pills.padding.md}
-                        ${surfaces.darkGlass}
-                        ${borders.glassBorder}
-                        ${focus.ring}
-                        text-red-400 hover:bg-red-500/10
-                      `}
+                      onClick={() => setShowDirectUpload(null)}
+                      className="text-sm text-slate-400 hover:text-white"
                     >
-                      Remove
+                      Cancel
                     </button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {formData.imageMedia?.publicUrl && (
+                      <img
+                        src={formData.imageMedia.publicUrl}
+                        alt={formData.imageMedia.title}
+                        className="w-full h-32 object-cover rounded-lg"
+                      />
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setMediaSelectionType('image');
+                          setShowMediaSelector(true);
+                        }}
+                        className={`${components.buttonSecondary} flex items-center gap-2 flex-1`}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Select from Library
+                      </button>
+                      <button
+                        onClick={() => setShowDirectUpload('image')}
+                        className={`${components.buttonPrimary} flex items-center gap-2 flex-1`}
+                      >
+                        <ImageIcon className="w-4 h-4" />
+                        Upload New
+                      </button>
+                      {formData.imageMedia && (
+                        <button
+                          onClick={() => handleMediaSelect(null)}
+                          className={`
+                            ${pills.base}
+                            ${pills.padding.md}
+                            ${surfaces.darkGlass}
+                            ${borders.glassBorder}
+                            ${focus.ring}
+                            text-red-400 hover:bg-red-500/10
+                          `}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Video Media */}
               <div>
                 <label className={typography.label}>Video</label>
-                <div className="flex gap-2">
-                  {formData.videoMedia?.publicUrl && (
-                    <video
-                      src={formData.videoMedia.publicUrl}
-                      className="w-24 h-24 object-cover rounded-lg"
-                      controls
-                    />
-                  )}
-                  <button
-                    onClick={() => {
-                      setMediaSelectionType('video');
-                      setShowMediaSelector(true);
-                    }}
-                    className={`
-                      ${components.buttonSecondary}
-                      flex items-center gap-2
-                    `}
-                  >
-                    <Upload className="w-4 h-4" />
-                    {formData.videoMedia ? 'Change Video' : 'Select Video'}
-                  </button>
-                  {formData.videoMedia && (
-                    <button
-                      onClick={() => {
-                        setMediaSelectionType('video');
-                        handleMediaSelect(null);
+                
+                {showDirectUpload === 'video' ? (
+                  <div className="space-y-2">
+                    <DirectMediaUpload
+                      acceptedTypes="video"
+                      csrfToken={csrfToken}
+                      onUploadComplete={(mediaAssetId, mediaUrl) => {
+                        handleInputChange('videoMediaId', mediaAssetId);
+                        setFormData((prev) => ({
+                          ...prev,
+                          videoMedia: {
+                            id: mediaAssetId,
+                            publicUrl: mediaUrl,
+                            title: 'Uploaded Video',
+                          },
+                        }));
+                        setShowDirectUpload(null);
                       }}
-                      className={`
-                        ${pills.base}
-                        ${pills.padding.md}
-                        ${surfaces.darkGlass}
-                        ${borders.glassBorder}
-                        ${focus.ring}
-                        text-red-400 hover:bg-red-500/10
-                      `}
+                    />
+                    <button
+                      onClick={() => setShowDirectUpload(null)}
+                      className="text-sm text-slate-400 hover:text-white"
                     >
-                      Remove
+                      Cancel
                     </button>
-                  )}
-                </div>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {formData.videoMedia?.publicUrl && (
+                      <video
+                        src={formData.videoMedia.publicUrl}
+                        className="w-full h-32 object-cover rounded-lg"
+                        controls
+                      />
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          setMediaSelectionType('video');
+                          setShowMediaSelector(true);
+                        }}
+                        className={`${components.buttonSecondary} flex items-center gap-2 flex-1`}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Select from Library
+                      </button>
+                      <button
+                        onClick={() => setShowDirectUpload('video')}
+                        className={`${components.buttonPrimary} flex items-center gap-2 flex-1`}
+                      >
+                        <VideoIcon className="w-4 h-4" />
+                        Upload New
+                      </button>
+                      {formData.videoMedia && (
+                        <button
+                          onClick={() => {
+                            setMediaSelectionType('video');
+                            handleMediaSelect(null);
+                          }}
+                          className={`
+                            ${pills.base}
+                            ${pills.padding.md}
+                            ${surfaces.darkGlass}
+                            ${borders.glassBorder}
+                            ${focus.ring}
+                            text-red-400 hover:bg-red-500/10
+                          `}
+                        >
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Size Selector */}
