@@ -116,106 +116,140 @@ export function BeforeHub({
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
-        {/* Hero - Event Countdown & Quick Actions */}
-        <section className="animate-in fade-in slide-in-from-top-4 duration-500">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 p-6 sm:p-8 shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/5 to-purple-500/5" />
-            
-            <div className="relative space-y-6">
-              {/* Countdown */}
-              {eventDate && getCountdown() && (
-                <div className="flex items-center gap-3">
-                  <div className="p-3 rounded-xl bg-fuchsia-500/20">
-                    <Clock className="w-6 h-6 text-fuchsia-400" />
-                  </div>
-                  <div>
-                    <div className="text-sm text-white/60 font-medium">COUNTDOWN</div>
-                    <div className="text-xl font-bold text-white">{getCountdown()}</div>
-                  </div>
-                </div>
-              )}
+      {/* Full-Width Visual Hero */}
+      <section className="relative h-[60vh] min-h-[500px] -mt-2 overflow-hidden">
+        {/* Background with gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/20 via-purple-600/20 to-slate-900">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-fuchsia-500/10 via-transparent to-transparent" />
+        </div>
+        
+        {/* Animated background pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-20 left-20 w-72 h-72 bg-fuchsia-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse" />
+          <div className="absolute bottom-20 right-20 w-72 h-72 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl animate-pulse delay-300" />
+        </div>
 
-              {/* Quick Actions */}
-              <div>
-                <div className="text-sm text-white/60 font-medium mb-3">QUICK ACTIONS</div>
-                <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
-                  <button
-                    onClick={() => handleQuickAction("tickets")}
-                    className="flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-fuchsia-700 text-white shadow-lg shadow-fuchsia-500/25 hover:shadow-fuchsia-500/40 hover:scale-105 transition-all duration-200 font-medium"
-                  >
-                    <Sparkles className="w-5 h-5" />
-                    <span>Get Tickets</span>
-                  </button>
-                  <button
-                    onClick={() => handleQuickAction("schedule")}
-                    className="flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200 font-medium"
-                  >
-                    <Calendar className="w-5 h-5" />
-                    <span>Schedule</span>
-                  </button>
-                  <button
-                    onClick={() => handleQuickAction("map")}
-                    className="flex-shrink-0 flex items-center gap-2 px-4 py-3 rounded-2xl bg-white/5 border border-white/10 text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200 font-medium"
-                  >
-                    <MapPin className="w-5 h-5" />
-                    <span>Venue Map</span>
-                  </button>
-                </div>
+        {/* Content */}
+        <div className="relative h-full max-w-6xl mx-auto px-4 flex flex-col justify-center items-center text-center">
+          <div className="space-y-6 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+            {/* Event Countdown */}
+            {eventDate && getCountdown() && (
+              <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-black/40 backdrop-blur-xl border border-white/20">
+                <Clock className="w-5 h-5 text-fuchsia-400" />
+                <span className="text-white font-bold text-lg">{getCountdown()}</span>
               </div>
+            )}
+
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold text-white leading-tight">
+              Your Journey<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-fuchsia-400 to-purple-400">Begins Here</span>
+            </h1>
+            
+            <p className="text-xl text-white/80 max-w-2xl mx-auto">
+              Explore immersive stories, plan your experience, and connect with the community
+            </p>
+
+            {/* Quick Actions */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-4">
+              <button
+                onClick={() => handleQuickAction("tickets")}
+                className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-br from-fuchsia-600 to-fuchsia-700 text-white shadow-2xl shadow-fuchsia-500/50 hover:shadow-fuchsia-500/70 hover:scale-105 transition-all duration-200 font-semibold text-lg"
+              >
+                <Sparkles className="w-6 h-6" />
+                <span>Get Tickets</span>
+              </button>
+              <button
+                onClick={() => handleQuickAction("schedule")}
+                className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-black/40 backdrop-blur-xl border-2 border-white/30 text-white hover:bg-black/60 hover:border-white/50 transition-all duration-200 font-semibold text-lg"
+              >
+                <Calendar className="w-6 h-6" />
+                <span>Schedule</span>
+              </button>
+              <button
+                onClick={() => handleQuickAction("map")}
+                className="flex items-center gap-2 px-6 py-4 rounded-2xl bg-black/40 backdrop-blur-xl border-2 border-white/30 text-white hover:bg-black/60 hover:border-white/50 transition-all duration-200 font-semibold text-lg"
+              >
+                <MapPin className="w-6 h-6" />
+                <span>Venue</span>
+              </button>
             </div>
           </div>
-        </section>
+        </div>
 
-        {/* Featured Section */}
+        {/* Scroll indicator */}
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
+          <div className="w-6 h-10 rounded-full border-2 border-white/40 flex items-start justify-center p-2">
+            <div className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
+          </div>
+        </div>
+      </section>
+
+      <div className="max-w-6xl mx-auto px-4 py-12 space-y-12">
+
+        {/* Featured Section - Visual First */}
         {featuredCards.length > 0 ? (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-            <div className="mb-4">
-              <h2 className="text-xl font-bold text-white">Featured</h2>
-              <p className="text-sm text-slate-400 mt-1">Curated experiences to prepare you for the event</p>
+            <div className="mb-8 text-center">
+              <h2 className="text-4xl font-bold text-white mb-2">Featured Experiences</h2>
+              <p className="text-lg text-slate-400">Discover what awaits you</p>
             </div>
             
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {featuredCards.map((card) => (
-                <button
-                  key={card.id}
-                  onClick={card.ctaAction}
-                  className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 hover:border-fuchsia-500/30 shadow-xl hover:shadow-2xl transition-all duration-300 text-left ${
-                    card.size === "L" ? "sm:col-span-2 lg:col-span-3" : ""
-                  } ${card.size === "M" ? "sm:col-span-2" : ""}`}
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/0 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  
-                  {card.imageUrl && (
-                    <div className="relative w-full h-40 overflow-hidden">
-                      <img
-                        src={card.imageUrl}
-                        alt={card.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/60 to-transparent" />
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-12">
+              {featuredCards.map((card, index) => {
+                const isLarge = card.size === "L";
+                const isMedium = card.size === "M";
+                const colSpan = isLarge ? "lg:col-span-12" : isMedium ? "lg:col-span-6" : "lg:col-span-4";
+                const height = isLarge ? "h-[500px]" : isMedium ? "h-[400px]" : "h-[350px]";
+                
+                return (
+                  <button
+                    key={card.id}
+                    onClick={card.ctaAction}
+                    className={`group relative overflow-hidden rounded-3xl ${colSpan} ${height} shadow-2xl hover:shadow-fuchsia-500/20 transition-all duration-500 text-left transform hover:scale-[1.02]`}
+                  >
+                    {/* Full-size background image */}
+                    {card.imageUrl ? (
+                      <div className="absolute inset-0">
+                        <img
+                          src={card.imageUrl}
+                          alt={card.title}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-600/30 via-purple-600/20 to-slate-900" />
+                    )}
+                    
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/0 via-fuchsia-500/0 to-fuchsia-500/30 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                    
+                    {/* Content */}
+                    <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                      <div className="space-y-4 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                        {card.subtitle && (
+                          <div className="inline-block px-3 py-1 rounded-full bg-fuchsia-500/90 backdrop-blur-sm text-white text-xs font-bold uppercase tracking-wider">
+                            {card.subtitle}
+                          </div>
+                        )}
+                        
+                        <h3 className={`font-bold text-white leading-tight ${isLarge ? "text-5xl" : isMedium ? "text-3xl" : "text-2xl"}`}>
+                          {card.title}
+                        </h3>
+                        
+                        {card.ctaLabel && (
+                          <div className="flex items-center gap-2 text-fuchsia-300 font-semibold text-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 delay-100">
+                            <span>{card.ctaLabel}</span>
+                            <svg className="w-5 h-5 transform group-hover:translate-x-2 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  
-                  <div className="relative p-5 space-y-3">
-                    {card.subtitle && (
-                      <div className="text-xs font-medium text-fuchsia-400 uppercase tracking-wide">
-                        {card.subtitle}
-                      </div>
-                    )}
-                    
-                    <h3 className="text-xl font-bold text-white group-hover:text-fuchsia-300 transition-colors leading-tight">
-                      {card.title}
-                    </h3>
-                    
-                    {card.ctaLabel && (
-                      <div className="text-sm text-fuchsia-400 font-medium">
-                        {card.ctaLabel} →
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
+                  </button>
+                );
+              })}
             </div>
           </section>
         ) : (
