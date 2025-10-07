@@ -81,24 +81,17 @@ export default function OpeningFlow({
   // Handle reduced motion - skip animation in useEffect
   useEffect(() => {
     if (prefersReducedMotion && flowState === "animation") {
-      const shouldShowIntroHero = config.introHero.showOnStages.includes(currentStage);
-      if (shouldShowIntroHero) {
-        setFlowState("hero");
-      } else {
-        handleFlowComplete();
-      }
+      // Skip both animation and hero, go straight to completion
+      handleFlowComplete();
     }
-  }, [prefersReducedMotion, flowState, config.introHero.showOnStages, currentStage]);
+  }, [prefersReducedMotion, flowState]);
 
   // Check if intro hero should be shown for this stage
   const shouldShowIntroHero = config.introHero.showOnStages.includes(currentStage);
 
   const handleAnimationComplete = () => {
-    if (shouldShowIntroHero) {
-      setFlowState("hero");
-    } else {
-      handleFlowComplete();
-    }
+    // Skip intro hero and go straight to completion
+    handleFlowComplete();
   };
 
   const handleHeroDismiss = () => {
@@ -128,23 +121,6 @@ export default function OpeningFlow({
           skippable={config.animation.skippable}
           caption={config.animation.caption}
           onComplete={handleAnimationComplete}
-        />
-      )}
-
-      {flowState === "hero" && shouldShowIntroHero && (
-        <IntroVideoHero
-          videoUrl={prefersReducedMotion ? config.introHero.posterImage : config.introHero.videoUrl}
-          posterImage={config.introHero.posterImage}
-          loop={config.introHero.loop}
-          muteDefault={config.introHero.muteDefault}
-          captionsVTT={config.introHero.captionsVTT}
-          title={config.introHero.title}
-          subTitle={config.introHero.subTitle}
-          ctaPrimary={config.introHero.ctaPrimary}
-          ctaSecondary={config.introHero.ctaSecondary}
-          fallbackImage={config.introHero.fallbackImage}
-          onDismiss={handleHeroDismiss}
-          onNavigate={onNavigate}
         />
       )}
     </>
