@@ -6,17 +6,9 @@ import {
   MapPin,
   Compass,
   Users,
-  Ticket,
-  Calendar,
-  BookOpen,
-  Film,
-  Trophy,
-  MessageSquare,
-  Sparkles,
-  Play,
-  Heart,
-  Share2
+  RefreshCw
 } from "lucide-react";
+import { BeforeCard } from "./cards/BeforeCard";
 
 export interface BeforeLaneCard {
   id: string;
@@ -33,7 +25,7 @@ interface BeforeLaneProps {
   lane: "plan" | "discover" | "community";
   cards: BeforeLaneCard[];
   onBack: () => void;
-  onCardClick: (card: BeforeLaneCard) => void;
+  onCardClick: (action: string, card: BeforeLaneCard) => void;
 }
 
 const laneConfig = {
@@ -87,23 +79,6 @@ const laneConfig = {
   },
 };
 
-const cardTypeIcons: Record<string, any> = {
-  // Plan lane
-  "tickets": Ticket,
-  "venue-travel": MapPin,
-  "schedule-preview": Calendar,
-  "safety-info": Heart,
-  // Discover lane
-  "immersive-chapter": BookOpen,
-  "trailer": Film,
-  "lore": Sparkles,
-  "daily-drop": Play,
-  // Community lane
-  "challenge": Trophy,
-  "polls": MessageSquare,
-  "leaderboard": Trophy,
-  "social": Share2,
-};
 
 export function BeforeLane({ lane, cards, onBack, onCardClick }: BeforeLaneProps) {
   const config = laneConfig[lane];
@@ -151,22 +126,6 @@ export function BeforeLane({ lane, cards, onBack, onCardClick }: BeforeLaneProps
     isAtTop.current = false;
   };
 
-  const getCardIcon = (card: BeforeLaneCard) => {
-    const IconComponent = cardTypeIcons[card.type] || LaneIcon;
-    return <IconComponent className={`w-6 h-6 ${config.iconColor}`} />;
-  };
-
-  const getCardSizeClass = (size: "S" | "M" | "L") => {
-    switch (size) {
-      case "L":
-        return "min-h-[280px]";
-      case "M":
-        return "min-h-[220px]";
-      case "S":
-      default:
-        return "min-h-[180px]";
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-900">
@@ -221,50 +180,19 @@ export function BeforeLane({ lane, cards, onBack, onCardClick }: BeforeLaneProps
           {cards.length > 0 ? (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {cards.map((card) => (
-                <button
+                <div
                   key={card.id}
-                  onClick={() => onCardClick(card)}
-                  className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br ${config.gradientBg} border ${config.borderColor} ${config.hoverBorder} ${config.shadowColor} hover:shadow-xl transition-all duration-300 text-left ${getCardSizeClass(card.size)} ${
+                  className={`${
                     card.size === "M" ? "sm:col-span-2" : ""
                   } ${
                     card.size === "L" ? "sm:col-span-2 lg:col-span-3" : ""
                   }`}
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${config.overlayFrom} ${config.overlayTo} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                  
-                  {card.imageUrl && (
-                    <div className="relative w-full h-32 overflow-hidden">
-                      <img
-                        src={card.imageUrl}
-                        alt={card.title}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
-                    </div>
-                  )}
-                  
-                  <div className="relative p-5 space-y-3">
-                    <div className={`w-10 h-10 rounded-lg ${config.iconBg} ${config.hoverIconBg} flex items-center justify-center transition-colors duration-300`}>
-                      {getCardIcon(card)}
-                    </div>
-                    
-                    {card.subtitle && (
-                      <div className={`text-xs font-medium ${config.textColor} uppercase tracking-wide`}>
-                        {card.subtitle}
-                      </div>
-                    )}
-                    
-                    <h3 className={`text-xl font-bold text-white ${config.hoverTextColor} transition-colors leading-tight`}>
-                      {card.title}
-                    </h3>
-                    
-                    {card.description && (
-                      <p className="text-sm text-slate-300 line-clamp-2">
-                        {card.description}
-                      </p>
-                    )}
-                  </div>
-                </button>
+                  <BeforeCard
+                    card={card}
+                    onAction={(action, card) => onCardClick(action, card)}
+                  />
+                </div>
               ))}
             </div>
           ) : (

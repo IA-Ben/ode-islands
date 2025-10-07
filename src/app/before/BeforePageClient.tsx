@@ -4,7 +4,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { BeforeHub } from "@/components/before/BeforeHub";
 import { BeforeLane, type BeforeLaneCard } from "@/components/before/BeforeLane";
-import { BeforeCard } from "@/components/before/cards/BeforeCard";
 import UnifiedTopNav from "@/components/UnifiedTopNav";
 import { useFanScore } from "@/hooks/useFanScore";
 import LoadingScreen from "@/components/LoadingScreen";
@@ -40,9 +39,9 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const { scoreData } = useFanScore();
   
   const [currentView, setCurrentView] = useState<"hub" | "plan" | "discover" | "community">("hub");
-  const [selectedCard, setSelectedCard] = useState<BeforeLaneCard | null>(null);
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [selectedCard, setSelectedCard] = useState<(BeforeLaneCard & { action?: string }) | null>(null);
 
   // Navigation handlers for UnifiedTopNav
   const handlePhaseChange = (phase: "before" | "event" | "after") => {
@@ -221,14 +220,74 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     },
   ];
 
-  const handleCardClick = (card: BeforeLaneCard) => {
+  const handleCardClick = (action: string, card: BeforeLaneCard) => {
     if (card.type === "immersive-chapter") {
       // Navigate to the chapter reader
       router.push(`/before/${card.id}`);
     } else {
-      // Handle other card types
-      setSelectedCard(card);
-      console.log('Card clicked:', card);
+      // Open card detail modal for non-chapter cards, preserving action
+      setSelectedCard({ ...card, action } as BeforeLaneCard);
+    }
+  };
+
+  const handleCardAction = (action: string, card: BeforeLaneCard) => {
+    setSelectedCard(null);
+    
+    // Route based on action first, then card type for full extensibility
+    const actionType = action || "view";
+    
+    // Future actions like "share", "bookmark" would branch here
+    if (actionType === "share") {
+      // Handle share action
+      console.log("Sharing card:", card.type);
+      return;
+    }
+    
+    if (actionType === "bookmark") {
+      // Handle bookmark action
+      console.log("Bookmarking card:", card.type);
+      return;
+    }
+    
+    // Default "view" action routes to card-specific destinations
+    if (actionType === "view") {
+      switch (card.type) {
+        case "tickets":
+          router.push('/tickets');
+          break;
+        case "venue-travel":
+          router.push('/venue');
+          break;
+        case "schedule-preview":
+          router.push('/schedule');
+          break;
+        case "safety-info":
+          router.push('/safety');
+          break;
+        case "trailer":
+          router.push('/trailer');
+          break;
+        case "lore":
+          router.push('/lore');
+          break;
+        case "daily-drop":
+          router.push('/daily-drop');
+          break;
+        case "challenge":
+          router.push('/challenge');
+          break;
+        case "polls":
+          router.push('/polls');
+          break;
+        case "leaderboard":
+          router.push('/leaderboard');
+          break;
+        case "social":
+          router.push('/community');
+          break;
+        default:
+          console.log("Unknown card type:", card.type);
+      }
     }
   };
 
@@ -281,6 +340,76 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
           onClose={() => setIsUserScoreOpen(false)}
           source="tier_pill"
         />
+
+        {/* Card Detail Modal */}
+        {selectedCard && (
+          <div 
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+            onClick={() => setSelectedCard(null)}
+          >
+            <div 
+              className="relative max-w-2xl w-full bg-gradient-to-br from-slate-800 to-slate-900 rounded-3xl border border-white/10 p-8 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedCard(null)}
+                className="absolute top-4 right-4 p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors"
+              >
+                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+
+              <div className="space-y-6">
+                <div>
+                  {selectedCard.subtitle && (
+                    <div className="text-sm font-medium text-fuchsia-400 uppercase tracking-wide mb-2">
+                      {selectedCard.subtitle}
+                    </div>
+                  )}
+                  <h2 className="text-3xl font-bold text-white">{selectedCard.title}</h2>
+                </div>
+
+                {selectedCard.imageUrl && (
+                  <div className="relative w-full h-64 rounded-2xl overflow-hidden">
+                    <img
+                      src={selectedCard.imageUrl}
+                      alt={selectedCard.title}
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
+                {selectedCard.description && (
+                  <p className="text-lg text-slate-300">{selectedCard.description}</p>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => handleCardAction(selectedCard.action || "view", selectedCard)}
+                    className="flex-1 px-6 py-3 rounded-2xl bg-fuchsia-600 text-white font-semibold hover:bg-fuchsia-700 transition-colors"
+                  >
+                    {selectedCard.type === "tickets" ? "Get Tickets" :
+                     selectedCard.type === "venue-travel" ? "View Details" :
+                     selectedCard.type === "schedule-preview" ? "See Schedule" :
+                     selectedCard.type === "trailer" ? "Watch Trailer" :
+                     selectedCard.type === "lore" ? "Read More" :
+                     selectedCard.type === "challenge" ? "Join Challenge" :
+                     selectedCard.type === "polls" ? "Vote Now" :
+                     selectedCard.type === "leaderboard" ? "View Rankings" :
+                     "Learn More"}
+                  </button>
+                  <button
+                    onClick={() => setSelectedCard(null)}
+                    className="px-6 py-3 rounded-2xl bg-white/5 border border-white/10 text-white font-semibold hover:bg-white/10 transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {currentView === "hub" ? (
           <BeforeHub
