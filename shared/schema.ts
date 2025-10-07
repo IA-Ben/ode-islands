@@ -2193,6 +2193,113 @@ export const beforeLanes = pgTable("before_lanes", {
   uniqueEventLane: uniqueIndex("before_lanes_unique").on(table.eventId, table.laneKey),
 }));
 
+// BTS (Behind-the-Scenes) Series table - groups BTS videos into playlists
+export const btsSeries = pgTable("bts_series", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Series identity
+  title: varchar("title").notNull(),
+  description: text("description"),
+  
+  // Configuration
+  autoPlayNext: boolean("auto_play_next").default(false),
+  mixOfficialAndUGC: boolean("mix_official_and_ugc").default(false),
+  
+  // Media
+  coverImageMediaId: varchar("cover_image_media_id").references(() => mediaAssets.id),
+  
+  // Publishing
+  publishStatus: varchar("publish_status").default('draft').notNull(),
+  publishedAt: timestamp("published_at"),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  publishStatusIndex: index("bts_series_publish_status_idx").on(table.publishStatus),
+  isActiveIndex: index("bts_series_is_active_idx").on(table.isActive),
+}));
+
+// BTS Series Videos junction table - maps videos to series with ordering
+export const btsSeriesVideos = pgTable("bts_series_videos", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  seriesId: varchar("series_id").references(() => btsSeries.id).notNull(),
+  videoCardId: varchar("video_card_id").references(() => cards.id).notNull(), // Reference to BTS video card
+  
+  order: integer("order").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => ({
+  seriesIdIndex: index("bts_series_videos_series_id_idx").on(table.seriesId),
+  videoCardIdIndex: index("bts_series_videos_video_card_id_idx").on(table.videoCardId),
+  orderIndex: index("bts_series_videos_order_idx").on(table.order),
+  uniqueSeriesVideo: uniqueIndex("bts_series_videos_unique").on(table.seriesId, table.videoCardId),
+}));
+
+// Concept Art Collections table - galleries of concept art
+export const conceptArtCollections = pgTable("concept_art_collections", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  // Collection identity
+  title: varchar("title").notNull(),
+  description: text("description"),
+  
+  // Layout configuration
+  coverLayout: varchar("cover_layout").default('mosaic'), // 'mosaic', 'strip'
+  
+  // Display options
+  showWatermark: boolean("show_watermark").default(false),
+  allowDownload: boolean("allow_download").default(false),
+  
+  // Publishing
+  publishStatus: varchar("publish_status").default('draft').notNull(),
+  publishedAt: timestamp("published_at"),
+  
+  // Status
+  isActive: boolean("is_active").default(true),
+  
+  // Audit
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  publishStatusIndex: index("concept_art_collections_publish_status_idx").on(table.publishStatus),
+  isActiveIndex: index("concept_art_collections_is_active_idx").on(table.isActive),
+}));
+
+// Concept Art Images table - individual images within collections
+export const conceptArtImages = pgTable("concept_art_images", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  
+  collectionId: varchar("collection_id").references(() => conceptArtCollections.id).notNull(),
+  
+  // Image data
+  imageMediaId: varchar("image_media_id").references(() => mediaAssets.id).notNull(),
+  title: varchar("title").notNull(),
+  caption: text("caption"),
+  artistName: varchar("artist_name"),
+  artistCredit: text("artist_credit"),
+  
+  // Content flags
+  spoilerFlag: boolean("spoiler_flag").default(false),
+  
+  // Ordering
+  order: integer("order").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => ({
+  collectionIdIndex: index("concept_art_images_collection_id_idx").on(table.collectionId),
+  imageMediaIdIndex: index("concept_art_images_image_media_id_idx").on(table.imageMediaId),
+  orderIndex: index("concept_art_images_order_idx").on(table.order),
+  spoilerFlagIndex: index("concept_art_images_spoiler_flag_idx").on(table.spoilerFlag),
+}));
+
 // Note: Enterprise featureFlags table is defined earlier in the file with comprehensive functionality
 
 // Export all types
@@ -2289,3 +2396,13 @@ export type CardReward = typeof cardRewards.$inferSelect;
 export type UpsertCardReward = typeof cardRewards.$inferInsert;
 export type BeforeLane = typeof beforeLanes.$inferSelect;
 export type UpsertBeforeLane = typeof beforeLanes.$inferInsert;
+
+// BTS and Concept Art Types
+export type BtsSeries = typeof btsSeries.$inferSelect;
+export type UpsertBtsSeries = typeof btsSeries.$inferInsert;
+export type BtsSeriesVideo = typeof btsSeriesVideos.$inferSelect;
+export type UpsertBtsSeriesVideo = typeof btsSeriesVideos.$inferInsert;
+export type ConceptArtCollection = typeof conceptArtCollections.$inferSelect;
+export type UpsertConceptArtCollection = typeof conceptArtCollections.$inferInsert;
+export type ConceptArtImage = typeof conceptArtImages.$inferSelect;
+export type UpsertConceptArtImage = typeof conceptArtImages.$inferInsert;
