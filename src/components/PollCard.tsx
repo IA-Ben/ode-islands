@@ -59,21 +59,32 @@ const PollCard: React.FC<PollCardProps> = ({ data, active, cardId, chapterId, th
   const [userResponse, setUserResponse] = useState<UserResponse | null>(null);
   const [totalVotes, setTotalVotes] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [anim, setAnim] = useState(false);
   const [pollId, setPollId] = useState<string | null>(data.id || null);
+  const [anonymousUserId, setAnonymousUserId] = useState<string | null>(null);
 
   const textShadow = theme?.shadow ? "0 4px 16px rgba(0,0,0,0.4)" : undefined;
 
-  // Check authentication status
+  // Get or create anonymous user ID
   useEffect(() => {
-    checkAuthStatus();
+    const getAnonymousUserId = () => {
+      let userId = localStorage.getItem('anonymous_user_id');
+      if (!userId) {
+        userId = `anon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        localStorage.setItem('anonymous_user_id', userId);
+      }
+      return userId;
+    };
+    
+    const userId = getAnonymousUserId();
+    setAnonymousUserId(userId);
+    setUser({ id: userId, isAnonymous: true });
   }, []);
 
   // Create poll if it doesn't exist and animation when active
   useEffect(() => {
-    if (active && !anim) {
+    if (active && !anim && anonymousUserId) {
       setAnim(true);
       if (!pollId) {
         createPoll();
@@ -81,30 +92,9 @@ const PollCard: React.FC<PollCardProps> = ({ data, active, cardId, chapterId, th
         loadPollData();
       }
     }
-  }, [active, anim, pollId]);
-
-  const checkAuthStatus = async () => {
-    try {
-      const response = await fetch('/api/auth/user-login', {
-        credentials: 'include',
-      });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.user) {
-          setIsAuthenticated(true);
-          setUser(data.user);
-        }
-      }
-    } catch (error) {
-      console.error('Auth check failed:', error);
-    }
-  };
+  }, [active, anim, pollId, anonymousUserId]);
 
   const createPoll = async () => {
-    if (!isAuthenticated) {
-      setError('Please log in to participate in polls');
-      return;
-    }
 
     try {
       const csrfToken = getCsrfToken();
@@ -142,7 +132,7 @@ const PollCard: React.FC<PollCardProps> = ({ data, active, cardId, chapterId, th
   };
 
   const loadPollData = async () => {
-    if (!pollId || !isAuthenticated) return;
+    if (!pollId || !anonymousUserId) return;
 
     try {
       // Load poll responses and user's response
@@ -181,7 +171,7 @@ const PollCard: React.FC<PollCardProps> = ({ data, active, cardId, chapterId, th
   };
 
   const handleVote = async () => {
-    if (!selectedOption || !pollId || !isAuthenticated || isSubmitting) return;
+    if (!selectedOption || !pollId || !anonymousUserId || isSubmitting) return;
 
     setIsSubmitting(true);
     setError(null);
@@ -290,38 +280,6 @@ const PollCard: React.FC<PollCardProps> = ({ data, active, cardId, chapterId, th
     const result = pollResults.find(r => r.selectedOption === option);
     return result ? result.count : 0;
   };
-
-  if (!isAuthenticated) {
-    return (
-      <div 
-        className="relative w-full h-full flex items-center justify-center"
-        style={{
-          backgroundColor: theme?.background || "#0f172a",
-          height: "100dvh",
-        }}
-      >
-        {theme?.overlay && (
-          <div
-            className="absolute w-full h-full"
-            style={{ background: theme.overlay }}
-          />
-        )}
-        <div className="relative text-center px-6">
-          <h2 className="text-2xl font-bold text-white mb-4">
-            <AnimateText active={anim} delay={300}>
-              Please log in to participate in polls
-            </AnimateText>
-          </h2>
-          <button
-            onClick={() => window.location.href = '/auth/login'}
-            className="bg-white hover:bg-white/80 text-black px-6 py-3 rounded-full font-semibold transition-all duration-300"
-          >
-            Log In
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div
