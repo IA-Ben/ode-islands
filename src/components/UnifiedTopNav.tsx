@@ -48,6 +48,7 @@ interface UnifiedTopNavProps {
   tier?: "Bronze" | "Silver" | "Gold";
   onOpenWallet?: () => void;
   onOpenQR?: () => void;
+  onOpenScore?: () => void;
   // Admin state
   currentAdminSection?: string;
   onAdminSectionChange?: (section: string) => void;
@@ -174,6 +175,7 @@ export default function UnifiedTopNav({
   tier = "Bronze",
   onOpenWallet,
   onOpenQR,
+  onOpenScore,
   currentAdminSection = "dashboard",
   onAdminSectionChange,
   onSwitchMode,
@@ -321,7 +323,12 @@ export default function UnifiedTopNav({
                 </button>
 
                 {/* Tier */}
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-fuchsia-600 text-white shadow">
+                <button
+                  onClick={onOpenScore}
+                  className="flex items-center gap-2 px-3 py-2 rounded-xl bg-fuchsia-600 text-white shadow hover:bg-fuchsia-700 hover:shadow-lg active:scale-95 transition-all cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400"
+                  aria-label={`View your score and progress • ${tier} • ${points} pts`}
+                  title={`Click to view your score • ${tier} • ${points} pts`}
+                >
                   <div className="grid place-items-center w-6 h-6 rounded-full bg-white/15">
                     <Crown className="w-4 h-4" />
                   </div>
@@ -331,7 +338,7 @@ export default function UnifiedTopNav({
                   <span className="hidden md:inline text-xs opacity-90">
                     • {points} pts
                   </span>
-                </div>
+                </button>
 
                 {/* QR Scan */}
                 <button

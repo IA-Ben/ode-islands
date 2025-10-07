@@ -15,6 +15,7 @@ const CertificateManager = lazy(() => import("@/components/CertificateManager"))
 const CollectionGrid = lazy(() => import("@/components/CollectionGrid"));
 const ScoreProgressPanel = lazy(() => import("@/components/ScoreProgressPanel"));
 const Leaderboard = lazy(() => import("@/components/Leaderboard"));
+const UserScoreModal = lazy(() => import("@/components/UserScoreModal"));
 
 const ComponentSkeleton = ({ height = "400px" }: { height?: string }) => (
   <div className={`${surfaces.cardGlass} rounded-2xl border border-slate-700/50 p-8 animate-pulse`} style={{ minHeight: height }}>
@@ -79,6 +80,7 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
   const [animateIn, setAnimateIn] = useState(false);
   const [cmsConfig, setCmsConfig] = useState<AfterExperienceConfig | null>(null);
   const [isLoadingCms, setIsLoadingCms] = useState(true);
+  const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
 
   const handlePhaseChange = (phase: "before" | "event" | "after") => {
     switch (phase) {
@@ -100,6 +102,10 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
 
   const handleOpenQR = () => {
     console.log('QR scanner opened');
+  };
+
+  const handleOpenScore = () => {
+    setIsUserScoreOpen(true);
   };
 
   const handleSwitchMode = (nextMode: "app" | "admin") => {
@@ -641,8 +647,17 @@ export default function AfterPageClient({ user }: AfterPageClientProps) {
         tier={tier}
         onOpenWallet={handleOpenWallet}
         onOpenQR={handleOpenQR}
+        onOpenScore={handleOpenScore}
         onSwitchMode={handleSwitchMode}
       />
+      
+      <Suspense fallback={null}>
+        <UserScoreModal
+          isOpen={isUserScoreOpen}
+          onClose={() => setIsUserScoreOpen(false)}
+          source="tier_pill"
+        />
+      </Suspense>
       
       {activeTab !== 'overview' ? (
         <ImmersivePageLayout

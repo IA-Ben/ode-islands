@@ -8,6 +8,12 @@ import UnifiedTopNav from "@/components/UnifiedTopNav";
 import { useFanScore } from '@/hooks/useFanScore';
 import type { CardData } from '@/@typings';
 import data from "../../data/ode-islands.json";
+import dynamic from 'next/dynamic';
+
+const UserScoreModal = dynamic(() => import('@/components/UserScoreModal'), {
+  ssr: false,
+  loading: () => null
+});
 
 type ChapterData = {
   [key: string]: CardData[];
@@ -37,6 +43,7 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
   const [interacted, setInteracted] = useState<boolean>(false);
   const [index, setIndex] = useState<number>(0);
   const [loadedCards, setLoadedCards] = useState<number>(1); // Start with only first card loaded
+  const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Navigation handlers for UnifiedTopNav
@@ -60,6 +67,10 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
 
   const handleOpenQR = () => {
     console.log('QR scanner opened');
+  };
+
+  const handleOpenScore = () => {
+    setIsUserScoreOpen(true);
   };
 
   const handleSwitchMode = (nextMode: "app" | "admin") => {
@@ -178,6 +189,7 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
           tier={tier}
           onOpenWallet={handleOpenWallet}
           onOpenQR={handleOpenQR}
+          onOpenScore={handleOpenScore}
           onSwitchMode={handleSwitchMode}
         />
         <div className="text-white">Loading...</div>
@@ -197,7 +209,14 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
         tier={tier}
         onOpenWallet={handleOpenWallet}
         onOpenQR={handleOpenQR}
+        onOpenScore={handleOpenScore}
         onSwitchMode={handleSwitchMode}
+      />
+      
+      <UserScoreModal
+        isOpen={isUserScoreOpen}
+        onClose={() => setIsUserScoreOpen(false)}
+        source="tier_pill"
       />
       
       <div

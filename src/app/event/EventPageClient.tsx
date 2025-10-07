@@ -30,6 +30,11 @@ const QRScanner = dynamic(() => import('@/components/QRScanner'), {
   loading: () => null
 });
 
+const UserScoreModal = dynamic(() => import('@/components/UserScoreModal'), {
+  ssr: false,
+  loading: () => null
+});
+
 // Types
 interface LiveEvent {
   id: string;
@@ -111,6 +116,10 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
     setIsQRScannerOpen(true);
   };
 
+  const handleOpenScore = () => {
+    setIsUserScoreOpen(true);
+  };
+
   const handleSwitchMode = (nextMode: "app" | "admin") => {
     if (nextMode === 'admin') {
       router.push('/admin');
@@ -150,6 +159,9 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
   
   // QR Scanner state
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
+  
+  // User Score Modal state
+  const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
   
   // Demo mode state
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -679,6 +691,7 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
           tier={tier}
           onOpenWallet={handleOpenWallet}
           onOpenQR={handleOpenQR}
+          onOpenScore={handleOpenScore}
           onSwitchMode={handleSwitchMode}
           isDemoMode={isDemoMode}
           onToggleDemo={() => setIsDemoMode(prev => !prev)}
@@ -718,6 +731,12 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
           onClose={() => setIsQRScannerOpen(false)}
           onResult={handleQRResult}
           onError={handleQRError}
+        />
+        
+        <UserScoreModal
+          isOpen={isUserScoreOpen}
+          onClose={() => setIsUserScoreOpen(false)}
+          source="tier_pill"
         />
         
         <HelpSystem userRole="audience" />
