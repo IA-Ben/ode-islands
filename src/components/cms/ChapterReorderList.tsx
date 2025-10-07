@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { ChapterTreeView, TreeChapter } from './ChapterTreeView';
-import { designTokens } from '@/lib/admin/designTokens';
+import { surfaces, borders, typography, components, colors, shadows } from '@/lib/admin/designTokens';
 
 interface Chapter {
   id: string;
@@ -181,33 +181,33 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
       {/* Header with View Toggle */}
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-4 flex-wrap">
-          <h3 className={designTokens.typography.h3}>Chapter Order</h3>
+          <h3 className={typography.h3}>Chapter Order</h3>
           
           {/* View Mode Toggle */}
-          <div className={`flex items-center ${designTokens.surfaces.subtleGlass} ${designTokens.borders.glassBorder} ${designTokens.borders.radius.lg} p-1`}>
+          <div className={`flex items-center ${surfaces.subtleGlass} ${borders.glassBorder} ${borders.radius.lg} p-1`}>
             <button
               onClick={() => setViewMode('flat')}
-              className={`px-4 py-1.5 text-sm font-medium ${designTokens.borders.radius.md} transition-all ${
+              className={`px-4 py-1.5 text-sm font-medium ${borders.radius.md} transition-all ${
                 viewMode === 'flat'
-                  ? `${designTokens.surfaces.cardGlass} text-white shadow-sm`
-                  : 'text-slate-400 hover:text-white'
+                  ? `${surfaces.cardGlass} text-white ${shadows.sm}`
+                  : `${colors.slate.textMuted} hover:text-white`
               }`}
             >
               Flat View
             </button>
             <button
               onClick={() => setViewMode('tree')}
-              className={`px-4 py-1.5 text-sm font-medium ${designTokens.borders.radius.md} transition-all ${
+              className={`px-4 py-1.5 text-sm font-medium ${borders.radius.md} transition-all ${
                 viewMode === 'tree'
-                  ? `${designTokens.surfaces.cardGlass} text-white shadow-sm`
-                  : 'text-slate-400 hover:text-white'
+                  ? `${surfaces.cardGlass} text-white ${shadows.sm}`
+                  : `${colors.slate.textMuted} hover:text-white`
               }`}
             >
               Tree View
             </button>
           </div>
 
-          <span className="text-sm text-slate-400">
+          <span className={`text-sm ${colors.slate.textMuted}`}>
             {viewMode === 'flat' ? 'Drag and drop to reorder chapters' : 'Hierarchical chapter management'}
           </span>
         </div>
@@ -217,14 +217,14 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
             <button
               onClick={handleCancelReorder}
               disabled={isReordering}
-              className={designTokens.components.buttons.secondary}
+              className={components.buttonSecondary}
             >
               Cancel
             </button>
             <button
               onClick={handleSaveOrder}
               disabled={isReordering}
-              className={designTokens.components.buttons.primary}
+              className={components.buttonPrimary}
             >
               {isReordering ? 'Saving...' : 'Save Order'}
             </button>
@@ -243,15 +243,15 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, index)}
               className={`
-                group relative ${designTokens.surfaces.cardGlass} ${designTokens.borders.glassBorder} ${designTokens.borders.radius.lg} p-4 cursor-move transition-all duration-200
+                group relative ${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} p-4 cursor-move transition-all duration-200
                 ${draggedIndex === index ? 'opacity-50 scale-95' : ''}
-                ${dragOverIndex === index && draggedIndex !== index ? 'border-fuchsia-400/50 bg-fuchsia-500/10' : ''}
-                ${draggedIndex === null ? 'hover:border-slate-600 hover:shadow-lg' : ''}
+                ${dragOverIndex === index && draggedIndex !== index ? `${colors.accent.borderSubtle} ${colors.accent.bgDragOver}` : ''}
+                ${draggedIndex === null ? `${colors.slate.borderHover} hover:${shadows.lg}` : ''}
               `}
             >
               {/* Drag Handle */}
               <div className="absolute left-3 top-1/2 transform -translate-y-1/2 opacity-30 group-hover:opacity-60 transition-opacity">
-                <svg className="w-5 h-5 text-slate-400" fill="currentColor" viewBox="0 0 20 20">
+                <svg className={`w-5 h-5 ${colors.icon.muted}`} fill="currentColor" viewBox="0 0 20 20">
                   <path d="M7 2a2 2 0 00-2 2v12a2 2 0 002 2h6a2 2 0 002-2V4a2 2 0 00-2-2H7zM8 4h4v2H8V4zm0 4h4v2H8V8zm0 4h4v2H8v-2z" />
                 </svg>
               </div>
@@ -259,16 +259,16 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
               <div className="flex items-center justify-between pl-8">
                 <div className="flex items-center gap-3">
                   {/* Order Badge */}
-                  <div className="flex items-center justify-center w-9 h-9 bg-fuchsia-600/20 border border-fuchsia-500/30 rounded-full text-sm font-semibold text-fuchsia-400">
+                  <div className={`flex items-center justify-center w-9 h-9 ${colors.accent.bgTranslucent} ${colors.accent.borderTranslucent} border rounded-full text-sm font-semibold ${colors.accent.primary}`}>
                     {index + 1}
                   </div>
                   
                   <div>
                     <h4 className="font-semibold text-white">{chapter.title}</h4>
-                    <div className="flex items-center gap-3 text-sm text-slate-400 mt-0.5">
+                    <div className={`flex items-center gap-3 text-sm ${colors.slate.textMuted} mt-0.5`}>
                       <span>{chapter.cardCount} cards</span>
                       {chapter.hasAR && (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-fuchsia-600/20 text-fuchsia-400 border border-fuchsia-500/30">
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs ${colors.accent.bgTranslucent} ${colors.accent.primary} ${colors.accent.borderTranslucent} border`}>
                           AR Content
                         </span>
                       )}
@@ -277,14 +277,14 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <div className="text-sm text-slate-500 mr-2">Order: {index + 1}</div>
+                  <div className={`text-sm ${colors.slate.textMuted} mr-2`}>Order: {index + 1}</div>
                   {onDelete && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onDelete(chapter.id, chapter.title);
                       }}
-                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                      className={`p-2 ${colors.error.textAlt} ${colors.error.hover} ${colors.error.bgHover} ${borders.radius.lg} transition-colors`}
                       title="Delete chapter"
                     >
                       <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -298,7 +298,7 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
           ))}
 
           {orderedChapters.length === 0 && (
-            <div className="text-center py-12 text-slate-400">
+            <div className={`text-center py-12 ${colors.slate.textMuted}`}>
               No chapters available to reorder
             </div>
           )}
@@ -307,13 +307,13 @@ export const ChapterReorderList: React.FC<ChapterReorderListProps> = ({
         <div>
           {isLoadingTree ? (
             <div className="text-center py-12">
-              <div className="inline-block w-8 h-8 border-4 border-slate-700 border-t-fuchsia-600 rounded-full animate-spin"></div>
-              <p className="text-slate-400 mt-3">Loading tree structure...</p>
+              <div className={`inline-block w-8 h-8 border-4 ${colors.slate.border} ${colors.accent.borderTop} rounded-full animate-spin`}></div>
+              <p className={`${colors.slate.textMuted} mt-3`}>Loading tree structure...</p>
             </div>
           ) : (
-            <div className={`${designTokens.surfaces.subtleGlass} ${designTokens.borders.glassBorder} ${designTokens.borders.radius.lg} p-6`}>
-              <div className="mb-6 flex items-center gap-3 text-sm text-slate-400">
-                <svg className="w-5 h-5 text-fuchsia-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className={`${surfaces.subtleGlass} ${borders.glassBorder} ${borders.radius.lg} p-6`}>
+              <div className={`mb-6 flex items-center gap-3 text-sm ${colors.slate.textMuted}`}>
+                <svg className={`w-5 h-5 ${colors.accent.primary}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span>

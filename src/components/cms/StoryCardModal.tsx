@@ -10,6 +10,7 @@ import { ColorPicker } from '@/components/ui/ColorPicker';
 import { ObjectUploader } from '@/components/ObjectUploader';
 import { CardEditorButtons } from '@/components/CardEditorButtons';
 import { CMSCardPreview } from '@/components/CMSCardPreview';
+import { surfaces, borders, typography, components, colors, shadows } from '@/lib/admin/designTokens';
 
 interface StoryCardModalProps {
   isOpen: boolean;
@@ -305,38 +306,43 @@ export default function StoryCardModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <Card className="max-w-6xl w-full max-h-[90vh] overflow-hidden">
-        <CardHeader className="border-b">
+    <div className={`fixed inset-0 ${colors.modalOverlay} flex items-center justify-center z-50 p-4`}>
+      <div className={`${surfaces.darkGlass} ${borders.glassBorder} ${borders.radius.lg} max-w-6xl w-full max-h-[90vh] overflow-hidden ${shadows.xl}`}>
+        {/* Modal Header */}
+        <div className={`border-b ${colors.slate.border} px-6 py-4`}>
           <div className="flex items-center justify-between">
-            <CardTitle>{editMode ? 'Edit Story Card' : 'Add Story Card'}</CardTitle>
+            <h2 className={typography.h2}>
+              {editMode ? 'Edit Story Card' : 'Add Story Card'}
+            </h2>
             <button
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-700 text-2xl"
+              className={`${colors.slate.textMuted} hover:text-white text-3xl leading-none transition-colors`}
               type="button"
             >
               ×
             </button>
           </div>
-        </CardHeader>
+        </div>
 
-        <CardContent className="overflow-y-auto max-h-[calc(90vh-180px)] p-6">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Modal Content */}
+        <div className="overflow-y-auto max-h-[calc(90vh-180px)] p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              <div className={`${colors.error.bg} border ${colors.error.border} ${colors.error.textAlt} px-4 py-3 ${borders.radius.lg}`}>
                 {error}
               </div>
             )}
 
-            <div className="flex gap-2 mb-4 justify-between items-center">
+            {/* Mode Toggle */}
+            <div className="flex gap-3 mb-6 justify-between items-center flex-wrap">
               <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={() => setEditingMode('traditional')}
-                  className={`px-4 py-2 rounded transition-colors ${
+                  className={`px-5 py-2 ${borders.radius.md} font-medium transition-all ${
                     editingMode === 'traditional' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? `${colors.accent.bg} text-white ${shadows.lg}` 
+                      : `${surfaces.subtleGlass} ${colors.slate.textMuted} hover:text-white ${borders.glassBorder}`
                   }`}
                 >
                   Traditional Mode
@@ -349,10 +355,10 @@ export default function StoryCardModal({
                       setVisualLayout(createEmptyLayout());
                     }
                   }}
-                  className={`px-4 py-2 rounded transition-colors ${
+                  className={`px-5 py-2 ${borders.radius.md} font-medium transition-all ${
                     editingMode === 'visual' 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? `${colors.accent.bg} text-white ${shadows.lg}` 
+                      : `${surfaces.subtleGlass} ${colors.slate.textMuted} hover:text-white ${borders.glassBorder}`
                   }`}
                 >
                   Visual Mode
@@ -363,10 +369,10 @@ export default function StoryCardModal({
                 <button
                   type="button"
                   onClick={() => setShowPreview(!showPreview)}
-                  className={`px-4 py-2 rounded transition-colors ${
+                  className={`px-5 py-2 ${borders.radius.md} font-medium transition-all ${
                     showPreview 
-                      ? 'bg-green-600 text-white' 
-                      : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                      ? `${colors.accent.bg} text-white ${shadows.lg}` 
+                      : `${surfaces.subtleGlass} ${colors.slate.textMuted} hover:text-white ${borders.glassBorder}`
                   }`}
                 >
                   {showPreview ? '👁️ Preview On' : '👁️ Preview'}
@@ -378,11 +384,11 @@ export default function StoryCardModal({
               <div className={showPreview ? "grid grid-cols-2 gap-6" : "space-y-4"}>
                 <div className="space-y-4">
                   <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-semibold">Card Configuration</h3>
+                    <h3 className={typography.h3}>Card Configuration</h3>
                     <button
                       type="button"
                       onClick={() => setShowJSON(!showJSON)}
-                      className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded"
+                      className={`px-4 py-1.5 text-sm ${components.buttonSecondary}`}
                     >
                       {showJSON ? 'Hide JSON' : 'Show JSON'}
                     </button>
@@ -390,9 +396,9 @@ export default function StoryCardModal({
 
                   {showJSON ? (
                   <div>
-                    <label className="block text-sm font-medium mb-1">Content (JSON)</label>
+                    <label className={typography.label}>Content (JSON)</label>
                     <textarea
-                      className="w-full p-2 border border-gray-300 rounded-md h-96 font-mono text-sm"
+                      className={`w-full p-3 ${components.inputs.base} h-96 font-mono text-sm`}
                       value={JSON.stringify(traditionalContent, null, 2)}
                       onChange={(e) => {
                         try {
@@ -408,16 +414,16 @@ export default function StoryCardModal({
                 ) : (
                   <div className="space-y-4">
                     {/* Text Content Section */}
-                    <Card className="border-gray-300">
-                      <CardHeader className="bg-gray-50">
-                        <CardTitle className="text-base">Text Content</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 pt-4">
+                    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} overflow-hidden`}>
+                      <div className={`${surfaces.subtleGlass} px-4 py-3 border-b ${colors.slate.border}`}>
+                        <h4 className={typography.h4}>Text Content</h4>
+                      </div>
+                      <div className="space-y-4 p-4">
                         <div>
-                          <label className="block text-sm font-medium mb-1">Title</label>
+                          <label className={typography.label}>Title</label>
                           <input
                             type="text"
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className={components.inputs.base}
                             value={traditionalContent.text?.title || ''}
                             onChange={(e) => setTraditionalContent(prev => ({
                               ...prev,
@@ -428,10 +434,10 @@ export default function StoryCardModal({
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium mb-1">Subtitle</label>
+                          <label className={typography.label}>Subtitle</label>
                           <input
                             type="text"
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className={components.inputs.base}
                             value={traditionalContent.text?.subtitle || ''}
                             onChange={(e) => setTraditionalContent(prev => ({
                               ...prev,
@@ -442,10 +448,10 @@ export default function StoryCardModal({
                         </div>
                         
                         <div>
-                          <label className="block text-sm font-medium mb-1">Description</label>
+                          <label className={typography.label}>Description</label>
                           <textarea
                             rows={4}
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className={components.inputs.base}
                             value={traditionalContent.text?.description || ''}
                             onChange={(e) => setTraditionalContent(prev => ({
                               ...prev,
@@ -454,20 +460,20 @@ export default function StoryCardModal({
                             placeholder="Card description..."
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
                     {/* Call to Action Section */}
-                    <Card className="border-gray-300">
-                      <CardHeader className="bg-gray-50">
-                        <CardTitle className="text-base">Call to Action</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 pt-4">
+                    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} overflow-hidden`}>
+                      <div className={`${surfaces.subtleGlass} px-4 py-3 border-b ${colors.slate.border}`}>
+                        <h4 className={typography.h4}>Call to Action</h4>
+                      </div>
+                      <div className="space-y-4 p-4">
                         <div>
-                          <label className="block text-sm font-medium mb-1">CTA Title</label>
+                          <label className={typography.label}>CTA Title</label>
                           <input
                             type="text"
-                            className="w-full p-2 border border-gray-300 rounded-md"
+                            className={components.inputs.base}
                             value={traditionalContent.cta?.title || ''}
                             onChange={(e) => setTraditionalContent(prev => ({
                               ...prev,
@@ -507,15 +513,15 @@ export default function StoryCardModal({
                             placeholder="Begin Journey, Start Experience..."
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
                     {/* Media Content Section */}
-                    <Card className="border-gray-300">
-                      <CardHeader className="bg-gray-50">
-                        <CardTitle className="text-base">Media Content</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 pt-4">
+                    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} overflow-hidden`}>
+                      <div className={`${surfaces.subtleGlass} px-4 py-3 border-b ${colors.slate.border}`}>
+                        <h4 className={typography.h4}>Media Content</h4>
+                      </div>
+                      <div className="space-y-4 p-4">
                         {/* Upload Section */}
                         <div className="bg-blue-50 border border-blue-200 rounded p-4 space-y-3">
                           <h4 className="text-sm font-semibold text-blue-900">Upload Files</h4>
@@ -605,7 +611,7 @@ export default function StoryCardModal({
                           
                           {/* Video Error Status */}
                           {videoTranscodingStatus === 'error' && (
-                            <div className="text-sm text-red-700 bg-red-100 border border-red-200 px-3 py-2 rounded">
+                            <div className={`text-sm ${colors.error.textLight} ${colors.error.bgLight} ${colors.error.borderLight} border px-3 py-2 ${borders.radius.md}`}>
                               ✗ {transcodingDetails.message || 'Video upload failed'}
                             </div>
                           )}
@@ -661,7 +667,7 @@ export default function StoryCardModal({
                                   ...prev,
                                   video: undefined
                                 }))}
-                                className="px-3 py-2 text-sm text-red-600 hover:text-red-700 border border-red-300 rounded"
+                                className={`px-3 py-2 text-sm ${colors.error.textLight} ${colors.error.hoverTextDark} ${colors.error.borderLight} border ${borders.radius.md}`}
                               >
                                 Clear
                               </button>
@@ -806,15 +812,15 @@ export default function StoryCardModal({
                             placeholder="audio.mp3 or full URL..."
                           />
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
                     {/* Theme & Styling Section */}
-                    <Card className="border-gray-300">
-                      <CardHeader className="bg-gray-50">
-                        <CardTitle className="text-base">Theme & Styling</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 pt-4">
+                    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} overflow-hidden`}>
+                      <div className={`${surfaces.subtleGlass} px-4 py-3 border-b ${colors.slate.border}`}>
+                        <h4 className={typography.h4}>Theme & Styling</h4>
+                      </div>
+                      <div className="space-y-4 p-4">
                         <ColorPicker
                           label="Background Color"
                           value={traditionalContent.theme?.background || '#000000'}
@@ -912,15 +918,15 @@ export default function StoryCardModal({
                             <span className="text-sm">Invert CTA</span>
                           </label>
                         </div>
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
                     {/* AR Configuration Section */}
-                    <Card className="border-gray-300">
-                      <CardHeader className="bg-gray-50">
-                        <CardTitle className="text-base">🥽 AR Configuration</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 pt-4">
+                    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} overflow-hidden`}>
+                      <div className={`${surfaces.subtleGlass} px-4 py-3 border-b ${colors.slate.border}`}>
+                        <h4 className={typography.h4}>🥽 AR Configuration</h4>
+                      </div>
+                      <div className="space-y-4 p-4">
                         <div>
                           <label className="block text-sm font-medium mb-1">AR Mode</label>
                           <select
@@ -1071,15 +1077,15 @@ export default function StoryCardModal({
                             </p>
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
                     {/* PlayCanvas Configuration Section */}
-                    <Card className="border-gray-300">
-                      <CardHeader className="bg-gray-50">
-                        <CardTitle className="text-base">🎮 PlayCanvas Configuration</CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-4 pt-4">
+                    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} overflow-hidden`}>
+                      <div className={`${surfaces.subtleGlass} px-4 py-3 border-b ${colors.slate.border}`}>
+                        <h4 className={typography.h4}>🎮 PlayCanvas Configuration</h4>
+                      </div>
+                      <div className="space-y-4 p-4">
                         <div>
                           <label className="block text-sm font-medium mb-1">Integration Type</label>
                           <select
@@ -1220,13 +1226,13 @@ export default function StoryCardModal({
                             </p>
                           </div>
                         )}
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
 
                     {/* Custom Buttons Section */}
-                    <Card className="border-gray-300">
-                      <CardHeader className="bg-gray-50 flex flex-row items-center justify-between">
-                        <CardTitle className="text-base">🔘 Custom Buttons</CardTitle>
+                    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} overflow-hidden`}>
+                      <div className={`${surfaces.subtleGlass} px-4 py-3 border-b ${colors.slate.border} flex items-center justify-between`}>
+                        <h4 className={typography.h4}>🔘 Custom Buttons</h4>
                         <label className="flex items-center cursor-pointer">
                           <input
                             type="checkbox"
@@ -1234,18 +1240,18 @@ export default function StoryCardModal({
                             checked={showButtons}
                             onChange={(e) => setShowButtons(e.target.checked)}
                           />
-                          <span className="text-sm font-normal">Enable Editor</span>
+                          <span className={`text-sm font-normal ${colors.slate.text}`}>Enable Editor</span>
                         </label>
-                      </CardHeader>
+                      </div>
                       {showButtons && (
-                        <CardContent className="pt-4">
+                        <div className="p-4">
                           <CardEditorButtons
                             cardData={traditionalContent}
                             onCardDataChange={(newCardData) => setTraditionalContent(newCardData)}
                           />
-                        </CardContent>
+                        </div>
                       )}
-                    </Card>
+                    </div>
                   </div>
                 )}
                 </div>
@@ -1253,14 +1259,14 @@ export default function StoryCardModal({
                 {/* Preview Panel */}
                 {showPreview && (
                   <div className="sticky top-0 h-fit">
-                    <Card className="border-gray-300">
-                      <CardHeader className="bg-gray-50">
-                        <CardTitle className="text-base">👁️ Live Preview</CardTitle>
-                      </CardHeader>
-                      <CardContent className="pt-4">
+                    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} overflow-hidden`}>
+                      <div className={`${surfaces.subtleGlass} px-4 py-3 border-b ${colors.slate.border}`}>
+                        <h4 className={typography.h4}>👁️ Live Preview</h4>
+                      </div>
+                      <div className="p-4">
                         <CMSCardPreview data={traditionalContent} className="min-h-[400px]" />
-                      </CardContent>
-                    </Card>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -1300,17 +1306,25 @@ export default function StoryCardModal({
               </div>
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4 border-t">
-              <Button type="button" variant="outline" onClick={onClose}>
+            <div className="flex justify-end gap-3 pt-6 border-t border-slate-700/50 mt-6">
+              <button 
+                type="button" 
+                onClick={onClose}
+                className={components.buttonSecondary}
+              >
                 Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
+              </button>
+              <button 
+                type="submit" 
+                disabled={loading}
+                className={components.buttonPrimary}
+              >
                 {loading ? 'Saving...' : editMode ? 'Update Card' : 'Create Card'}
-              </Button>
+              </button>
             </div>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }

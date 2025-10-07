@@ -142,7 +142,12 @@ export const colors = {
     hover: 'hover:text-fuchsia-300',
     bg: 'bg-fuchsia-600',
     bgHover: 'hover:bg-fuchsia-500',
+    bgTranslucent: 'bg-fuchsia-600/20',
+    bgDragOver: 'bg-fuchsia-500/10',
     border: 'border-fuchsia-400',
+    borderSubtle: 'border-fuchsia-400/50',
+    borderTranslucent: 'border-fuchsia-500/30',
+    borderTop: 'border-t-fuchsia-600',
     ring: 'ring-fuchsia-400',
   },
   
@@ -158,6 +163,7 @@ export const colors = {
     text: 'text-slate-100',
     textMuted: 'text-slate-400',
     border: 'border-slate-700',
+    borderHover: 'hover:border-slate-600',
   },
   
   /**
@@ -175,7 +181,18 @@ export const colors = {
   /**
    * Error and warning colors
    */
-  error: 'text-rose-400',
+  error: {
+    text: 'text-rose-400',
+    textAlt: 'text-red-400',
+    textLight: 'text-red-600',
+    hover: 'hover:text-red-300',
+    hoverTextDark: 'hover:text-red-700',
+    bg: 'bg-red-500/10',
+    bgLight: 'bg-red-100',
+    bgHover: 'hover:bg-red-500/10',
+    border: 'border-red-500/30',
+    borderLight: 'border-red-300',
+  },
   warning: 'text-amber-400',
   success: 'text-emerald-400',
   info: 'text-sky-400',
