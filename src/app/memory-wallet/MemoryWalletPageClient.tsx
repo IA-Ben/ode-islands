@@ -8,6 +8,7 @@ import UnifiedTopNav from '@/components/UnifiedTopNav';
 import { useFanScore } from '@/hooks/useFanScore';
 import ImmersivePageLayout, { ImmersiveTheme } from '@/components/ImmersivePageLayout';
 import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 interface UserData {
   id: string;
@@ -123,6 +124,15 @@ export default function MemoryWalletPageClient({ user }: MemoryWalletPageClientP
       />
       <div className="min-h-screen bg-slate-900 pt-20 px-4 pb-8">
         <div className="max-w-7xl mx-auto">
+          {/* Back Button */}
+          <button
+            onClick={() => router.back()}
+            className="flex items-center gap-2 text-white/60 hover:text-white mb-6 transition-colors group"
+          >
+            <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+            <span>Back</span>
+          </button>
+
           <div className="mb-8">
             <h1 className="text-4xl font-bold text-white mb-2">
               {authUser?.firstName ? `${authUser.firstName}'s Memory Wallet` : 'Memory Wallet'}
