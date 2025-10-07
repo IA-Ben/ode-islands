@@ -6,7 +6,8 @@ import {
   MapPin,
   Compass,
   Users,
-  RefreshCw
+  RefreshCw,
+  Film
 } from "lucide-react";
 import { BeforeCard } from "./cards/BeforeCard";
 
@@ -22,7 +23,7 @@ export interface BeforeLaneCard {
 }
 
 interface BeforeLaneProps {
-  lane: "plan" | "discover" | "community";
+  lane: "plan" | "discover" | "community" | "bts";
   cards: BeforeLaneCard[];
   onBack: () => void;
   onCardClick: (action: string, card: BeforeLaneCard) => void;
@@ -76,6 +77,22 @@ const laneConfig = {
     shadowColor: "hover:shadow-emerald-500/20",
     overlayFrom: "from-emerald-500/0",
     overlayTo: "to-emerald-500/10",
+  },
+  bts: {
+    title: "Behind the Scenes",
+    description: "Exclusive making-of content",
+    icon: Film,
+    gradientBg: "from-fuchsia-600/20 to-fuchsia-700/10",
+    borderColor: "border-fuchsia-500/20",
+    hoverBorder: "hover:border-fuchsia-500/40",
+    iconBg: "bg-fuchsia-500/20",
+    hoverIconBg: "group-hover:bg-fuchsia-500/30",
+    iconColor: "text-fuchsia-400",
+    textColor: "text-fuchsia-400",
+    hoverTextColor: "group-hover:text-fuchsia-300",
+    shadowColor: "hover:shadow-fuchsia-500/20",
+    overlayFrom: "from-fuchsia-500/0",
+    overlayTo: "to-fuchsia-500/10",
   },
 };
 

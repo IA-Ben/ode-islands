@@ -1,6 +1,6 @@
 "use client";
 
-import { MapPin, Calendar, Compass, Users, Sparkles, Clock } from "lucide-react";
+import { MapPin, Calendar, Compass, Users, Sparkles, Clock, Film } from "lucide-react";
 import { useState } from "react";
 
 export interface FeaturedBeforeCard {
@@ -14,7 +14,7 @@ export interface FeaturedBeforeCard {
 }
 
 interface BeforeHubProps {
-  onEnterLane: (lane: "plan" | "discover" | "community") => void;
+  onEnterLane: (lane: "plan" | "discover" | "community" | "bts") => void;
   featuredCards?: FeaturedBeforeCard[];
   onQuickAction?: (action: "scan" | "map" | "schedule" | "offers" | "tickets") => void;
   eventDate?: Date;
@@ -26,7 +26,7 @@ export function BeforeHub({
   onQuickAction,
   eventDate,
 }: BeforeHubProps) {
-  const [activeTab, setActiveTab] = useState<"featured" | "plan" | "discover" | "community">("featured");
+  const [activeTab, setActiveTab] = useState<"featured" | "plan" | "discover" | "community" | "bts">("featured");
 
   const handleQuickAction = (action: "scan" | "map" | "schedule" | "offers" | "tickets") => {
     if (onQuickAction) {
@@ -47,7 +47,7 @@ export function BeforeHub({
     return `${hours}h until event`;
   };
 
-  const scrollToSection = (section: "plan" | "discover" | "community") => {
+  const scrollToSection = (section: "plan" | "discover" | "community" | "bts") => {
     const element = document.getElementById(`section-${section}`);
     if (element) {
       element.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -111,6 +111,19 @@ export function BeforeHub({
               }`}
             >
               Community
+            </button>
+            <button
+              onClick={() => {
+                setActiveTab("bts");
+                scrollToSection("bts");
+              }}
+              className={`flex-shrink-0 px-6 py-2 rounded-full font-medium transition-all duration-200 ${
+                activeTab === "bts"
+                  ? "bg-fuchsia-600 text-white shadow-lg shadow-fuchsia-500/25"
+                  : "bg-white/5 text-white/70 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              BTS
             </button>
           </nav>
         </div>
@@ -227,7 +240,7 @@ export function BeforeHub({
             <p className="text-sm text-slate-400 mt-1">Prepare for your experience</p>
           </div>
           
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {/* Plan Lane */}
             <button
               onClick={() => onEnterLane("plan")}
@@ -273,6 +286,22 @@ export function BeforeHub({
                 </div>
                 <h3 className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors">Community</h3>
                 <p className="text-sm text-slate-300">Connect & participate</p>
+              </div>
+            </button>
+
+            {/* BTS Lane */}
+            <button
+              onClick={() => onEnterLane("bts")}
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-600/20 to-fuchsia-700/10 border border-fuchsia-500/20 hover:border-fuchsia-500/40 hover:shadow-fuchsia-500/20 shadow-xl hover:shadow-2xl transition-all duration-300 text-left p-6"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/0 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              
+              <div className="relative space-y-3">
+                <div className="w-12 h-12 rounded-xl bg-fuchsia-500/20 group-hover:bg-fuchsia-500/30 flex items-center justify-center transition-colors duration-300">
+                  <Film className="w-6 h-6 text-fuchsia-400" />
+                </div>
+                <h3 className="text-xl font-bold text-white group-hover:text-fuchsia-300 transition-colors">BTS</h3>
+                <p className="text-sm text-slate-300">Behind the scenes</p>
               </div>
             </button>
           </div>

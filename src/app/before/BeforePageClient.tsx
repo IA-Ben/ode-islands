@@ -44,7 +44,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   const searchParams = useSearchParams();
   const { scoreData } = useFanScore();
   
-  const [currentView, setCurrentView] = useState<"hub" | "plan" | "discover" | "community">("hub");
+  const [currentView, setCurrentView] = useState<"hub" | "plan" | "discover" | "community" | "bts">("hub");
   const [isUserScoreOpen, setIsUserScoreOpen] = useState(false);
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
@@ -53,7 +53,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
   // Restore view from URL params on mount
   useEffect(() => {
     const view = searchParams?.get('view');
-    if (view && (view === 'plan' || view === 'discover' || view === 'community')) {
+    if (view && (view === 'plan' || view === 'discover' || view === 'community' || view === 'bts')) {
       setCurrentView(view);
     }
   }, [searchParams]);
@@ -223,6 +223,41 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     },
   ];
 
+  const btsCards: BeforeLaneCard[] = [
+    {
+      id: "bts1",
+      type: "making-of",
+      title: "The Making Of",
+      subtitle: "EXCLUSIVE",
+      size: "L",
+      description: "Go behind the curtain to see how this experience came to life",
+    },
+    {
+      id: "bts2",
+      type: "creator-interview",
+      title: "Meet the Creators",
+      subtitle: "INSIGHTS",
+      size: "M",
+      description: "Hear from the minds behind the magic",
+    },
+    {
+      id: "bts3",
+      type: "production-diary",
+      title: "Production Diary",
+      subtitle: "DAILY UPDATES",
+      size: "S",
+      description: "Follow the journey from concept to reality",
+    },
+    {
+      id: "bts4",
+      type: "concept-art",
+      title: "Concept Art Gallery",
+      subtitle: "VISUAL DEV",
+      size: "S",
+      description: "Explore early designs and creative evolution",
+    },
+  ];
+
   // Featured cards (could come from CMS Featured Rules)
   const featuredCards = [
     {
@@ -301,6 +336,18 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
         case "social":
           router.push('/community');
           break;
+        case "making-of":
+          router.push('/bts/making-of');
+          break;
+        case "creator-interview":
+          router.push('/bts/interviews');
+          break;
+        case "production-diary":
+          router.push('/bts/diary');
+          break;
+        case "concept-art":
+          router.push('/bts/concept-art');
+          break;
         default:
           console.log("Unknown card type:", card.type);
       }
@@ -311,7 +358,7 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
     console.log('Quick action:', action);
   };
 
-  const handleEnterLane = (lane: "plan" | "discover" | "community") => {
+  const handleEnterLane = (lane: "plan" | "discover" | "community" | "bts") => {
     setCurrentView(lane);
   };
 
@@ -327,6 +374,8 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
         return discoverCards;
       case "community":
         return communityCards;
+      case "bts":
+        return btsCards;
       default:
         return [];
     }
@@ -418,6 +467,10 @@ export default function BeforePageClient({ user }: BeforePageClientProps) {
                      selectedCard.type === "challenge" ? "Join Challenge" :
                      selectedCard.type === "polls" ? "Vote Now" :
                      selectedCard.type === "leaderboard" ? "View Rankings" :
+                     selectedCard.type === "making-of" ? "Watch Now" :
+                     selectedCard.type === "creator-interview" ? "Watch Interview" :
+                     selectedCard.type === "production-diary" ? "Read Diary" :
+                     selectedCard.type === "concept-art" ? "View Gallery" :
                      "Learn More"}
                   </button>
                   <button
