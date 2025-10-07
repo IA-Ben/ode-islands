@@ -707,20 +707,6 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
           />
         )}
         
-        {session?.isAuthenticated && (
-          <div className="fixed top-4 right-4 z-50">
-            <GlobalHUD
-              newItemsCount={newItemsCount}
-              currentPoints={currentPoints}
-              currentTier={currentTier}
-              nextTierThreshold={nextTierThreshold}
-              onWalletClick={() => router.push('/memory-wallet')}
-              onQuickScan={() => setIsQRScannerOpen(true)}
-              onPulse={hudPulse}
-            />
-          </div>
-        )}
-        
         <ScoreToast
           toasts={toasts}
           onDismiss={dismissToast}
@@ -735,21 +721,6 @@ export default function EventPageClient({ initialData }: EventPageClientProps) {
         />
         
         <HelpSystem userRole="audience" />
-        
-        {session?.isAuthenticated && session?.isAdmin && (
-          <div className="fixed top-32 right-4 z-40">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => {
-                fetchEvents().then(() => setActiveView('dashboard'));
-              }}
-              className="bg-black/50 text-white/60 hover:text-white hover:bg-black/70 text-xs"
-            >
-              ⚙️ Operator Console
-            </Button>
-          </div>
-        )}
       </>
     );
   }
