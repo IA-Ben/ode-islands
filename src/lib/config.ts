@@ -103,14 +103,18 @@ function loadConfig(): AppConfig {
   
   // Check if we're in a server environment (Node.js vs browser)
   const isServerSide = typeof window === 'undefined';
-  
-  // Validate required environment variables (only on server-side)
-  if (isServerSide) {
+
+  // Check if we're in build phase (next.config.ts import) - skip validation
+  const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build' ||
+                       process.env.VERCEL_ENV === undefined && isProduction;
+
+  // Validate required environment variables (only on server-side runtime, not during build)
+  if (isServerSide && !isBuildPhase) {
     const requiredEnvVars = ['DATABASE_URL'];
     if (isProduction) {
       requiredEnvVars.push('JWT_SECRET', 'SESSION_SECRET');
     }
-    
+
     for (const envVar of requiredEnvVars) {
       if (!process.env[envVar]) {
         throw new Error(`Missing required environment variable: ${envVar}`);
@@ -136,8 +140,8 @@ function loadConfig(): AppConfig {
     cdnUrl: process.env.CDN_URL || 'https://storage.googleapis.com/odeislands',
     domain: process.env.DOMAIN,
     
-    // Database (server-side only)
-    databaseUrl: isServerSide ? process.env.DATABASE_URL! : '',
+    // Database (server-side only, fallback during build)
+    databaseUrl: isServerSide ? (process.env.DATABASE_URL || '') : '',
     
     // Authentication & Security (server-side only for sensitive secrets)
     jwtSecret: isServerSide ? jwtSecret : '',
