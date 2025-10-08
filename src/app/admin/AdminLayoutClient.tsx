@@ -3,6 +3,7 @@
 import { ReactNode } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import UnifiedTopNav from '@/components/UnifiedTopNav';
+import { CommandPalette } from '@/components/admin/CommandPalette';
 import { layout } from '@/lib/admin/designTokens';
 
 interface UserData {
@@ -33,6 +34,7 @@ export default function AdminLayoutClient({ children, user }: AdminLayoutClientP
 
   return (
     <div className={layout.page}>
+      <CommandPalette />
       <UnifiedTopNav
         mode="admin"
         user={user}
