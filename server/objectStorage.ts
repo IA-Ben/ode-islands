@@ -1,27 +1,66 @@
 import { Storage, File } from "@google-cloud/storage";
 import { Response } from "express";
 import { randomUUID } from "crypto";
+import path from "path";
+import fs from "fs";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
 
+// Determine GCP authentication method
+const isReplitEnvironment = process.env.REPL_ID !== undefined;
+const gcpKeyPath = process.env.GCP_CREDENTIALS_PATH || path.join(process.cwd(), 'gcp-credentials.json');
+const gcpCredentialsBase64 = process.env.GCP_CREDENTIALS_BASE64;
+
+// Decode base64 credentials if provided (for Vercel deployment)
+let gcpCredentials: any = undefined;
+if (gcpCredentialsBase64) {
+  try {
+    const decoded = Buffer.from(gcpCredentialsBase64, 'base64').toString('utf-8');
+    gcpCredentials = JSON.parse(decoded);
+    console.log('✅ GCP credentials loaded from base64 environment variable');
+  } catch (error) {
+    console.error('❌ Failed to decode GCP_CREDENTIALS_BASE64:', error);
+  }
+}
+
 // The object storage client is used to interact with the object storage service.
-export const objectStorageClient = new Storage({
-  credentials: {
-    audience: "replit",
-    subject_token_type: "access_token",
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: "external_account",
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: "json",
-        subject_token_field_name: "access_token",
-      },
-    },
-    universe_domain: "googleapis.com",
-  },
-  projectId: "",
-});
+export const objectStorageClient = new Storage(
+  isReplitEnvironment
+    ? {
+        // Replit environment - use sidecar
+        credentials: {
+          audience: "replit",
+          subject_token_type: "access_token",
+          token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
+          type: "external_account",
+          credential_source: {
+            url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
+            format: {
+              type: "json",
+              subject_token_field_name: "access_token",
+            },
+          },
+          universe_domain: "googleapis.com",
+        },
+        projectId: "",
+      }
+    : gcpCredentials
+    ? {
+        // Vercel environment - use decoded credentials from base64 env var
+        credentials: gcpCredentials,
+        projectId: "ode-islands",
+      }
+    : fs.existsSync(gcpKeyPath)
+    ? {
+        // Local environment - use service account key file
+        keyFilename: gcpKeyPath,
+        projectId: "ode-islands",
+      }
+    : {
+        // Fallback - use application default credentials
+        projectId: "ode-islands",
+      }
+);
 
 export class ObjectNotFoundError extends Error {
   constructor() {
