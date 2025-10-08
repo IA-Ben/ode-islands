@@ -144,13 +144,18 @@ export async function setupAuth(app: Express) {
     },
   }));
 
-  // PHASE 2: Store session fingerprint on session creation
+  // PHASE 2: Store session fingerprint on session creation & enforce limits
   const { storeFingerprintInSession } = require('./sessionFingerprint');
-  app.use((req: any, res: any, next: any) => {
+  const { enforceSessionLimitMiddleware } = require('./sessionLimits');
+
+  app.use(async (req: any, res: any, next: any) => {
     // If session exists and is new or doesn't have fingerprint, store it
     if (req.session && req.session.userId && !req.session.fingerprint) {
       storeFingerprintInSession(req);
       console.log(`🔒 Stored fingerprint for user ${req.session.userId}`);
+
+      // PHASE 2: Enforce concurrent session limits (max 5 per user)
+      await enforceSessionLimitMiddleware(req.session.userId);
     }
     next();
   });
