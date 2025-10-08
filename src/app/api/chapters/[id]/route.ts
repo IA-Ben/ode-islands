@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromHeaders } from '../../../../../server/auth';
 import { storage } from '../../../../../server/storage';
+import { AuditLogger } from '../../../../../server/auditLogger';
 
 export async function GET(
   request: NextRequest,
@@ -51,10 +52,23 @@ export async function PUT(
     if (!session.isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
+    // Get current state before update
+    const before = await storage.getChapter(id);
+
     const data = await request.json();
     const updated = await storage.updateChapter(id, data);
-    
+
+    // Log the update
+    await AuditLogger.logUpdate(
+      session.user?.id || 'unknown',
+      'chapter',
+      id,
+      before,
+      updated,
+      request
+    );
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Error updating chapter:', error);
@@ -73,16 +87,28 @@ export async function DELETE(
     if (!session.isAuthenticated) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
-    
+
     const children = await storage.getChapterChildren(id);
     if (children.length > 0) {
-      return NextResponse.json({ 
-        error: `Cannot delete chapter with ${children.length} child chapter(s). Please delete or move the children first.` 
+      return NextResponse.json({
+        error: `Cannot delete chapter with ${children.length} child chapter(s). Please delete or move the children first.`
       }, { status: 400 });
     }
-    
+
+    // Get chapter data before deletion for audit log
+    const chapter = await storage.getChapter(id);
+
     await storage.deleteChapter(id);
-    
+
+    // Log the deletion
+    await AuditLogger.logDelete(
+      session.user?.id || 'unknown',
+      'chapter',
+      id,
+      chapter,
+      request
+    );
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error deleting chapter:', error);
