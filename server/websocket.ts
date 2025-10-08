@@ -226,41 +226,78 @@ class WebSocketManager {
   /**
    * Authenticate WebSocket connection using Stack Auth
    *
-   * CRITICAL SECURITY NOTE:
-   * Stack Auth's getUser() requires Next.js request context which we don't have in WebSocket.
-   * For now, we rely on Express session authentication until we implement proper
-   * Stack Auth token validation for WebSocket contexts.
+   * PHASE 2: Stack Auth JWT validation for WebSocket
    *
-   * TODO Phase 2: Implement Stack Auth JWT token validation for WebSocket
-   * - Parse Stack Auth cookie
-   * - Validate JWT signature
-   * - Extract userId from token
-   * - Verify against database
+   * Validates Stack Auth JWT tokens from cookies or Authorization header.
+   * Uses Stack Auth's token validation to verify user identity.
    */
   private async authenticateViaStackAuth(request: any): Promise<{ userId: string; sessionId: string; isAdmin: boolean } | null> {
     try {
-      // Get cookies from the request
-      const cookies = this.parseCookies(request.headers.cookie || '');
+      // Extract JWT token from cookie or Authorization header
+      const token = this.extractStackAuthToken(request);
 
-      // Stack Auth uses specific cookie names
-      const stackAuthCookie = cookies['stack-auth-session'] || cookies['__Secure-stack-auth-session'];
-
-      if (!stackAuthCookie) {
+      if (!token) {
         return null;
       }
 
-      // TEMPORARY LIMITATION:
-      // Stack Auth's getUser() doesn't work in WebSocket context (requires Next.js request)
-      // For Phase 1, we fall back to Express session authentication
-      // This will be replaced with proper JWT token validation in Phase 2
+      // Validate token with Stack Auth SDK
+      // Stack Auth will verify JWT signature, expiration, and audience
+      const user = await stackServerApp.validateAccessToken(token);
 
-      console.log('Stack Auth cookie found, but WebSocket JWT validation not yet implemented - falling back to Express session');
-      return null;
+      if (!user || !user.id) {
+        console.log('Stack Auth token validation failed');
+        return null;
+      }
+
+      // Get admin status from database
+      const dbUser = await storage.getUser(user.id);
+
+      if (!dbUser) {
+        console.log(`User ${user.id} not found in database`);
+        return null;
+      }
+
+      // Log successful authentication
+      await AuditLogger.log({
+        action: 'websocket_auth_success',
+        severity: 'info',
+        userId: user.id,
+        metadata: {
+          method: 'stack_auth_jwt',
+          email: user.primaryEmail
+        }
+      });
+
+      console.log(`✅ WebSocket authenticated via Stack Auth JWT for user: ${user.id}`);
+
+      return {
+        userId: user.id,
+        sessionId: token.substring(0, 16), // Use token hash as session ID
+        isAdmin: dbUser.isAdmin || false
+      };
 
     } catch (error) {
-      console.error('Stack Auth WebSocket authentication error:', error);
+      console.error('Stack Auth WebSocket JWT validation error:', error);
       return null;
     }
+  }
+
+  /**
+   * Extract Stack Auth JWT token from request
+   * Checks both Authorization header and cookies
+   */
+  private extractStackAuthToken(request: any): string | null {
+    // Try Authorization header first (Bearer token)
+    const authHeader = request.headers['authorization'];
+    if (authHeader?.startsWith('Bearer ')) {
+      return authHeader.substring(7);
+    }
+
+    // Try Stack Auth session cookies
+    const cookies = this.parseCookies(request.headers.cookie || '');
+    return cookies['stack-auth-session'] ||
+           cookies['__Secure-stack-auth-session'] ||
+           null;
   }
 
   /**
