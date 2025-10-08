@@ -1,0 +1,19 @@
+# PROJECT CONFIGURATION
+# This file documents the correct repositories and deployment targets
+
+PRIMARY_GITHUB_REPO="IA-Ben/ode-islands"
+PRIMARY_GITHUB_URL="https://github.com/IA-Ben/ode-islands"
+PRIMARY_GIT_REMOTE="ia-ben"
+
+VERCEL_PROJECT="ode-islands-app" (or should be connected to IA-Ben/ode-islands)
+VERCEL_ORG="immersives"
+
+# IMPORTANT:
+# - Always push to the ia-ben remote, NOT origin
+# - Vercel should auto-deploy from IA-Ben/ode-islands GitHub repo
+# - Do NOT use hubd/theodeislands4 (that's the wrong repo)
+
+# Current working directory structure:
+# /Users/benjamindawson/Downloads/theodeislands (local clone)
+#   ├── ia-ben remote → https://github.com/IA-Ben/ode-islands
+#   └── origin remote → https://github.com/hubd/theodeislands4 (IGNORE THIS)
