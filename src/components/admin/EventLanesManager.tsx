@@ -204,6 +204,15 @@ export function EventLanesManager({ eventId, onSave }: EventLanesManagerProps) {
           </p>
         </div>
         <div className="flex gap-3">
+          {eventId && eventId !== 'new' && (
+            <button
+              onClick={() => window.open(`/admin/events/${eventId}/live`, '_blank')}
+              className="px-4 py-2 rounded-lg bg-green-600 hover:bg-green-500 text-white font-medium flex items-center gap-2 transition-colors"
+            >
+              <Zap className="w-4 h-4" />
+              Go Live
+            </button>
+          )}
           <button onClick={handleAddLane} className={components.buttonSecondary}>
             <Plus className="w-4 h-4" />
             Add Lane
