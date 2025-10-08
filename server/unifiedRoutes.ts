@@ -22,9 +22,15 @@ import { seedRoles } from './seedRoles';
 // Import Audit Logger
 import { AuditLogger } from './auditLogger';
 
+// Import Session Fingerprinting
+import {
+  validateFingerprintWithLogging,
+  getFingerprintFromSession
+} from './sessionFingerprint';
+
 /**
  * Authentication middleware for Express routes
- * CRITICAL SECURITY: Uses Stack Auth for authentication
+ * CRITICAL SECURITY: Uses Stack Auth for authentication + session fingerprinting
  */
 export async function isAuthenticated(req: Request, res: Response, next: NextFunction) {
   try {
@@ -46,6 +52,29 @@ export async function isAuthenticated(req: Request, res: Response, next: NextFun
         message: 'Authentication required. Please log in.',
         code: 'AUTH_REQUIRED'
       });
+    }
+
+    // PHASE 2: Validate session fingerprint to prevent hijacking
+    const storedFingerprint = getFingerprintFromSession(req);
+    if (storedFingerprint) {
+      const fingerprintValid = await validateFingerprintWithLogging(
+        req,
+        storedFingerprint,
+        (req as any).session.userId
+      );
+
+      if (!fingerprintValid) {
+        // Session hijacking detected - destroy session
+        (req as any).session.destroy((err: any) => {
+          if (err) console.error('Failed to destroy hijacked session:', err);
+        });
+
+        return res.status(401).json({
+          success: false,
+          message: 'Session invalid. Please log in again.',
+          code: 'SESSION_HIJACK_DETECTED'
+        });
+      }
     }
 
     // User is authenticated - attach to request
@@ -111,6 +140,17 @@ export async function setupAuth(app: Express) {
       maxAge: sessionTtl,
     },
   }));
+
+  // PHASE 2: Store session fingerprint on session creation
+  const { storeFingerprintInSession } = require('./sessionFingerprint');
+  app.use((req: any, res: any, next: any) => {
+    // If session exists and is new or doesn't have fingerprint, store it
+    if (req.session && req.session.userId && !req.session.fingerprint) {
+      storeFingerprintInSession(req);
+      console.log(`🔒 Stored fingerprint for user ${req.session.userId}`);
+    }
+    next();
+  });
 }
 
 // Export RBAC middleware for use in routes
