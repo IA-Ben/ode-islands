@@ -4,20 +4,10 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "regions": ["iad1"],
-  "env": {
-    "NODE_ENV": "production"
-  },
   "build": {
     "env": {
-      "NEXT_TELEMETRY_DISABLED": "1"
-    }
-  },
-  "functions": {
-    "api/**/*": {
-      "maxDuration": 30
-    },
-    "app/api/**/*": {
-      "maxDuration": 30
+      "NEXT_TELEMETRY_DISABLED": "1",
+      "NODE_ENV": "production"
     }
   },
   "headers": [
