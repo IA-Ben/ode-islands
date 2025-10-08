@@ -28,6 +28,9 @@ import {
   getFingerprintFromSession
 } from './sessionFingerprint';
 
+// Import Session Rotation
+import { rotateSessionOnPrivilegeChange } from './sessionRotation';
+
 /**
  * Authentication middleware for Express routes
  * CRITICAL SECURITY: Uses Stack Auth for authentication + session fingerprinting
@@ -1464,11 +1467,36 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/admin/users/:id", isAdminWithCSRF, async (req, res) => {
+  app.patch("/api/admin/users/:id", isAdminWithCSRF, async (req: any, res) => {
     try {
       const userId = req.params.id;
       const updates = req.body;
+
+      // PHASE 2: Track if admin status is changing
+      const oldUser = await storage.getUser(userId);
+      const isAdminChanging = updates.isAdmin !== undefined &&
+                              updates.isAdmin !== oldUser?.isAdmin;
+
       const updatedUser = await storage.updateUser(userId, updates);
+
+      // PHASE 2: Rotate session if admin status changed for current user
+      if (isAdminChanging && userId === req.session?.userId) {
+        const rotationResult = await rotateSessionOnPrivilegeChange(
+          req,
+          updates.isAdmin
+        );
+
+        if (rotationResult.success) {
+          console.log(
+            `✅ Session rotated after privilege change for user ${userId}`
+          );
+        } else {
+          console.error(
+            `❌ Failed to rotate session: ${rotationResult.error}`
+          );
+        }
+      }
+
       res.json(updatedUser);
     } catch (error) {
       console.error("Error updating user:", error);
