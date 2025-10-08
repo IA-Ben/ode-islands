@@ -265,8 +265,11 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     process.exit(1);
   }
 
-  // Setup Replit Auth (this includes session management)
+  // Setup session middleware (used by Neon Auth for Express compatibility)
   await setupAuth(app);
+
+  // Note: Neon Auth (Stack Auth) handles authentication via Next.js middleware
+  // Express routes use session data populated by Stack Auth
 
   // Seed system roles on server startup
   try {
@@ -1706,7 +1709,7 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   // Create a new schedule
   app.post("/api/scheduler/schedules", isAdminWithCSRF, async (req, res) => {
     try {
-      const userId = req.user!.claims.sub; // Get actual user ID from Replit Auth
+      const userId = req.user!.claims.sub; // Get actual user ID from Stack Auth
       const scheduleData = {
         ...req.body,
         createdBy: userId

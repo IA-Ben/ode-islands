@@ -1,5 +1,5 @@
 // SECURITY: Legacy authentication route - DISABLED
-// All authentication now goes through unified Replit Auth system
+// All authentication now goes through Stack Auth (OAuth)
 
 import { NextRequest, NextResponse } from 'next/server';
 

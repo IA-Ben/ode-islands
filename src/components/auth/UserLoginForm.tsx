@@ -9,8 +9,8 @@ export default function UserLoginForm() {
 
   const handleOAuthLogin = () => {
     setIsLoading(true);
-    // Redirect to Replit OAuth login
-    window.location.href = '/api/login';
+    // Redirect to Stack Auth OAuth login
+    window.location.href = '/handler/sign-in';
   };
 
   return (
@@ -26,12 +26,12 @@ export default function UserLoginForm() {
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
           </svg>
-          <span>{isLoading ? 'Redirecting...' : 'Sign in with Replit'}</span>
+          <span>{isLoading ? 'Redirecting...' : 'Sign In'}</span>
         </button>
 
         <div className="text-center">
           <p className="text-sm text-gray-500">
-            Secure authentication powered by Replit
+            Secure authentication powered by Stack Auth
           </p>
         </div>
 
