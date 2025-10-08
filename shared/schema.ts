@@ -16,6 +16,7 @@ import {
 
 // Enums
 export const cardScopeEnum = pgEnum('card_scope', ['story', 'event']);
+export const heroContentTypeEnum = pgEnum('hero_content_type', ['intro_video', 'hero_spot', 'menu_hero']);
 
 // Featured Rules enums
 export const ruleContextEnum = pgEnum('rule_context', [
@@ -506,6 +507,45 @@ export const mediaUsage = pgTable("media_usage", {
     entityTypeIndex: index("media_usage_entity_type_idx").on(table.entityType),
     entityIdIndex: index("media_usage_entity_id_idx").on(table.entityId),
     uniqueUsage: uniqueIndex("media_usage_unique").on(table.mediaId, table.entityType, table.entityId, table.fieldName),
+  };
+});
+
+// Hero Content - Intro videos, hero spots, and menu heroes
+export const heroContents = pgTable("hero_contents", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+
+  // Identity
+  name: varchar("name").notNull(),
+  type: heroContentTypeEnum("type").notNull(),
+
+  // Content
+  title: varchar("title").notNull(),
+  subtitle: text("subtitle"),
+
+  // Media references
+  imageMediaId: varchar("image_media_id").references(() => mediaAssets.id),
+  videoMediaId: varchar("video_media_id").references(() => mediaAssets.id),
+
+  // CTA configuration
+  ctaPrimary: jsonb("cta_primary"), // { label, action: 'story'|'app'|'url', target }
+  ctaSecondary: jsonb("cta_secondary"),
+
+  // Settings
+  settings: jsonb("settings"), // { loop, autoplay, muted, showOnLaunch }
+
+  // Status
+  isActive: boolean("is_active").default(false),
+
+  // Audit fields
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => {
+  return {
+    typeIndex: index("hero_contents_type_idx").on(table.type),
+    isActiveIndex: index("hero_contents_is_active_idx").on(table.isActive),
+    imageMediaIdIndex: index("hero_contents_image_media_id_idx").on(table.imageMediaId),
+    videoMediaIdIndex: index("hero_contents_video_media_id_idx").on(table.videoMediaId),
   };
 });
 
@@ -2406,3 +2446,7 @@ export type ConceptArtCollection = typeof conceptArtCollections.$inferSelect;
 export type UpsertConceptArtCollection = typeof conceptArtCollections.$inferInsert;
 export type ConceptArtImage = typeof conceptArtImages.$inferSelect;
 export type UpsertConceptArtImage = typeof conceptArtImages.$inferInsert;
+
+// Hero Content Types
+export type HeroContent = typeof heroContents.$inferSelect;
+export type UpsertHeroContent = typeof heroContents.$inferInsert;

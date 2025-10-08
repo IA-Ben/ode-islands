@@ -96,6 +96,15 @@ export function CommandPalette() {
       category: 'navigation',
     },
     {
+      id: 'nav-hero-content',
+      title: 'Go to Hero Content',
+      subtitle: 'Intro videos & hero spots',
+      icon: Film,
+      action: () => router.push('/admin/hero-content'),
+      keywords: ['hero', 'intro', 'video', 'launch', 'menu'],
+      category: 'navigation',
+    },
+    {
       id: 'nav-settings',
       title: 'Go to Settings',
       subtitle: 'System configuration',
