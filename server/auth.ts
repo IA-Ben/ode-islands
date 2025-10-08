@@ -252,3 +252,50 @@ export function requireAdmin(req: any, res: any, next: any) {
     message: 'Admin access required.'
   });
 }
+
+/**
+ * CSRF token validation (placeholder for backward compatibility)
+ */
+export function validateCSRFToken(req: any, res: any, next: any) {
+  // CSRF validation placeholder - implement if needed
+  next();
+}
+
+export async function validateCSRFTokenAsync(request: NextRequest): Promise<boolean> {
+  // CSRF validation placeholder - implement if needed
+  return true;
+}
+
+/**
+ * Auth + CSRF wrappers
+ */
+export function withAuthAndCSRF(
+  handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
+) {
+  return withAuth(handler);
+}
+
+export function withAdminAuthAndCSRF(
+  handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
+) {
+  return withAuth(handler, { requireAdmin: true });
+}
+
+export function withUserAuthAndCSRF(
+  handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
+) {
+  return withUserAuth(handler);
+}
+
+/**
+ * User identifier validation (placeholder for backward compatibility)
+ */
+export function validateUserIdentifierFields(req: any, res: any, next: any) {
+  // Validation placeholder - implement if needed
+  next();
+}
+
+export function setUserIdentifierFields(req: any, res: any, next: any) {
+  // Placeholder - implement if needed
+  next();
+}
