@@ -2,7 +2,8 @@ import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { verifyJWT } from "./jwtUtils";
-import { withAdminAuthAndCSRF, withCSRFProtection, validateCSRFToken } from "./auth";
+// Temporarily commented to test if this is causing import issues
+// import { withAdminAuthAndCSRF, withCSRFProtection, validateCSRFToken } from "./auth";
 import cookieParser from "cookie-parser";
 import session from "express-session";
 import connectPg from "connect-pg-simple";

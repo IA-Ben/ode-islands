@@ -1,3 +1,6 @@
+// Load environment variables from .env.local
+require('dotenv').config({ path: '.env.local' });
+
 const express = require('express');
 const next = require('next');
 const http = require('http');
@@ -119,11 +122,18 @@ app.prepare().then(async () => {
   console.log('⚠️  Authentication disabled - all routes are publicly accessible');
 
   // Import and setup unified routes for non-auth endpoints
-  const { registerUnifiedRoutes, isAuthenticated, isAdmin } = await import('./server/unifiedRoutes.ts');
+  const unifiedRoutesModule = await import('./server/unifiedRoutes.ts');
+
+  // Handle ESM/CommonJS interop - tsx may wrap exports in default or module.exports
+  const exports = unifiedRoutesModule.default || unifiedRoutesModule['module.exports'] || unifiedRoutesModule;
+  const { registerUnifiedRoutes, isAuthenticated, isAdmin } = exports;
+
   await registerUnifiedRoutes(server);
 
   // Initialize WebSocket server
-  const { webSocketManager } = await import('./server/websocket.ts');
+  const websocketModule = await import('./server/websocket.ts');
+  const websocketExports = websocketModule.default || websocketModule['module.exports'] || websocketModule;
+  const { webSocketManager } = websocketExports;
 
   // Note: CMS page now handles authentication on the client side
 

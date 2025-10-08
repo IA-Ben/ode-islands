@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import { StackProvider, StackTheme } from "@stackframe/stack";
+import { stackClientApp } from "../stack/client";
 import { Manrope } from "next/font/google";
 import { ThemeProvider as TokenThemeProvider } from "@/components/theme/ThemeProvider";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -37,7 +39,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <body className={`${manrope.variable} antialiased bg-slate-900`}>
+      <body className={`${manrope.variable} antialiased bg-slate-900`}><StackProvider app={stackClientApp}><StackTheme>
         <TokenThemeProvider initial={serverTheme}>
           <ThemeProvider>
             <MobileProvider>
@@ -49,7 +51,7 @@ export default async function RootLayout({
             </MobileProvider>
           </ThemeProvider>
         </TokenThemeProvider>
-      </body>
+      </StackTheme></StackProvider></body>
     </html>
   );
 }
