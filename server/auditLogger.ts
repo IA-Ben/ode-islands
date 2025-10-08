@@ -3,7 +3,7 @@ import { auditLogs } from '../shared/schema';
 import { desc, eq } from 'drizzle-orm';
 
 interface AuditLogEntry {
-  userId: string;
+  userId?: string | null; // PHASE 2: Allow null for unauthenticated events
   userEmail?: string;
   entityType: string;
   entityId: string;
@@ -21,7 +21,7 @@ export class AuditLogger {
   static async log(entry: AuditLogEntry): Promise<void> {
     try {
       await db.insert(auditLogs).values({
-        userId: entry.userId,
+        userId: entry.userId || null, // PHASE 2: Allow null for unauthenticated events
         userEmail: entry.userEmail,
         entityType: entry.entityType,
         entityId: entry.entityId,
@@ -40,6 +40,10 @@ export class AuditLogger {
       }
     } catch (error) {
       console.error('Failed to write audit log:', error);
+      // PHASE 2: Don't fail silently - log the specific error for debugging
+      if (error instanceof Error && error.message.includes('foreign key')) {
+        console.error('Audit log foreign key error - userId may not exist:', entry.userId);
+      }
     }
   }
 
