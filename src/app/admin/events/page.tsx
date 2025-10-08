@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Search, Calendar, Play, Pause, MapPin, Clock, X, Loader2 } from 'lucide-react';
 import { SectionSubNav } from '@/components/admin/SectionSubNav';
+import { UnifiedEventBuilder } from '@/components/admin/UnifiedEventBuilder';
 import { surfaces, pills, focus, colors, interactive, borders, typography, spacing, layout, components } from '@/lib/admin/designTokens';
 
 interface LiveEvent {
@@ -19,21 +20,6 @@ interface LiveEvent {
   createdBy?: string | null;
 }
 
-interface EventFormData {
-  title: string;
-  description: string;
-  startTime: string;
-  endTime: string;
-  venueName: string;
-  venueAddress: string;
-  settings: {
-    allowPolls: boolean;
-    allowQA: boolean;
-    allowChat: boolean;
-    moderationRequired: boolean;
-  };
-}
-
 type SubNavTab = 'list' | 'create';
 
 export default function EventsPage() {
@@ -42,24 +28,8 @@ export default function EventsPage() {
   const [activeTab, setActiveTab] = useState<SubNavTab>('list');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterActive, setFilterActive] = useState<'all' | 'active' | 'inactive'>('all');
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingEvent, setEditingEvent] = useState<LiveEvent | null>(null);
-  const [submitting, setSubmitting] = useState(false);
-
-  const [formData, setFormData] = useState<EventFormData>({
-    title: '',
-    description: '',
-    startTime: '',
-    endTime: '',
-    venueName: '',
-    venueAddress: '',
-    settings: {
-      allowPolls: true,
-      allowQA: true,
-      allowChat: false,
-      moderationRequired: true,
-    }
-  });
+  const [showEventBuilder, setShowEventBuilder] = useState(false);
+  const [editingEventId, setEditingEventId] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     fetchEvents();
@@ -79,42 +49,6 @@ export default function EventsPage() {
       console.error('Error fetching events:', error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleCreateEvent = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmitting(true);
-
-    try {
-      const response = await fetch('/api/events', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'same-origin',
-        body: JSON.stringify({
-          title: formData.title,
-          description: formData.description,
-          startTime: formData.startTime,
-          endTime: formData.endTime,
-          venueName: formData.venueName,
-          venueAddress: formData.venueAddress,
-          settings: formData.settings,
-        }),
-      });
-
-      if (response.ok) {
-        setShowCreateModal(false);
-        resetForm();
-        fetchEvents();
-      } else {
-        const error = await response.json();
-        alert(`Error: ${error.message || 'Failed to create event'}`);
-      }
-    } catch (error) {
-      console.error('Error creating event:', error);
-      alert('Failed to create event');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -160,22 +94,15 @@ export default function EventsPage() {
     }
   };
 
-  const resetForm = () => {
-    setFormData({
-      title: '',
-      description: '',
-      startTime: '',
-      endTime: '',
-      venueName: '',
-      venueAddress: '',
-      settings: {
-        allowPolls: true,
-        allowQA: true,
-        allowChat: false,
-        moderationRequired: true,
-      }
-    });
-    setEditingEvent(null);
+  const handleEdit = (event: LiveEvent) => {
+    setEditingEventId(event.id);
+    setShowEventBuilder(true);
+  };
+
+  const handleEventSaved = () => {
+    setShowEventBuilder(false);
+    setEditingEventId(undefined);
+    fetchEvents();
   };
 
   const filteredEvents = events.filter(event => {
@@ -195,6 +122,19 @@ export default function EventsPage() {
     return startTime > new Date() && !e.isActive;
   }).length;
 
+  if (showEventBuilder) {
+    return (
+      <UnifiedEventBuilder
+        eventId={editingEventId}
+        onSave={handleEventSaved}
+        onCancel={() => {
+          setShowEventBuilder(false);
+          setEditingEventId(undefined);
+        }}
+      />
+    );
+  }
+
   return (
     <div className={layout.page}>
       {/* Section Sub-Navigation */}
@@ -207,7 +147,7 @@ export default function EventsPage() {
         onChange={(id) => {
           setActiveTab(id as SubNavTab);
           if (id === 'create') {
-            setShowCreateModal(true);
+            setShowEventBuilder(true);
             setActiveTab('list');
           }
         }}
@@ -319,6 +259,7 @@ export default function EventsPage() {
               <EventCard
                 key={event.id}
                 event={event}
+                onEdit={handleEdit}
                 onToggleActive={handleToggleActive}
                 onDelete={handleDelete}
               />
@@ -327,183 +268,6 @@ export default function EventsPage() {
         )}
       </div>
 
-      {/* Create Event Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className={`${surfaces.overlayGlass} ${borders.glassBorder} ${borders.radius.xl} ${spacing.padding.lg} max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className={typography.h2}>Create New Event</h2>
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  resetForm();
-                }}
-                className={`${pills.base} p-2 ${surfaces.darkGlass} ${borders.glassBorder} hover:bg-slate-800/80 transition-colors ${focus.ring}`}
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleCreateEvent} className="space-y-6">
-              <div>
-                <label className={typography.label}>Event Title *</label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  className={`${components.input} w-full mt-1`}
-                  placeholder="Enter event title"
-                />
-              </div>
-
-              <div>
-                <label className={typography.label}>Description</label>
-                <textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  className={`${components.input} w-full mt-1`}
-                  rows={3}
-                  placeholder="Enter event description"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className={typography.label}>Start Time *</label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={formData.startTime}
-                    onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
-                    className={`${components.input} w-full mt-1`}
-                  />
-                </div>
-
-                <div>
-                  <label className={typography.label}>End Time *</label>
-                  <input
-                    type="datetime-local"
-                    required
-                    value={formData.endTime}
-                    onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
-                    className={`${components.input} w-full mt-1`}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className={typography.label}>Venue Name</label>
-                <input
-                  type="text"
-                  value={formData.venueName}
-                  onChange={(e) => setFormData({ ...formData, venueName: e.target.value })}
-                  className={`${components.input} w-full mt-1`}
-                  placeholder="Enter venue name"
-                />
-              </div>
-
-              <div>
-                <label className={typography.label}>Venue Address</label>
-                <input
-                  type="text"
-                  value={formData.venueAddress}
-                  onChange={(e) => setFormData({ ...formData, venueAddress: e.target.value })}
-                  className={`${components.input} w-full mt-1`}
-                  placeholder="Enter venue address"
-                />
-              </div>
-
-              <div>
-                <label className={`${typography.label} mb-3 block`}>Event Features</label>
-                <div className="space-y-2">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.settings.allowPolls}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        settings: { ...formData.settings, allowPolls: e.target.checked }
-                      })}
-                      className={focus.ring}
-                    />
-                    <span className="text-slate-300">Enable Polls</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.settings.allowQA}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        settings: { ...formData.settings, allowQA: e.target.checked }
-                      })}
-                      className={focus.ring}
-                    />
-                    <span className="text-slate-300">Enable Q&A</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.settings.allowChat}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        settings: { ...formData.settings, allowChat: e.target.checked }
-                      })}
-                      className={focus.ring}
-                    />
-                    <span className="text-slate-300">Enable Live Chat</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={formData.settings.moderationRequired}
-                      onChange={(e) => setFormData({
-                        ...formData,
-                        settings: { ...formData.settings, moderationRequired: e.target.checked }
-                      })}
-                      className={focus.ring}
-                    />
-                    <span className="text-slate-300">Require Moderation</span>
-                  </label>
-                </div>
-              </div>
-
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowCreateModal(false);
-                    resetForm();
-                  }}
-                  className={components.buttonSecondary}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className={`${components.buttonPrimary} flex items-center gap-2`}
-                >
-                  {submitting ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Creating...
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="w-4 h-4" />
-                      Create Event
-                    </>
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -511,11 +275,12 @@ export default function EventsPage() {
 // Event Card Component
 interface EventCardProps {
   event: LiveEvent;
+  onEdit: (event: LiveEvent) => void;
   onToggleActive: (event: LiveEvent) => void;
   onDelete: (event: LiveEvent) => void;
 }
 
-function EventCard({ event, onToggleActive, onDelete }: EventCardProps) {
+function EventCard({ event, onEdit, onToggleActive, onDelete }: EventCardProps) {
   const startTime = new Date(event.startTime);
   const endTime = new Date(event.endTime);
   const now = new Date();
@@ -554,7 +319,10 @@ function EventCard({ event, onToggleActive, onDelete }: EventCardProps) {
   };
 
   return (
-    <div className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.xl} ${spacing.padding.md} group hover:border-fuchsia-500/30 transition-all`}>
+    <div
+      onClick={() => onEdit(event)}
+      className={`${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.xl} ${spacing.padding.md} group hover:border-fuchsia-500/30 transition-all cursor-pointer`}
+    >
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 mb-2">
@@ -583,7 +351,7 @@ function EventCard({ event, onToggleActive, onDelete }: EventCardProps) {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
           <button
             onClick={() => onToggleActive(event)}
             className={`${pills.base} p-2 ${surfaces.darkGlass} ${borders.glassBorder} hover:bg-slate-800/80 transition-colors ${focus.ring} ${

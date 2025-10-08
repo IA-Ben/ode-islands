@@ -308,12 +308,15 @@ export function UnifiedEventBuilder({ eventId, onSave, onCancel }: UnifiedEventB
               Configure the pre-event story, chapters, and content that users explore before the event.
             </p>
             <div className="space-y-4">
-              <button className={components.buttonPrimary}>
+              <button
+                onClick={() => window.open('/admin/story-builder', '_blank')}
+                className={components.buttonPrimary}
+              >
                 <BookOpen className="w-4 h-4" />
                 Open Story Builder
               </button>
               <p className="text-sm text-slate-500">
-                This will open the visual story builder to create interactive narratives.
+                Opens the visual story builder in a new tab to create interactive narratives.
               </p>
             </div>
           </div>
