@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
+import { db } from '@/server/db';
 import { cardAssignments } from '@/shared/schema';
 import { and, eq } from 'drizzle-orm';
 

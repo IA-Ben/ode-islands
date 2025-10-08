@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Search, Calendar, BookOpen, Users, BarChart3, Settings, CreditCard, Gift, Folder, ArrowRight } from 'lucide-react';
+import { Search, Calendar, BookOpen, Users, BarChart3, Settings, CreditCard, Gift, Folder, ArrowRight, Film } from 'lucide-react';
 import { surfaces, colors, components } from '@/lib/admin/designTokens';
 
 interface Command {
