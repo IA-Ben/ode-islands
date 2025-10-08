@@ -5,7 +5,8 @@ import { parse } from 'url';
 import { db } from './db';
 import { users, sessions, liveEvents } from '../shared/schema';
 import { eq } from 'drizzle-orm';
-import { verifyServerSession } from './auth';
+import { stackServerApp } from './stackAuth';
+import { AuditLogger } from './auditLogger';
 
 interface AuthenticatedWebSocket extends WebSocket {
   userId?: string;
@@ -135,29 +136,159 @@ class WebSocketManager {
   }
 
   private async authenticateConnection(ws: AuthenticatedWebSocket, request: any): Promise<boolean> {
+    const clientIp = request.socket.remoteAddress || 'unknown';
+
+    try {
+      // Try Stack Auth first (preferred method)
+      const stackUser = await this.authenticateViaStackAuth(request);
+
+      if (stackUser) {
+        ws.userId = stackUser.userId;
+        ws.sessionId = stackUser.sessionId;
+        ws.isAuthenticated = true;
+        ws.isAdmin = stackUser.isAdmin;
+
+        // Log successful authentication
+        AuditLogger.log({
+          userId: stackUser.userId,
+          action: 'websocket_auth_success',
+          entityType: 'websocket',
+          entityId: stackUser.sessionId,
+          severity: 'info',
+          metadata: { method: 'stack_auth' },
+          ipAddress: clientIp,
+          userAgent: request.headers['user-agent']
+        });
+
+        console.log(`✅ WebSocket authenticated via Stack Auth for user: ${stackUser.userId}`);
+        return true;
+      }
+
+      // Fallback to Express session (legacy support - will be removed in Phase 1)
+      const expressUser = await this.authenticateViaExpressSession(request);
+
+      if (expressUser) {
+        ws.userId = expressUser.userId;
+        ws.sessionId = expressUser.sessionId;
+        ws.isAuthenticated = true;
+        ws.isAdmin = expressUser.isAdmin;
+
+        // Log legacy authentication (warning level)
+        AuditLogger.log({
+          userId: expressUser.userId,
+          action: 'websocket_auth_legacy',
+          entityType: 'websocket',
+          entityId: expressUser.sessionId,
+          severity: 'warning',
+          metadata: { method: 'express_session', note: 'Legacy auth - migrate to Stack Auth' },
+          ipAddress: clientIp,
+          userAgent: request.headers['user-agent']
+        });
+
+        console.log(`⚠️ WebSocket authenticated via Express session (legacy) for user: ${expressUser.userId}`);
+        return true;
+      }
+
+      // Log failed authentication
+      AuditLogger.log({
+        userId: 'unknown',
+        action: 'websocket_auth_failed',
+        entityType: 'websocket',
+        entityId: 'none',
+        severity: 'warning',
+        metadata: { reason: 'No valid credentials' },
+        ipAddress: clientIp,
+        userAgent: request.headers['user-agent']
+      });
+
+      console.log('❌ WebSocket authentication failed: No valid credentials');
+      return false;
+
+    } catch (error) {
+      console.error('WebSocket authentication error:', error);
+
+      // Log authentication error
+      AuditLogger.log({
+        userId: 'unknown',
+        action: 'websocket_auth_error',
+        entityType: 'websocket',
+        entityId: 'none',
+        severity: 'error',
+        metadata: { error: error instanceof Error ? error.message : 'Unknown error' },
+        ipAddress: clientIp,
+        userAgent: request.headers['user-agent']
+      });
+
+      return false;
+    }
+  }
+
+  /**
+   * Authenticate WebSocket connection using Stack Auth
+   *
+   * CRITICAL SECURITY NOTE:
+   * Stack Auth's getUser() requires Next.js request context which we don't have in WebSocket.
+   * For now, we rely on Express session authentication until we implement proper
+   * Stack Auth token validation for WebSocket contexts.
+   *
+   * TODO Phase 2: Implement Stack Auth JWT token validation for WebSocket
+   * - Parse Stack Auth cookie
+   * - Validate JWT signature
+   * - Extract userId from token
+   * - Verify against database
+   */
+  private async authenticateViaStackAuth(request: any): Promise<{ userId: string; sessionId: string; isAdmin: boolean } | null> {
     try {
       // Get cookies from the request
       const cookies = this.parseCookies(request.headers.cookie || '');
-      const sessionCookie = cookies['connect.sid']; // Use Express session cookie, not JWT
+
+      // Stack Auth uses specific cookie names
+      const stackAuthCookie = cookies['stack-auth-session'] || cookies['__Secure-stack-auth-session'];
+
+      if (!stackAuthCookie) {
+        return null;
+      }
+
+      // TEMPORARY LIMITATION:
+      // Stack Auth's getUser() doesn't work in WebSocket context (requires Next.js request)
+      // For Phase 1, we fall back to Express session authentication
+      // This will be replaced with proper JWT token validation in Phase 2
+
+      console.log('Stack Auth cookie found, but WebSocket JWT validation not yet implemented - falling back to Express session');
+      return null;
+
+    } catch (error) {
+      console.error('Stack Auth WebSocket authentication error:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Authenticate WebSocket connection using Express sessions (LEGACY - TO BE REMOVED)
+   */
+  private async authenticateViaExpressSession(request: any): Promise<{ userId: string; sessionId: string; isAdmin: boolean } | null> {
+    try {
+      // Get cookies from the request
+      const cookies = this.parseCookies(request.headers.cookie || '');
+      const sessionCookie = cookies['connect.sid'];
 
       if (!sessionCookie) {
-        console.log('No session cookie found');
-        return false;
+        return null;
       }
 
       // Parse and verify the Express session cookie signature
       let sessionId = sessionCookie;
-      
+
       // Properly unsign the cookie using SESSION_SECRET
       if (sessionId.startsWith('s:')) {
         sessionId = sessionId.substring(2); // Remove 's:' prefix
         const unsigned = signature.unsign(sessionId, process.env.SESSION_SECRET!);
-        
+
         if (unsigned === false) {
           console.log('Invalid session cookie signature');
-          return false;
+          return null;
         }
-        
+
         sessionId = unsigned;
       }
 
@@ -169,25 +300,22 @@ class WebSocketManager {
         .limit(1);
 
       if (serverSession.length === 0) {
-        console.log('Express session not found in database');
-        return false;
+        return null;
       }
 
       // Check if session has expired
       if (serverSession[0].expire < new Date()) {
-        console.log('Express session has expired');
         // Clean up expired session
         await db.delete(sessions).where(eq(sessions.sid, sessionId));
-        return false;
+        return null;
       }
 
       // Get user info from session data
       const sessionData = serverSession[0].sess as any;
       let userId = null;
 
-      // Extract user ID from session (could be in different formats depending on Passport setup)
+      // Extract user ID from session
       if (sessionData.passport && sessionData.passport.user) {
-        // If user info is stored in passport.user
         const passportUser = sessionData.passport.user;
         if (typeof passportUser === 'string') {
           userId = passportUser;
@@ -197,13 +325,11 @@ class WebSocketManager {
           userId = passportUser.id;
         }
       } else if (sessionData.userId) {
-        // Direct userId in session
         userId = sessionData.userId;
       }
 
       if (!userId) {
-        console.log('No user ID found in session data');
-        return false;
+        return null;
       }
 
       // Verify user exists in database and get current info
@@ -214,22 +340,18 @@ class WebSocketManager {
         .limit(1);
 
       if (user.length === 0) {
-        console.log('User not found in database');
-        return false;
+        return null;
       }
 
-      // Set authentication info on WebSocket
-      ws.userId = userId;
-      ws.sessionId = sessionId;
-      ws.isAuthenticated = true;
-      ws.isAdmin = user[0].isAdmin ?? false; // Capture admin status
-
-      console.log(`WebSocket authenticated successfully`);
-      return true;
+      return {
+        userId,
+        sessionId,
+        isAdmin: user[0].isAdmin ?? false
+      };
 
     } catch (error) {
-      console.error('WebSocket authentication error:', error);
-      return false;
+      console.error('Express session WebSocket authentication error:', error);
+      return null;
     }
   }
 

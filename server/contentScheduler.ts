@@ -103,11 +103,15 @@ export class ContentScheduler {
 
   /**
    * Stop the content scheduler
+   * SECURITY FIX: Prevents race condition during shutdown
    */
   async stop(): Promise<void> {
     console.log('Stopping content scheduler...');
+
+    // CRITICAL: Set isRunning to false FIRST to prevent new jobs from starting
     this.isRunning = false;
 
+    // CRITICAL: Clear timers IMMEDIATELY to prevent new polling cycles
     if (this.pollTimer) {
       clearInterval(this.pollTimer);
       this.pollTimer = null;
@@ -118,19 +122,36 @@ export class ContentScheduler {
       this.healthCheckTimer = null;
     }
 
-    // Wait for active jobs to complete
+    // Wait for active jobs to complete with timeout
+    const maxWaitTime = 30000; // 30 seconds max wait
+    const startWait = Date.now();
+
     while (this.activeJobs.size > 0) {
-      console.log(`Waiting for ${this.activeJobs.size} active jobs to complete...`);
+      const elapsed = Date.now() - startWait;
+
+      if (elapsed > maxWaitTime) {
+        console.warn(`⚠️ Timeout waiting for ${this.activeJobs.size} jobs to complete. Force shutting down.`);
+        console.warn(`⚠️ Remaining jobs: ${Array.from(this.activeJobs).join(', ')}`);
+        break;
+      }
+
+      console.log(`Waiting for ${this.activeJobs.size} active jobs to complete... (${Math.round(elapsed / 1000)}s elapsed)`);
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
-    console.log('Content scheduler stopped');
+    if (this.activeJobs.size === 0) {
+      console.log('✅ Content scheduler stopped gracefully - all jobs completed');
+    } else {
+      console.log('⚠️ Content scheduler stopped with force - some jobs may not have completed');
+    }
   }
 
   /**
    * Process pending jobs that are ready to execute
+   * SECURITY FIX: Double-checks isRunning before starting each job to prevent race conditions
    */
   private async processPendingJobs(): Promise<void> {
+    // CRITICAL: Check isRunning BEFORE doing any work
     if (!this.isRunning) return;
 
     try {
@@ -151,13 +172,25 @@ export class ContentScheduler {
         .orderBy(scheduleJobs.priority, scheduleJobs.scheduledFor)
         .limit(this.config.maxConcurrentJobs - this.activeJobs.size);
 
+      // CRITICAL: Check isRunning again after async DB query
+      if (!this.isRunning) return;
+
       console.log(`Found ${pendingJobs.length} jobs ready for execution`);
 
       // Process each job
       for (const job of pendingJobs) {
-        if (this.activeJobs.size >= this.config.maxConcurrentJobs) break;
-        if (!this.isRunning) break;
+        // CRITICAL: Triple check before starting each job
+        if (!this.isRunning) {
+          console.log('Scheduler stopped - aborting job processing');
+          break;
+        }
 
+        if (this.activeJobs.size >= this.config.maxConcurrentJobs) {
+          console.log('Max concurrent jobs reached - deferring remaining jobs');
+          break;
+        }
+
+        // Start job asynchronously (non-blocking)
         this.processJob(job).catch(error => {
           console.error(`Error processing job ${job.id}:`, error);
         });
@@ -170,8 +203,15 @@ export class ContentScheduler {
 
   /**
    * Process a single scheduled job
+   * SECURITY FIX: Ensures job is properly tracked and cleaned up even on shutdown
    */
   private async processJob(job: any): Promise<void> {
+    // CRITICAL: Final check before adding to active jobs
+    if (!this.isRunning) {
+      console.log(`Skipping job ${job.id} - scheduler is shutting down`);
+      return;
+    }
+
     const startTime = Date.now();
     this.activeJobs.add(job.id);
     

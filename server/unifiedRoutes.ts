@@ -22,16 +22,64 @@ import { seedRoles } from './seedRoles';
 // Import Audit Logger
 import { AuditLogger } from './auditLogger';
 
-// isAuthenticated middleware for Express routes - BYPASSED
-export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
-  // Authentication bypassed - set mock user
-  (req as any).user = {
-    userId: 'dev-user',
-    isAdmin: true,
-    sessionId: 'dev-session',
-    claims: { sub: 'dev-user' }
-  };
-  next();
+/**
+ * Authentication middleware for Express routes
+ * CRITICAL SECURITY: Uses Stack Auth for authentication
+ */
+export async function isAuthenticated(req: Request, res: Response, next: NextFunction) {
+  try {
+    // Check if user is in session (populated by Stack Auth middleware)
+    if (!(req as any).session?.userId) {
+      AuditLogger.log({
+        userId: 'unknown',
+        action: 'auth_required',
+        entityType: 'express_route',
+        entityId: req.path,
+        severity: 'warning',
+        metadata: { path: req.path, method: req.method },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required. Please log in.',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    // User is authenticated - attach to request
+    (req as any).user = {
+      userId: (req as any).session.userId,
+      isAdmin: (req as any).session.isAdmin ?? false,
+      sessionId: (req as any).sessionID,
+      claims: { sub: (req as any).session.userId }
+    };
+
+    next();
+  } catch (error) {
+    console.error('Authentication middleware error:', error);
+
+    AuditLogger.log({
+      userId: 'unknown',
+      action: 'auth_error',
+      entityType: 'express_route',
+      entityId: req.path,
+      severity: 'error',
+      metadata: {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        path: req.path
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: 'Authentication error',
+      code: 'AUTH_ERROR'
+    });
+  }
 }
 
 // Setup auth middleware (session and cookie parser)
@@ -68,16 +116,97 @@ export async function setupAuth(app: Express) {
 // Export RBAC middleware for use in routes
 export { requireRole, requirePermission, requireAnyPermission, combineMiddleware };
 
-// Database-backed admin middleware with RBAC fallback - BYPASSED
+/**
+ * Admin authorization middleware
+ * CRITICAL SECURITY: Requires authenticated user with admin privileges
+ */
 export async function isAdmin(req: any, res: any, next: any) {
-  // Authentication bypassed - all users are admin
-  next();
+  try {
+    // First ensure user is authenticated
+    if (!req.user || !req.user.userId) {
+      AuditLogger.log({
+        userId: 'unknown',
+        action: 'admin_access_denied_no_auth',
+        entityType: 'express_route',
+        entityId: req.path,
+        severity: 'warning',
+        metadata: { path: req.path, method: req.method },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required. Please log in.',
+        code: 'AUTH_REQUIRED'
+      });
+    }
+
+    // Check if user has admin privileges
+    if (!req.user.isAdmin) {
+      AuditLogger.log({
+        userId: req.user.userId,
+        action: 'admin_access_denied',
+        entityType: 'express_route',
+        entityId: req.path,
+        severity: 'warning',
+        metadata: {
+          path: req.path,
+          method: req.method,
+          reason: 'User is not an admin'
+        },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent']
+      });
+
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required.',
+        code: 'ADMIN_REQUIRED'
+      });
+    }
+
+    // User is authenticated and is admin
+    next();
+  } catch (error) {
+    console.error('Admin authorization error:', error);
+
+    AuditLogger.log({
+      userId: req.user?.userId || 'unknown',
+      action: 'admin_auth_error',
+      entityType: 'express_route',
+      entityId: req.path,
+      severity: 'error',
+      metadata: {
+        error: error instanceof Error ? error.message : 'Unknown error',
+        path: req.path
+      },
+      ipAddress: req.ip,
+      userAgent: req.headers['user-agent']
+    });
+
+    return res.status(500).json({
+      success: false,
+      message: 'Authorization error',
+      code: 'AUTH_ERROR'
+    });
+  }
 }
 
-// CSRF-protected admin middleware - BYPASSED
+/**
+ * CSRF-protected admin middleware
+ * CRITICAL SECURITY: Requires admin privileges + valid CSRF token
+ */
 export function isAdminWithCSRF(req: any, res: any, next: any) {
-  // CSRF check bypassed
-  return isAdmin(req, res, next);
+  // Import CSRF validator
+  const { validateCSRFToken } = require('./auth');
+
+  // Chain CSRF validation -> admin check
+  return validateCSRFToken(req, res, (csrfErr?: any) => {
+    if (csrfErr) return;
+
+    return isAdmin(req, res, next);
+  });
 }
 
 export async function registerUnifiedRoutes(app: Express): Promise<Server> {
@@ -276,60 +405,52 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
   // Production-only authentication - no development bypasses
 
   // Auth status endpoint for checking authentication state
-  // TEMP: Authentication check disabled for development
-  // TODO: Re-enable before production deployment
+  // CRITICAL SECURITY: Must validate actual session status
   app.get('/api/auth/status', (req: any, res) => {
-    // TEMP: Always return authenticated during development
-    res.json({ authenticated: true });
-    
-    /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
-    if (req.isAuthenticated && req.isAuthenticated()) {
-      res.json({ authenticated: true });
-    } else {
-      res.status(401).json({ authenticated: false });
+    // Development-only bypass (completely disabled in production)
+    if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
+      console.warn('⚠️ DEVELOPMENT MODE: /api/auth/status returning mock authenticated status');
+      return res.json({ authenticated: true, development: true });
     }
-    */
+
+    // Production/Secure path: Check actual session
+    if (req.session && req.session.userId) {
+      return res.json({
+        authenticated: true,
+        userId: req.session.userId,
+        isAdmin: req.session.isAdmin || false
+      });
+    } else {
+      return res.status(401).json({
+        authenticated: false,
+        message: 'Not authenticated. Please log in.'
+      });
+    }
   });
 
-  // Unified auth routes that work with Replit Auth
-  // TEMP: Authentication check disabled for development
-  // TODO: Re-enable before production deployment
-  app.get('/api/auth/user', async (req: any, res) => {
+  // Unified auth routes
+  // CRITICAL SECURITY: This endpoint must validate authentication
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      // TEMP: Return mock user during development
-      return res.json({
-        id: 'dev-user-id',
-        email: 'dev@example.com',
-        firstName: 'Dev',
-        lastName: 'User',
-        isAdmin: true,
-        profileImageUrl: undefined,
-        isAuthenticated: true,
-        fanScore: { totalScore: 0, level: 1 }
-      });
-      
-      /* DISABLED FOR DEVELOPMENT - RE-ENABLE BEFORE PRODUCTION
-      // Check if user is authenticated
-      if (!req.isAuthenticated || !req.isAuthenticated()) {
-        // Return standardized format when not authenticated
-        return res.json({ 
-          isAuthenticated: false,
-          user: null,
-          isAdmin: false
-        });
-      }
-      
-      const userId = req.user!.claims.sub;
-      const user = await storage.getUser(userId);
+      // User is authenticated (validated by isAuthenticated middleware)
+      const userId = req.user.userId;
+
+      // Get user from database
+      let user = await storage.getUser(userId);
       
       if (!user) {
-        // User might not exist in database yet, create from claims
+        // User might not exist in database yet - this shouldn't happen
+        // as isAuthenticated middleware should have synced the user
+        console.warn(`User ${userId} authenticated but not in database - syncing now`);
+
+        // User data should already be in req.user from isAuthenticated middleware
         const userData = {
           id: userId,
-          email: req.user.claims.email,
-          firstName: req.user.claims.first_name,
-          lastName: req.user.claims.last_name,
-          profileImageUrl: req.user.claims.profile_image_url,
+          email: req.user.email || '',
+          firstName: req.user.firstName || '',
+          lastName: req.user.lastName || '',
+          profileImageUrl: req.user.profileImageUrl || null,
+          isAdmin: req.user.isAdmin || false,
         };
         
         const newUser = await storage.upsertUser(userData);
@@ -450,7 +571,6 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
         isAdmin: user.isAdmin || false,
         fanScore: fanScoreData
       });
-      */
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ isAuthenticated: false, error: "Failed to fetch user" });

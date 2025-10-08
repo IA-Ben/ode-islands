@@ -1,6 +1,6 @@
 "use client";
 
-import { ReactNode } from 'react';
+import { ReactNode, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import UnifiedTopNav from '@/components/UnifiedTopNav';
 import { CommandPalette } from '@/components/admin/CommandPalette';
@@ -29,7 +29,48 @@ const getAdminSectionFromPath = (pathname: string): string => {
 export default function AdminLayoutClient({ children, user }: AdminLayoutClientProps) {
   const pathname = usePathname();
   const router = useRouter();
-  
+
+  // CRITICAL SECURITY FIX: Redirect unauthenticated users
+  useEffect(() => {
+    if (!user) {
+      const redirectUrl = `/signin?redirect=${encodeURIComponent(pathname)}`;
+      console.log('🔒 Unauthenticated access to admin area - redirecting to login');
+      router.push(redirectUrl);
+    }
+  }, [user, router, pathname]);
+
+  // Block rendering if not authenticated
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-fuchsia-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Redirecting to login...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Additional check: Verify user has admin privileges
+  if (!user.isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold text-white mb-4">Access Denied</h1>
+          <p className="text-slate-400 mb-6">
+            You don't have permission to access the admin area.
+          </p>
+          <button
+            onClick={() => router.push('/event')}
+            className="px-6 py-3 bg-fuchsia-600 text-white rounded-lg hover:bg-fuchsia-700 transition-colors"
+          >
+            Return to App
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const currentSection = getAdminSectionFromPath(pathname);
 
   return (

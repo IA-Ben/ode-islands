@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { stackServerApp } from '../src/stack/server';
+import { stackServerApp } from './stackAuth';
 import { db } from './db';
 import { users } from '../shared/schema';
 import { eq } from 'drizzle-orm';
+import {
+  validateCSRFToken as validateCSRF,
+  setCSRFToken,
+  generateCSRFToken
+} from './csrfProtection';
 
 export interface SessionData {
   isAuthenticated: boolean;
@@ -254,16 +259,27 @@ export function requireAdmin(req: any, res: any, next: any) {
 }
 
 /**
- * CSRF token validation (placeholder for backward compatibility)
+ * CSRF token validation
  */
 export function validateCSRFToken(req: any, res: any, next: any) {
-  // CSRF validation placeholder - implement if needed
-  next();
+  return validateCSRF(req, res, next);
 }
 
 export async function validateCSRFTokenAsync(request: NextRequest): Promise<boolean> {
-  // CSRF validation placeholder - implement if needed
-  return true;
+  // For Next.js API routes, wrap validateCSRF in a Promise
+  return new Promise((resolve) => {
+    const mockRes = {
+      status: () => mockRes,
+      json: () => {
+        resolve(false);
+        return mockRes;
+      }
+    };
+
+    validateCSRF(request as any, mockRes as any, () => {
+      resolve(true);
+    });
+  });
 }
 
 /**
@@ -272,19 +288,58 @@ export async function validateCSRFTokenAsync(request: NextRequest): Promise<bool
 export function withAuthAndCSRF(
   handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
 ) {
-  return withAuth(handler);
+  return async (request: NextRequest, context: { params?: any }) => {
+    // Validate CSRF for state-changing methods
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      const csrfValid = await validateCSRFTokenAsync(request);
+      if (!csrfValid) {
+        return NextResponse.json(
+          { success: false, message: 'CSRF validation failed', code: 'CSRF_INVALID' },
+          { status: 403 }
+        );
+      }
+    }
+
+    return withAuth(handler)(request, context);
+  };
 }
 
 export function withAdminAuthAndCSRF(
   handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
 ) {
-  return withAuth(handler, { requireAdmin: true });
+  return async (request: NextRequest, context: { params?: any }) => {
+    // Validate CSRF for state-changing methods
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      const csrfValid = await validateCSRFTokenAsync(request);
+      if (!csrfValid) {
+        return NextResponse.json(
+          { success: false, message: 'CSRF validation failed', code: 'CSRF_INVALID' },
+          { status: 403 }
+        );
+      }
+    }
+
+    return withAuth(handler, { requireAdmin: true })(request, context);
+  };
 }
 
 export function withUserAuthAndCSRF(
   handler: (request: NextRequest, context: { params?: any }) => Promise<NextResponse>
 ) {
-  return withUserAuth(handler);
+  return async (request: NextRequest, context: { params?: any }) => {
+    // Validate CSRF for state-changing methods
+    if (!['GET', 'HEAD', 'OPTIONS'].includes(request.method)) {
+      const csrfValid = await validateCSRFTokenAsync(request);
+      if (!csrfValid) {
+        return NextResponse.json(
+          { success: false, message: 'CSRF validation failed', code: 'CSRF_INVALID' },
+          { status: 403 }
+        );
+      }
+    }
+
+    return withUserAuth(handler)(request, context);
+  };
 }
 
 /**
@@ -296,6 +351,6 @@ export function validateUserIdentifierFields(req: any, res: any, next: any) {
 }
 
 export function setUserIdentifierFields(req: any, res: any, next: any) {
-  // Placeholder - implement if needed
-  next();
+  // Set CSRF token in response
+  return setCSRFToken(req, res, next);
 }
