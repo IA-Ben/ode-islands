@@ -42,3 +42,4 @@ next-env.d.ts
 .local/
 .config/
 .vercel/
+gcp-credentials.json
