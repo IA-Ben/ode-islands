@@ -81,6 +81,7 @@
     "passport": "^0.7.0",
     "passport-openidconnect": "^0.1.2",
     "playcanvas": "^2.11.4",
+    "rate-limiter-flexible": "^8.0.1",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "recharts": "^3.2.0",

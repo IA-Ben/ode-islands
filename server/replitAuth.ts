@@ -156,6 +156,12 @@ export async function setupAuth(app: Express) {
             // Upsert user and get admin status
             const userWithAdmin = await upsertUser(claims);
 
+            // PHASE 2: Reset rate limit on successful authentication
+            const { resetLoginRateLimit } = await import('./bruteForceProtection');
+            if (userWithAdmin.email) {
+              await resetLoginRateLimit(userWithAdmin.email);
+            }
+
             // Create session user object
             const sessionUser = {
               ...userWithAdmin,
@@ -211,12 +217,27 @@ export async function setupAuth(app: Express) {
     });
 
     // OAuth callback route
-    app.get('/api/callback', (req, res, next) => {
+    // PHASE 2: Brute force protection - rate limit login attempts
+    app.get('/api/callback', async (req, res, next) => {
       const host = req.headers.host || 'localhost:5000';
       const strategyName = `replitauth:${host}`;
-      
+
       console.log(`Callback authentication with strategy: ${strategyName}`);
-      
+
+      // PHASE 2: Check rate limit before attempting authentication
+      // Use IP address as identifier for OAuth flow (no email available yet)
+      const { checkLoginRateLimit } = await import('./bruteForceProtection');
+      const ipAddress = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
+                        (req.headers['x-real-ip'] as string) ||
+                        req.socket.remoteAddress || 'unknown';
+
+      const rateLimitResult = await checkLoginRateLimit(ipAddress, ipAddress);
+
+      if (!rateLimitResult.allowed) {
+        console.log(`🚫 Login rate limit exceeded for IP ${ipAddress}`);
+        return res.redirect(`/auth/login?error=rate_limit_exceeded&retry_after=${rateLimitResult.retryAfter}`);
+      }
+
       passport.authenticate(strategyName, {
         successReturnToOrRedirect: '/auth/post-login',
         failureRedirect: '/auth/login?error=authentication_failed',
