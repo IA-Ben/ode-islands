@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { Calendar, MapPin, Settings, Eye, Save, ArrowLeft, BookOpen, Zap, Award } from 'lucide-react';
 import { surfaces, colors, components } from '@/lib/admin/designTokens';
 import { ContentStatusManager } from '../cms/ContentStatusManager';
+import { EventLanesManager } from './EventLanesManager';
 
 interface Event {
   id?: string;
@@ -324,11 +325,7 @@ export function UnifiedEventBuilder({ eventId, onSave, onCancel }: UnifiedEventB
 
         {activeTab === 'during' && (
           <div className={`${surfaces.cardGlass} rounded-xl p-6 border border-slate-700/50`}>
-            <h2 className="text-xl font-semibold text-white mb-4">During Event Experience</h2>
-            <p className="text-slate-400 mb-6">
-              Manage real-time event features, lanes, and live interactions.
-            </p>
-            <p className="text-sm text-slate-500">Event lane configuration coming soon...</p>
+            <EventLanesManager eventId={eventId} />
           </div>
         )}
 
