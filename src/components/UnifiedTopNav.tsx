@@ -185,13 +185,9 @@ export default function UnifiedTopNav({
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleSignOut = async () => {
-    try {
-      await fetch("/api/auth/logout", { method: "POST" });
-      window.location.href = "/";
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+  const handleSignOut = () => {
+    // Redirect directly to Stack Auth sign-out handler
+    window.location.href = "/handler/sign-out";
   };
 
   const visibleAdminItems = adminNavItems.filter((item) => {
