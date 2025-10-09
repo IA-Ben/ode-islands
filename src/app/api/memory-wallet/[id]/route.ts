@@ -214,6 +214,6 @@ async function handleDELETE(request: NextRequest, { params }: { params: { id: st
   }
 }
 
-export const GET = withAuth(handleGET);
-export const PUT = withUserAuthAndCSRF(handlePUT);
-export const DELETE = withUserAuthAndCSRF(handleDELETE);
+export const GET = withAuth(async (request: NextRequest, context: any) => handleGET(request, context));
+export const PUT = withUserAuthAndCSRF(async (request: NextRequest, context: any) => handlePUT(request, context));
+export const DELETE = withUserAuthAndCSRF(async (request: NextRequest, context: any) => handleDELETE(request, context));

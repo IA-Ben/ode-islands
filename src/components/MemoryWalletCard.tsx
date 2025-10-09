@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { WalletMemory } from './MemoryWallet';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ interface MemoryWalletCardProps {
   onClick: () => void;
   onUpdate: (memory: WalletMemory) => void;
   onDelete: (memoryId: string) => void;
-  getSourceIcon: (sourceType: string) => JSX.Element;
+  getSourceIcon: (sourceType: string) => React.ReactElement;
   formatDate: (dateString: string) => string;
 }
 

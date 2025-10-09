@@ -40,8 +40,8 @@ export function EventHub({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-900">
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 pb-20">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Quick Actions Bar */}
         <section className="animate-in fade-in slide-in-from-top-4 duration-500">
           <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-hide">
@@ -92,40 +92,56 @@ export function EventHub({
           </div>
         </section>
 
-        {/* Now & Next Section */}
+        {/* Now & Next Hero Strip */}
         {nowNextItems.length > 0 && (
-          <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-100">
-            <div className="mb-4 flex items-center gap-2">
-              <Clock className="w-5 h-5 text-fuchsia-400" />
-              <h2 className="text-xl font-bold text-white">Now & Next</h2>
-            </div>
-            
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {nowNextItems.map((item) => (
-                <div
-                  key={item.id}
-                  className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-white/10 to-white/5 border border-white/10 p-4 hover:border-fuchsia-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-fuchsia-500/10"
-                >
-                  {item.isLive && (
-                    <div className="absolute top-3 right-3">
-                      <span className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500 text-white text-xs font-semibold">
-                        <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                        LIVE
-                      </span>
-                    </div>
-                  )}
-                  
-                  <div className="space-y-2">
-                    <div className="text-sm font-medium text-fuchsia-400">{item.time}</div>
-                    <h3 className="text-lg font-bold text-white leading-tight group-hover:text-fuchsia-300 transition-colors">
-                      {item.title}
-                    </h3>
-                    {item.description && (
-                      <p className="text-sm text-slate-300 line-clamp-2">{item.description}</p>
-                    )}
-                  </div>
+          <section className="animate-in fade-in slide-in-from-top-4 duration-500 delay-100">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-fuchsia-600 via-purple-600 to-indigo-600 p-8 shadow-2xl">
+              <div className="relative z-10">
+                <div className="mb-4">
+                  <h1 className="text-3xl font-bold text-white mb-2">
+                    Live Event
+                  </h1>
                 </div>
-              ))}
+
+                {/* Now & Next Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {nowNextItems.slice(0, 2).map((item, index) => (
+                    <div
+                      key={item.id}
+                      className={`${
+                        item.isLive || index === 0
+                          ? 'bg-white/10 backdrop-blur-lg border-white/20'
+                          : 'bg-white/5 backdrop-blur-lg border-white/10'
+                      } rounded-2xl p-5 border`}
+                    >
+                      <div className="flex items-center gap-2 text-white/80 text-sm mb-2">
+                        {item.isLive || index === 0 ? (
+                          <>
+                            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
+                            <span className="font-semibold">NOW</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock className="w-4 h-4" />
+                            <span className="font-semibold">UP NEXT</span>
+                          </>
+                        )}
+                      </div>
+                      <h3 className="text-xl font-bold text-white mb-1">
+                        {item.title}
+                      </h3>
+                      <p className="text-white/60 text-sm">{item.time}</p>
+                      {item.description && (
+                        <p className="text-white/50 text-xs mt-2">{item.description}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Decorative gradient orbs */}
+              <div className="absolute -top-20 -right-20 w-64 h-64 bg-pink-500/30 rounded-full blur-3xl"></div>
+              <div className="absolute -bottom-20 -left-20 w-64 h-64 bg-blue-500/30 rounded-full blur-3xl"></div>
             </div>
           </section>
         )}
@@ -133,7 +149,8 @@ export function EventHub({
         {/* Featured Cards Section */}
         {featuredCards.length > 0 && (
           <section className="animate-in fade-in slide-in-from-bottom-4 duration-700 delay-200">
-            <div className="mb-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Sparkles className="w-5 h-5 text-fuchsia-400" />
               <h2 className="text-xl font-bold text-white">Featured</h2>
             </div>
             
@@ -179,7 +196,7 @@ export function EventHub({
                 {featuredCards.map((card) => (
                   <div
                     key={card.id}
-                    className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 hover:border-fuchsia-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-fuchsia-500/20 ${
+                    className={`group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 hover:border-fuchsia-500/50 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-fuchsia-500/20 cursor-pointer ${
                       card.size === "M" ? "sm:col-span-2 lg:col-span-2" : ""
                     }`}
                   >
@@ -188,7 +205,7 @@ export function EventHub({
                         <img
                           src={card.imageUrl}
                           alt={card.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
                       </div>
@@ -232,71 +249,50 @@ export function EventHub({
           <div className="grid gap-4 sm:grid-cols-3">
             <button
               onClick={() => onEnterLane("info")}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600/20 to-blue-700/10 border border-blue-500/20 p-6 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-500/20 transition-all duration-300 text-left"
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-blue-600 to-blue-700 p-6 text-left hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-blue-500/50"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-blue-500/0 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              <div className="relative space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center group-hover:bg-blue-500/30 transition-colors duration-300">
-                  <Info className="w-6 h-6 text-blue-400" />
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">📋</span>
                 </div>
-                
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-1">Info</h3>
-                  <p className="text-sm text-slate-300">Event details, stories & content</p>
-                </div>
-                
-                <div className="flex items-center gap-2 text-blue-400 text-sm font-medium">
-                  <span>Explore</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Info</h3>
+                <p className="text-blue-100 text-sm">
+                  Schedule, maps, venue info & safety
+                </p>
               </div>
+              <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             </button>
 
             <button
               onClick={() => onEnterLane("interact")}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-600/20 to-fuchsia-700/10 border border-fuchsia-500/20 p-6 hover:border-fuchsia-500/40 hover:shadow-xl hover:shadow-fuchsia-500/20 transition-all duration-300 text-left"
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-fuchsia-600 to-purple-700 p-6 text-left hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-fuchsia-500/50"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/0 to-fuchsia-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              <div className="relative space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-fuchsia-500/20 flex items-center justify-center group-hover:bg-fuchsia-500/30 transition-colors duration-300">
-                  <Sparkles className="w-6 h-6 text-fuchsia-400" />
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">✨</span>
                 </div>
-                
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-1">Interact</h3>
-                  <p className="text-sm text-slate-300">Polls, Q&A, live chat & more</p>
-                </div>
-                
-                <div className="flex items-center gap-2 text-fuchsia-400 text-sm font-medium">
-                  <span>Join In</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Interact</h3>
+                <p className="text-purple-100 text-sm">
+                  AR, QR scans, wearables & AI creation
+                </p>
               </div>
+              <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             </button>
 
             <button
               onClick={() => onEnterLane("rewards")}
-              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-600/20 to-amber-700/10 border border-amber-500/20 p-6 hover:border-amber-500/40 hover:shadow-xl hover:shadow-amber-500/20 transition-all duration-300 text-left"
+              className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-600 to-orange-700 p-6 text-left hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-amber-500/50"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-amber-500/0 to-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              
-              <div className="relative space-y-3">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/20 flex items-center justify-center group-hover:bg-amber-500/30 transition-colors duration-300">
-                  <Gift className="w-6 h-6 text-amber-400" />
+              <div className="relative z-10">
+                <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                  <span className="text-2xl">🎁</span>
                 </div>
-                
-                <div>
-                  <h3 className="text-xl font-bold text-white mb-1">Rewards</h3>
-                  <p className="text-sm text-slate-300">Collect memories & earn prizes</p>
-                </div>
-                
-                <div className="flex items-center gap-2 text-amber-400 text-sm font-medium">
-                  <span>Collect</span>
-                  <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </div>
+                <h3 className="text-2xl font-bold text-white mb-2">Rewards</h3>
+                <p className="text-orange-100 text-sm">
+                  Points, perks, merch & food ordering
+                </p>
               </div>
+              <div className="absolute -bottom-8 -right-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
             </button>
           </div>
         </section>

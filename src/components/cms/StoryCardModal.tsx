@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { VisualCardEditor } from '../VisualCardEditor';
 import { VisualCardLayout, createEmptyLayout } from '@/../../shared/cardTypes';
+import { convertLegacyCardToVisualLayout, isLegacyCardFormat } from '@/../../shared/cardConverter';
 import type { CardData } from '@/@typings';
 import { ColorPicker } from '@/components/ui/ColorPicker';
 import { ObjectUploader } from '@/components/ObjectUploader';
@@ -60,13 +61,24 @@ export default function StoryCardModal({
 
   useEffect(() => {
     if (initialData) {
+      // Check if we have a visualLayout in the data
       if (initialData.visualLayout) {
         setVisualLayout(initialData.visualLayout);
         setEditingMode('visual');
       } else if (initialData.content?.visualLayout) {
         setVisualLayout(initialData.content.visualLayout);
         setEditingMode('visual');
+      } else if (initialData.content && isLegacyCardFormat(initialData.content)) {
+        // Convert legacy format to visual layout
+        console.log('Converting legacy card format to visual layout');
+        const converted = convertLegacyCardToVisualLayout(initialData.content);
+        setVisualLayout(converted);
+        setEditingMode('visual');
+      } else {
+        // No visual layout found, start with empty
+        setVisualLayout(createEmptyLayout());
       }
+
       setTraditionalContent(initialData.content || {});
       setOrder(initialData.order || 0);
       setHasAR(initialData.hasAR || false);

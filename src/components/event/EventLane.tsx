@@ -31,6 +31,11 @@ export interface EventLaneCard {
   icon?: string;
   imageUrl?: string;
   description?: string;
+  award?: {
+    enabled: boolean;
+    points?: number;
+    trigger?: string;
+  };
 }
 
 interface EventLaneProps {
@@ -114,6 +119,7 @@ const cardTypeIcons: Record<string, any> = {
 export function EventLane({ lane, cards, onBack, onCardClick, isAdmin = false }: EventLaneProps) {
   const config = laneConfig[lane];
   const LaneIcon = config.icon;
+  const [expandedCard, setExpandedCard] = useState<string | null>(null);
   
   // Admin configuration mapping for each lane
   const adminConfigLinks: Record<string, string> = {
@@ -187,10 +193,50 @@ export function EventLane({ lane, cards, onBack, onCardClick, isAdmin = false }:
     }
   };
 
+  const handleCardToggle = (cardId: string) => {
+    setExpandedCard(expandedCard === cardId ? null : cardId);
+  };
+
+  const handleCardAction = (card: EventLaneCard) => {
+    onCardClick(card);
+  };
+
+  // Convert lane config to match demo gradients
+  const laneGradients = {
+    info: 'from-blue-600 to-cyan-600',
+    interact: 'from-fuchsia-600 to-purple-600',
+    rewards: 'from-amber-600 to-orange-600'
+  };
+
+  const laneEmojis = {
+    info: '📋',
+    interact: '✨',
+    rewards: '🎁'
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-900">
-      {/* Lane Header */}
-      <header className="sticky top-0 z-20 backdrop-blur-lg bg-slate-900/80 border-b border-white/10">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 pb-20">
+      {/* Lane Header with Demo Styling */}
+      <div className={`relative overflow-hidden bg-gradient-to-br ${laneGradients[lane]} p-8 mb-6 shadow-2xl`}>
+        <div className="relative z-10">
+          <button
+            onClick={onBack}
+            className="mb-4 flex items-center gap-2 text-white/80 hover:text-white transition-colors"
+            aria-label="Back to hub"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span className="text-sm font-medium">Back to Hub</span>
+          </button>
+
+          <div className="text-6xl mb-4">{laneEmojis[lane]}</div>
+          <h1 className="text-4xl font-bold text-white mb-2">{config.title}</h1>
+          <p className="text-white/80">{config.description}</p>
+        </div>
+        <div className="absolute -bottom-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
+      </div>
+
+      {/* Original sticky header kept for scroll behavior */}
+      <header className="hidden sticky top-0 z-20 backdrop-blur-lg bg-slate-900/80 border-b border-white/10">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center gap-4">
             <button
@@ -234,81 +280,126 @@ export function EventLane({ lane, cards, onBack, onCardClick, isAdmin = false }:
         </div>
       )}
 
-      {/* Card Rail */}
-      <div
-        ref={scrollContainerRef}
-        className="h-[calc(100vh-120px)] overflow-y-auto snap-y snap-mandatory scroll-smooth"
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-      >
-        <div className="max-w-6xl mx-auto px-4 py-6 space-y-4">
-          {cards.map((card, index) => (
-            <div
-              key={card.id}
-              className="snap-start animate-in fade-in slide-in-from-bottom-4 duration-500"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <button
-                onClick={() => onCardClick(card)}
-                className={`w-full group relative overflow-hidden rounded-2xl bg-gradient-to-br ${config.gradientBg} border ${config.borderColor} ${config.hoverBorder} transition-all duration-300 hover:shadow-xl ${config.shadowColor} text-left ${getCardSizeClass(card.size)}`}
+      {/* Cards List with Expandable System */}
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="space-y-4">
+          {cards.map((card, index) => {
+            const isExpanded = expandedCard === card.id;
+
+            return (
+              <div
+                key={card.id}
+                className={`relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 border border-white/10 transition-all duration-300 ${
+                  isExpanded ? 'ring-2 ring-fuchsia-500' : 'hover:border-fuchsia-500/50'
+                }`}
               >
-                {/* Background overlay */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${config.overlayFrom} ${config.overlayTo} opacity-0 group-hover:opacity-100 transition-opacity duration-300`} />
-                
-                {/* Card Image (if available) */}
-                {card.imageUrl && (
-                  <div className="relative w-full h-32 overflow-hidden">
-                    <img
-                      src={card.imageUrl}
-                      alt={card.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
-                  </div>
-                )}
-                
-                {/* Card Content */}
-                <div className={`relative p-6 space-y-3 ${card.imageUrl ? 'pt-4' : ''}`}>
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      {card.subtitle && (
-                        <div className={`text-xs font-medium ${config.textColor} uppercase tracking-wide`}>
-                          {card.subtitle}
+                {/* Card Header - Clickable to expand */}
+                <div
+                  className="p-5 cursor-pointer"
+                  onClick={() => handleCardToggle(card.id)}
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      <div className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${laneGradients[lane]} flex items-center justify-center flex-shrink-0`}>
+                        <div className="text-white">
+                          {getCardIcon(card)}
                         </div>
-                      )}
-                      
-                      <h3 className={`text-xl font-bold text-white leading-tight ${config.hoverTextColor} transition-colors`}>
-                        {card.title}
-                      </h3>
-                      
-                      {card.description && (
-                        <p className="text-sm text-slate-300 line-clamp-2">
-                          {card.description}
-                        </p>
-                      )}
-                    </div>
-                    
-                    <div className={`flex-shrink-0 w-12 h-12 rounded-xl ${config.iconBg} ${config.hoverIconBg} flex items-center justify-center group-hover:scale-110 transition-all duration-300`}>
-                      <div className={config.iconColor}>
-                        {getCardIcon(card)}
+                      </div>
+
+                      <div className="flex-1">
+                        <h3 className="text-lg font-bold text-white mb-1">
+                          {card.title}
+                        </h3>
+                        {card.subtitle && (
+                          <p className="text-sm text-white/60">{card.subtitle}</p>
+                        )}
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Size indicator badge */}
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500 uppercase tracking-wider">
-                      {card.type.replace(/-/g, ' ')}
-                    </span>
-                    <span className={`px-2 py-1 rounded-md bg-white/5 text-xs font-medium ${config.textColor}`}>
-                      {card.size}
-                    </span>
+
+                    {/* Award Badge */}
+                    {card.award?.enabled && card.award.points && (
+                      <div className="absolute top-3 right-3 bg-amber-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg">
+                        +{card.award.points}
+                      </div>
+                    )}
+
+                    {/* Expand/Collapse Icon */}
+                    <button
+                      className="flex-shrink-0 w-8 h-8 flex items-center justify-center text-white/60 hover:text-white transition-colors"
+                      aria-label={isExpanded ? "Collapse" : "Expand"}
+                    >
+                      <svg
+                        className={`w-5 h-5 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
                   </div>
                 </div>
-              </button>
-            </div>
-          ))}
+
+                {/* Expanded Content */}
+                {isExpanded && (
+                  <div className="px-5 pb-5 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+                    {/* Card Image */}
+                    {card.imageUrl && (
+                      <div className="relative w-full h-48 rounded-xl overflow-hidden">
+                        <img
+                          src={card.imageUrl}
+                          alt={card.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+
+                    {/* Description */}
+                    {card.description && (
+                      <p className="text-sm text-white/80 leading-relaxed">
+                        {card.description}
+                      </p>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="flex gap-3">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCardAction(card);
+                        }}
+                        className={`flex-1 py-3 px-4 rounded-xl bg-gradient-to-r ${laneGradients[lane]} text-white font-semibold hover:scale-105 transition-all duration-200 shadow-lg`}
+                      >
+                        Open
+                      </button>
+
+                      {card.type === 'qr-scan' && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleCardAction(card);
+                          }}
+                          className="py-3 px-4 rounded-xl bg-white/10 text-white font-semibold hover:bg-white/20 transition-all duration-200"
+                        >
+                          Scan Now
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Metadata badges */}
+                    <div className="flex items-center gap-2 pt-2 border-t border-white/10">
+                      <span className="px-2 py-1 rounded-md bg-white/5 text-xs text-white/60">
+                        {card.type.replace(/-/g, ' ')}
+                      </span>
+                      <span className="px-2 py-1 rounded-md bg-white/5 text-xs text-white/60">
+                        Size: {card.size}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
           
           {/* Empty State */}
           {cards.length === 0 && (

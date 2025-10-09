@@ -117,18 +117,7 @@ async function handlePOST(request: NextRequest) {
       );
     }
 
-    // Validate user identifier fields to prevent spoofing (no user ID fields in memory wallet)
-    const validation = validateUserIdentifierFields(session, body, {
-      userIdFields: [],
-      requireMatchingUser: false
-    });
-    
-    if (!validation.isValid) {
-      return NextResponse.json(
-        { success: false, message: validation.errorMessage },
-        { status: 403 }
-      );
-    }
+    // Memory wallet is personal - userId is always from session (no validation needed)
 
     // Prepare memory data - memory wallet is personal so userId is always from session
     const memoryData = {

@@ -118,7 +118,8 @@ export default function MemoryDetailPageClient({ user }: MemoryDetailPageClientP
     
     setShareStatus('sharing');
     const success = await shareMemory(memory);
-    setShareStatus(success ? (navigator.share ? 'shared' : 'copied') : 'idle');
+    const hasNativeShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+    setShareStatus(success ? (hasNativeShare ? 'shared' : 'copied') : 'idle');
     
     // Reset status after 3 seconds
     if (success) {
