@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getSessionFromHeaders } from '../../../../../server/auth';
 import { storage } from '../../../../../server/storage';
 import { AuditLogger } from '../../../../../server/auditLogger';
+import odeIslandsData from '../../../data/ode-islands.json';
 
 export async function GET(
   request: NextRequest,
@@ -19,22 +20,47 @@ export async function GET(
       storage.getSubChapters(chapter.id),
       storage.getStoryCards(chapter.id),
     ]);
-    
-    // Get custom buttons for each story card
-    const storyCardsWithButtons = await Promise.all(
-      storyCards.map(async (card) => {
-        const buttons = await storage.getCustomButtons('story_card', card.id);
-        return {
-          ...card,
-          customButtons: buttons,
-        };
-      })
-    );
-    
+
+    // Map database chapters to JSON chapter keys
+    const chapterMapping: Record<number, string> = {
+      1: 'chapter-1',
+      2: 'chapter-2',
+      3: 'chapter-3'
+    };
+
+    // If no story cards in DB, fall back to JSON file
+    let finalStoryCards = storyCards;
+    if (storyCards.length === 0 && chapter.order) {
+      const jsonChapterKey = chapterMapping[chapter.order];
+      if (jsonChapterKey && odeIslandsData[jsonChapterKey as keyof typeof odeIslandsData]) {
+        const jsonCards = odeIslandsData[jsonChapterKey as keyof typeof odeIslandsData] as any[];
+        // Transform JSON cards to match story card format
+        finalStoryCards = jsonCards.map((card, index) => ({
+          id: `${chapter.id}-card-${index}`,
+          chapterId: chapter.id,
+          order: index,
+          content: card,
+          hasAR: card.ar ? true : false,
+          customButtons: [],
+        }));
+      }
+    } else {
+      // Get custom buttons for database story cards
+      finalStoryCards = await Promise.all(
+        storyCards.map(async (card) => {
+          const buttons = await storage.getCustomButtons('story_card', card.id);
+          return {
+            ...card,
+            customButtons: buttons,
+          };
+        })
+      );
+    }
+
     return NextResponse.json({
       ...chapter,
       subChapters,
-      storyCards: storyCardsWithButtons,
+      storyCards: finalStoryCards,
     });
   } catch (error) {
     console.error('Error fetching chapter:', error);
