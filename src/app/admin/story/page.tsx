@@ -384,6 +384,12 @@ export default function StoryBuilderPage() {
                           <div
                             key={card.id || index}
                             onClick={() => {
+                              // Check if this is a JSON-based card (not in database yet)
+                              const isJsonCard = card.id && card.id.includes('-card-');
+                              if (isJsonCard) {
+                                alert('This card is from the JSON file and cannot be edited yet. To edit these cards, they need to be migrated to the database first.');
+                                return;
+                              }
                               setEditingCard({
                                 cardId: card.id,
                                 content: card.content,
@@ -397,7 +403,12 @@ export default function StoryBuilderPage() {
                             className={`group ${surfaces.cardGlass} ${borders.glassBorder} ${borders.radius.lg} p-5 cursor-pointer hover:bg-white/10 transition-all ${focus.ring}`}
                           >
                             <div className="flex items-center justify-between mb-3">
-                              <span className="text-xs text-slate-400 font-medium">Card {index + 1}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-slate-400 font-medium">Card {index + 1}</span>
+                                {card.id && card.id.includes('-card-') && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">JSON</span>
+                                )}
+                              </div>
                               <Edit className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-400 transition-colors" />
                             </div>
 
