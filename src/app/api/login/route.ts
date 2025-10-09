@@ -1,11 +1,10 @@
 import { redirect } from 'next/navigation';
 
+// Legacy route - redirects to Stack Auth sign-in
 export async function GET() {
-  // Redirect to the correct auth login route
-  redirect('/api/auth/login');
+  redirect('/handler/sign-in');
 }
 
 export async function POST() {
-  // Also handle POST requests to /api/login
-  redirect('/api/auth/login');
+  redirect('/handler/sign-in');
 }
