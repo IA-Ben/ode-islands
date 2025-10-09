@@ -1,6 +1,6 @@
 import { db } from './db';
 import { chapters, storyCards } from '../shared/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import odeIslandsData from '../src/app/data/ode-islands.json';
 
 /**
@@ -89,6 +89,7 @@ export async function seedChapters() {
         }
 
         // Import story cards for this chapter
+        console.log(`   Importing ${chapterData.length} cards for chapter ID: ${chapterId}`);
         for (let i = 0; i < chapterData.length; i++) {
           const card = chapterData[i];
 
@@ -97,8 +98,10 @@ export async function seedChapters() {
             const existingCards = await db
               .select()
               .from(storyCards)
-              .where(eq(storyCards.chapterId, chapterId))
-              .where(eq(storyCards.order, i));
+              .where(and(
+                eq(storyCards.chapterId, chapterId),
+                eq(storyCards.order, i)
+              ));
 
             const cardData = {
               chapterId,
@@ -110,16 +113,20 @@ export async function seedChapters() {
 
             if (existingCards.length > 0) {
               // Update existing card
+              console.log(`     Card ${i}: Updating existing card ${existingCards[0].id}`);
               await db
                 .update(storyCards)
                 .set(cardData)
                 .where(eq(storyCards.id, existingCards[0].id));
             } else {
               // Create new card
-              await db.insert(storyCards).values(cardData);
+              console.log(`     Card ${i}: Creating new card`);
+              const [newCard] = await db.insert(storyCards).values(cardData).returning();
+              console.log(`     Card ${i}: Created with ID ${newCard?.id}`);
               results.cardsCreated++;
             }
           } catch (error) {
+            console.error(`     Card ${i}: ERROR -`, error);
             results.errors.push(`Failed to import card ${i} for ${meta.title}: ${error}`);
           }
         }
