@@ -33,7 +33,7 @@ export default function AdminLayoutClient({ children, user }: AdminLayoutClientP
   // CRITICAL SECURITY FIX: Redirect unauthenticated users
   useEffect(() => {
     if (!user) {
-      const redirectUrl = `/signin?redirect=${encodeURIComponent(pathname)}`;
+      const redirectUrl = `/handler/sign-in?redirect=${encodeURIComponent(pathname)}`;
       console.log('🔒 Unauthenticated access to admin area - redirecting to login');
       router.push(redirectUrl);
     }
