@@ -61,7 +61,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
 
   const handleOpenWallet = () => {
     if (!isAuthenticated) {
-      window.location.href = '/api/login?returnTo=/memory-wallet';
+      window.location.href = '/handler/sign-in?returnUrl=' + encodeURIComponent('/memory-wallet');
       return;
     }
     router.push('/memory-wallet');
@@ -69,7 +69,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
 
   const handleOpenQR = () => {
     if (!isAuthenticated) {
-      window.location.href = '/api/login?returnTo=/event';
+      window.location.href = '/handler/sign-in?returnUrl=' + encodeURIComponent('/event');
       return;
     }
     setQrScannerOpen(true);
@@ -80,7 +80,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
   };
 
   const handleSignOut = () => {
-    window.location.href = '/api/logout';
+    window.location.href = '/handler/sign-out';
   };
 
   const getTierName = (level: number): "Bronze" | "Silver" | "Gold" => {
@@ -259,7 +259,7 @@ export default function TopNav({ currentPhase }: TopNavProps) {
                 </>
               ) : (
                 <button
-                  onClick={() => window.location.href = '/api/login'}
+                  onClick={() => window.location.href = '/handler/sign-in'}
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition font-medium text-sm"
                 >
                   Sign In

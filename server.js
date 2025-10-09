@@ -118,10 +118,7 @@ app.prepare().then(async () => {
     process.exit(1);
   }
 
-  // Authentication bypassed per user request
-  console.log('⚠️  Authentication disabled - all routes are publicly accessible');
-
-  // Import and setup unified routes for non-auth endpoints
+  // Import and setup unified routes (authentication enforced via Stack Auth)
   const unifiedRoutesModule = await import('./server/unifiedRoutes.ts');
 
   // Handle ESM/CommonJS interop - tsx may wrap exports in default or module.exports

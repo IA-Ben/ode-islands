@@ -17,8 +17,8 @@ interface JourneyEvent {
 export async function GET(request: NextRequest) {
   return withAuth(async (session: any) => {
     try {
-      // Get user ID from session (works with both authenticated and mock sessions)
-      const userId = session?.user?.id || session?.id || 'dev-user';
+      // Get user ID from Stack Auth session
+      const userId = session?.user?.id || session?.userId;
       
       // Get user's latest progress and activities
       const progressData = await db

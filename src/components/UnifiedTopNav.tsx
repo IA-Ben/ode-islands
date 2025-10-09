@@ -478,7 +478,7 @@ export default function UnifiedTopNav({
               </div>
             ) : (
               <button
-                onClick={() => (window.location.href = "/api/login")}
+                onClick={() => (window.location.href = "/handler/sign-in")}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition font-medium text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-fuchsia-400"
               >
                 Sign In
@@ -494,7 +494,7 @@ export default function UnifiedTopNav({
               </div>
             ) : (
               <button
-                onClick={() => (window.location.href = "/api/login")}
+                onClick={() => (window.location.href = "/handler/sign-in")}
                 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-fuchsia-600 text-white hover:bg-fuchsia-700 transition font-medium text-xs"
               >
                 Sign In

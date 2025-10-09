@@ -193,40 +193,10 @@ async function handlePOST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
-  const mockSession = {
-    isAuthenticated: true,
-    userId: 'dev-user',
-    isAdmin: true,
-    sessionId: 'mock-session-id',
-    user: {
-      id: 'dev-user',
-      email: 'dev@example.com',
-      firstName: 'Dev',
-      lastName: 'User',
-      isAdmin: true,
-    }
-  };
-  
-  (request as any).session = mockSession;
-  return handleGET(request);
-}
+// GET /api/admin/cards - Get all cards with filtering
+// Requires: Admin authentication via Stack Auth
+export const GET = withAuth(handleGET, { requireAdmin: true });
 
-export async function POST(request: NextRequest) {
-  const mockSession = {
-    isAuthenticated: true,
-    userId: 'dev-user',
-    isAdmin: true,
-    sessionId: 'mock-session-id',
-    user: {
-      id: 'dev-user',
-      email: 'dev@example.com',
-      firstName: 'Dev',
-      lastName: 'User',
-      isAdmin: true,
-    }
-  };
-  
-  (request as any).session = mockSession;
-  return handlePOST(request);
-}
+// POST /api/admin/cards - Create a new card
+// Requires: Admin authentication via Stack Auth
+export const POST = withAuth(handlePOST, { requireAdmin: true });

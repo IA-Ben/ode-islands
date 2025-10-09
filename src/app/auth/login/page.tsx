@@ -2,12 +2,11 @@
 
 import { useEffect } from 'react';
 
-// SECURITY: Legacy authentication page - REDIRECTS TO OAUTH
-// This page now redirects to the unified OAuth login system
+// SECURITY: Redirects to Stack Auth OAuth login
 export default function LoginPage() {
   useEffect(() => {
-    // Redirect to OAuth login immediately
-    window.location.href = '/api/login';
+    // Redirect to Stack Auth sign-in page
+    window.location.href = '/handler/sign-in';
   }, []);
 
   return (

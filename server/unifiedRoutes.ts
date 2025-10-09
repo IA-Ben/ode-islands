@@ -453,18 +453,10 @@ export async function registerUnifiedRoutes(app: Express): Promise<Server> {
     res.json({ success: true, csrfToken });
   });
 
-  // Production-only authentication - no development bypasses
-
   // Auth status endpoint for checking authentication state
-  // CRITICAL SECURITY: Must validate actual session status
+  // CRITICAL SECURITY: Must validate actual session status from Stack Auth
   app.get('/api/auth/status', (req: any, res) => {
-    // Development-only bypass (completely disabled in production)
-    if (process.env.NODE_ENV === 'development' && process.env.BYPASS_AUTH === 'true') {
-      console.warn('⚠️ DEVELOPMENT MODE: /api/auth/status returning mock authenticated status');
-      return res.json({ authenticated: true, development: true });
-    }
-
-    // Production/Secure path: Check actual session
+    // Check actual session (populated by Stack Auth)
     if (req.session && req.session.userId) {
       return res.json({
         authenticated: true,
