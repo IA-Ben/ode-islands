@@ -93,22 +93,19 @@ export async function seedChapters() {
           const card = chapterData[i];
 
           try {
-            // Check if card already exists
+            // Check if card already exists (by chapterId and order)
             const existingCards = await db
               .select()
               .from(storyCards)
               .where(eq(storyCards.chapterId, chapterId))
-              .where(eq(storyCards.cardIndex, i));
+              .where(eq(storyCards.order, i));
 
             const cardData = {
               chapterId,
-              cardIndex: i,
-              title: card.text?.title || card.text?.subtitle || `Card ${i + 1}`,
-              content: card.text?.description || '',
-              videoUrl: card.video?.url || null,
+              order: i,
+              content: card, // Store entire card JSON in content field
               hasAR: card.ar ? true : false,
-              theme: card.theme ? JSON.stringify(card.theme) : null,
-              updatedAt: new Date(),
+              publishStatus: 'published', // Make them immediately available
             };
 
             if (existingCards.length > 0) {
