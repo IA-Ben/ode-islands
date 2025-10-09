@@ -84,7 +84,7 @@ export default function StoryBuilderPage() {
         const cardsData: Record<string, any[]> = {};
         for (const chapter of data) {
           try {
-            const chapterResponse = await fetch(`/api/chapters/${chapter.id}`);
+            const chapterResponse = await fetch(`/api/chapters/${chapter.id}?includeUnpublished=true`);
             if (chapterResponse.ok) {
               const chapterDetail = await chapterResponse.json();
               cardsData[chapter.id] = chapterDetail.storyCards || [];
@@ -124,6 +124,32 @@ export default function StoryBuilderPage() {
       console.error('Failed to fetch subchapters:', error);
     } finally {
       setLoadingSubChapters(false);
+    }
+  };
+
+  const handlePublishToggle = async (cardId: string, currentStatus: string) => {
+    const action = currentStatus === 'published' ? 'unpublish' : 'publish';
+
+    try {
+      const response = await fetch(`/api/story-cards/${cardId}/publish`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken,
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      if (response.ok) {
+        // Refresh the chapter cards to show updated status
+        fetchChapters();
+      } else {
+        const error = await response.json();
+        alert(`Failed to ${action} card: ${error.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing card:`, error);
+      alert(`Failed to ${action} card`);
     }
   };
 
@@ -408,8 +434,30 @@ export default function StoryBuilderPage() {
                                 {card.id && card.id.includes('-card-') && (
                                   <span className="text-xs px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">JSON</span>
                                 )}
+                                {card.publishStatus === 'published' && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-green-500/20 text-green-300 border border-green-500/30">Published</span>
+                                )}
+                                {card.publishStatus === 'draft' && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-slate-500/20 text-slate-300 border border-slate-500/30">Draft</span>
+                                )}
+                                {card.publishStatus === 'archived' && (
+                                  <span className="text-xs px-2 py-0.5 rounded bg-orange-500/20 text-orange-300 border border-orange-500/30">Archived</span>
+                                )}
                               </div>
-                              <Edit className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-400 transition-colors" />
+                              <div className="flex items-center gap-2">
+                                {!card.id.includes('-card-') && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handlePublishToggle(card.id, card.publishStatus);
+                                    }}
+                                    className="text-xs px-2 py-1 rounded bg-fuchsia-500/20 text-fuchsia-300 border border-fuchsia-500/30 hover:bg-fuchsia-500/30 transition-colors"
+                                  >
+                                    {card.publishStatus === 'published' ? 'Unpublish' : 'Publish'}
+                                  </button>
+                                )}
+                                <Edit className="w-4 h-4 text-slate-400 group-hover:text-fuchsia-400 transition-colors" />
+                              </div>
                             </div>
 
                             {textContent.title && (

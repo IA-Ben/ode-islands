@@ -8,7 +8,6 @@ import UnifiedTopNav from "@/components/UnifiedTopNav";
 import { useFanScore } from '@/hooks/useFanScore';
 import LoadingScreen from '@/components/LoadingScreen';
 import type { CardData } from '@/@typings';
-import data from "../../data/ode-islands.json";
 import dynamic from 'next/dynamic';
 
 const UserScoreModal = dynamic(() => import('@/components/UserScoreModal'), {
@@ -20,12 +19,6 @@ const MemoryWalletModal = dynamic(() => import('@/components/MemoryWalletModal')
   ssr: false,
   loading: () => null
 });
-
-type ChapterData = {
-  [key: string]: CardData[];
-};
-
-const chapterData: ChapterData = data as ChapterData;
 
 interface UserData {
   id: string;
@@ -54,8 +47,11 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
   const [isWalletOpen, setIsWalletOpen] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const [pageReady, setPageReady] = useState(false);
+  const [cards, setCards] = useState<CardData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [chapterIdMap, setChapterIdMap] = useState<Record<string, string>>({});
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
   // Get return path from URL params or default to /before
   const returnTo = searchParams?.get('returnTo') || '/before';
 
@@ -64,6 +60,56 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
     const timer = setTimeout(() => setPageReady(true), 100);
     return () => clearTimeout(timer);
   }, []);
+
+  // Fetch chapters and build ID map
+  useEffect(() => {
+    async function fetchChapters() {
+      try {
+        const response = await fetch('/api/chapters');
+        if (response.ok) {
+          const chapters = await response.json();
+          const map: Record<string, string> = {};
+          chapters.forEach((ch: any) => {
+            if (ch.order === 1) map['chapter-1'] = ch.id;
+            if (ch.order === 2) map['chapter-2'] = ch.id;
+            if (ch.order === 3) map['chapter-3'] = ch.id;
+          });
+          setChapterIdMap(map);
+        }
+      } catch (error) {
+        console.error('Failed to fetch chapters:', error);
+      }
+    }
+    fetchChapters();
+  }, []);
+
+  // Fetch cards for current chapter from database
+  useEffect(() => {
+    async function fetchCards() {
+      if (!chapterIdMap[chapterId]) {
+        return; // Wait for chapter ID map
+      }
+
+      setLoading(true);
+      try {
+        const dbChapterId = chapterIdMap[chapterId];
+        const response = await fetch(`/api/chapters/${dbChapterId}`);
+        if (response.ok) {
+          const data = await response.json();
+          // Extract card content from storyCards
+          const cardData = data.storyCards.map((sc: any) => sc.content);
+          setCards(cardData);
+        }
+      } catch (error) {
+        console.error('Failed to fetch cards:', error);
+        setCards([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchCards();
+  }, [chapterId, chapterIdMap]);
 
   // Navigation handlers for UnifiedTopNav
   const handlePhaseChange = (phase: "before" | "event" | "after") => {
@@ -116,15 +162,12 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
   const level = scoreData?.currentScore?.level || 1;
   const tier = getTier(level);
 
-  // Get cards for current chapter  
-  const cards: CardData[] = chapterData[chapterId] || [];
-
   // Redirect to chapter 1 if invalid chapter
   useEffect(() => {
-    if (cards.length === 0 && chapterId !== "chapter-1") {
+    if (!loading && cards.length === 0 && chapterId !== "chapter-1") {
       router.push("/before/chapter-1");
     }
-  }, [cards.length, chapterId, router]);
+  }, [cards.length, chapterId, router, loading]);
 
   const scrollToCard = useCallback((cardIndex: number) => {
     if (containerRef.current) {
@@ -202,7 +245,7 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
     }
   }, [index, cards.length, interacted]);
 
-  if (cards.length === 0) {
+  if (loading || cards.length === 0) {
     return (
       <div className="w-full h-screen bg-slate-900 flex items-center justify-center">
         <UnifiedTopNav

@@ -10,16 +10,31 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
+    const { searchParams } = new URL(request.url);
+    const includeUnpublished = searchParams.get('includeUnpublished') === 'true';
+
+    // Check if user is authenticated (for admin access)
+    const session = await getSessionFromHeaders(request);
+    const isAdmin = session.isAuthenticated && session.user?.isAdmin;
+
+    // Only admins can see unpublished content
+    const showAll = includeUnpublished && isAdmin;
+
     const chapter = await storage.getChapter(id);
     if (!chapter) {
       return NextResponse.json({ error: 'Chapter not found' }, { status: 404 });
     }
-    
+
     // Get sub-chapters and story cards for this chapter
-    const [subChapters, storyCards] = await Promise.all([
+    const [subChapters, allStoryCards] = await Promise.all([
       storage.getSubChapters(chapter.id),
       storage.getStoryCards(chapter.id),
     ]);
+
+    // Filter cards by publish status (unless admin requested all)
+    const storyCards = showAll
+      ? allStoryCards
+      : allStoryCards.filter(card => card.publishStatus === 'published');
 
     // Map database chapters to JSON chapter keys
     const chapterMapping: Record<number, string> = {
