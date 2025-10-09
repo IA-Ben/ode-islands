@@ -1,11 +1,10 @@
 import { redirect } from 'next/navigation';
 
+// Legacy route - redirects to Stack Auth sign-out
 export async function GET() {
-  // Redirect to the passport logout route
-  redirect('/api/logout');
+  redirect('/handler/sign-out');
 }
 
 export async function POST() {
-  // Also handle POST requests
-  redirect('/api/logout');
+  redirect('/handler/sign-out');
 }

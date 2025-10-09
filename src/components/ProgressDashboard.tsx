@@ -57,11 +57,11 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
   const [activeTab, setActiveTab] = useState<'certificates' | 'memories' | 'collection' | 'insights'>('collection');
   const [animateIn, setAnimateIn] = useState(false);
 
-  // Redirect to OAuth login if not authenticated
+  // Redirect to Stack Auth sign-in if not authenticated
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
-      // Use proper OAuth endpoint with returnTo for seamless redirect back
-      window.location.href = "/api/login?returnTo=/progress";
+      // Redirect to Stack Auth with return URL
+      window.location.href = '/handler/sign-in?returnUrl=' + encodeURIComponent('/progress');
       return;
     }
   }, [isAuthenticated, authLoading]);
@@ -251,8 +251,8 @@ export default function ProgressDashboard({ className = '' }: ProgressDashboardP
   };
 
   const handleLoginRedirect = () => {
-    // Use OAuth login with returnTo parameter
-    window.location.href = '/api/login?returnTo=/progress';
+    // Redirect to Stack Auth sign-in
+    window.location.href = '/handler/sign-in?returnUrl=' + encodeURIComponent('/progress');
   };
 
   const handleBackToJourney = () => {

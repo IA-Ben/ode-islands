@@ -16,37 +16,47 @@ import { rollbackService } from './rollbackService';
 const router = express.Router();
 
 // Middleware to verify admin authentication
+interface AdminUser {
+  id: string;
+  email: string;
+  roles: string[];
+  permissions: string[];
+}
+
 interface AuthenticatedRequest extends express.Request {
-  user?: {
-    id: string;
-    email: string;
-    roles: string[];
-    permissions: string[];
-  };
+  adminUser?: AdminUser;
 }
 
 /**
- * Authenticate and authorize admin user
+ * Authenticate and authorize admin user using Express session (populated by Stack Auth)
  */
 async function authenticateAdmin(req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) {
   try {
-    // Get user from session (assumes session middleware is set up)
-    const userId = req.session?.user?.id;
-    if (!userId) {
-      return res.status(401).json({ error: 'Authentication required' });
+    // Get user from Express session (populated by Stack Auth via Next.js middleware)
+    const session = (req as any).session;
+
+    if (!session || !session.userId) {
+      return res.status(401).json({ error: 'Authentication required. Please sign in.' });
     }
 
-    // Get user and their roles
+    const userId = session.userId;
+
+    // Get user from database
     const user = await db.select().from(users)
       .where(eq(users.id, userId))
       .limit(1);
 
     if (user.length === 0) {
-      return res.status(401).json({ error: 'User not found' });
+      return res.status(401).json({ error: 'User not found in database' });
     }
 
     const userData = user[0];
-    
+
+    // Check if user is admin
+    if (!userData.isAdmin) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
     // Get user roles and permissions
     const userRoleData = await db.select({
       roleId: userRoles.roleId,
@@ -59,10 +69,6 @@ async function authenticateAdmin(req: AuthenticatedRequest, res: express.Respons
         eq(userRoles.isActive, true)
       ));
 
-    if (userRoleData.length === 0) {
-      return res.status(403).json({ error: 'Admin access required' });
-    }
-
     // Aggregate permissions from all roles
     const allPermissions = new Set<string>();
     const roleNames = userRoleData.map(role => {
@@ -72,7 +78,13 @@ async function authenticateAdmin(req: AuthenticatedRequest, res: express.Respons
       return role.roleName;
     });
 
-    req.user = {
+    // If no roles assigned but user is admin, grant all permissions
+    if (roleNames.length === 0) {
+      roleNames.push('super-admin');
+      allPermissions.add('*');
+    }
+
+    req.adminUser = {
       id: userData.id,
       email: userData.email!,
       roles: roleNames,
@@ -91,10 +103,10 @@ async function authenticateAdmin(req: AuthenticatedRequest, res: express.Respons
  */
 function requirePermission(permission: string) {
   return (req: AuthenticatedRequest, res: express.Response, next: express.NextFunction) => {
-    if (!req.user?.permissions.includes(permission)) {
-      return res.status(403).json({ 
+    if (!req.adminUser?.permissions.includes(permission) && !req.adminUser?.permissions.includes('*')) {
+      return res.status(403).json({
         error: `Permission denied: ${permission} required`,
-        userPermissions: req.user?.permissions || []
+        userPermissions: req.adminUser?.permissions || []
       });
     }
     next();
@@ -123,9 +135,9 @@ function auditAction(
       actionDetails,
       oldValues,
       newValues,
-      userId: req.user?.id,
-      userEmail: req.user?.email,
-      userRoles: req.user?.roles,
+      userId: req.adminUser?.id,
+      userEmail: req.adminUser?.email,
+      userRoles: req.adminUser?.roles,
       ipAddress: req.ip,
       userAgent: req.get('User-Agent')
     };
@@ -192,7 +204,7 @@ router.post('/feature-flags',
   async (req: AuthenticatedRequest, res) => {
     try {
       const flagData = req.body;
-      const flag = await featureFlagService.createFlag(flagData, req.user!.id);
+      const flag = await featureFlagService.createFlag(flagData, req.adminUser!.id);
       
       res.locals.auditData.resource = flag.id;
       res.locals.auditData.actionDetails = { flagKey: flag.flagKey, flagName: flag.flagName };
@@ -221,7 +233,7 @@ router.put('/feature-flags/:flagKey',
       const updates = req.body;
       const reason = req.body.reason || 'Updated via admin API';
       
-      const flag = await featureFlagService.updateFlag(flagKey, updates, req.user!.id, reason);
+      const flag = await featureFlagService.updateFlag(flagKey, updates, req.adminUser!.id, reason);
       
       res.locals.auditData.resource = flag.id;
       res.locals.auditData.resourceType = 'feature_flag';
@@ -254,7 +266,7 @@ router.post('/feature-flags/:flagKey/emergency-disable',
         return res.status(400).json({ error: 'Reason required for emergency disable' });
       }
       
-      await featureFlagService.emergencyDisableFlag(flagKey, reason, req.user!.id, req.user!.email);
+      await featureFlagService.emergencyDisableFlag(flagKey, reason, req.adminUser!.id, req.adminUser!.email);
       
       res.locals.auditData.resource = flagKey;
       res.locals.auditData.resourceType = 'feature_flag';
@@ -286,7 +298,7 @@ router.post('/feature-flags/global-kill-switch',
         return res.status(400).json({ error: 'Reason required for global kill switch' });
       }
       
-      await featureFlagService.activateGlobalKillSwitch(reason, req.user!.id, req.user!.email);
+      await featureFlagService.activateGlobalKillSwitch(reason, req.adminUser!.id, req.adminUser!.email);
       
       res.locals.auditData.resource = 'GLOBAL_KILL_SWITCH';
       res.locals.auditData.resourceType = 'system';
@@ -312,7 +324,7 @@ router.delete('/feature-flags/global-kill-switch',
   auditAction('global_kill_switch_deactivate', 'feature_flags'),
   async (req: AuthenticatedRequest, res) => {
     try {
-      await featureFlagService.deactivateGlobalKillSwitch(req.user!.id, req.user!.email);
+      await featureFlagService.deactivateGlobalKillSwitch(req.adminUser!.id, req.adminUser!.email);
       
       res.locals.auditData.resource = 'GLOBAL_KILL_SWITCH';
       res.locals.auditData.resourceType = 'system';
@@ -418,8 +430,8 @@ router.post('/rollbacks/emergency',
         reason,
         scope || 'global',
         targetComponent,
-        req.user!.id,
-        req.user!.email
+        req.adminUser!.id,
+        req.adminUser!.email
       );
       
       res.locals.auditData.resource = rollback.id;
@@ -460,18 +472,23 @@ router.get('/rollbacks/:rollbackId', requirePermission('view_rollbacks'), async 
  */
 router.get('/audit-logs', requirePermission('view_audit_logs'), async (req: AuthenticatedRequest, res) => {
   try {
-    const { startDate, endDate, category, action, userId, limit = 100 } = req.query;
-    
-    let query = db.select().from(adminAuditLog)
-      .orderBy(desc(adminAuditLog.timestamp))
-      .limit(parseInt(limit as string));
-    
-    // Add filters if provided
+    const { startDate, limit = 100 } = req.query;
+
+    // Build query with filters
+    const filters = [];
     if (startDate) {
-      query = query.where(gte(adminAuditLog.timestamp, new Date(startDate as string)));
+      filters.push(gte(adminAuditLog.timestamp, new Date(startDate as string)));
     }
-    
-    const auditLogs = await query;
+
+    const auditLogs = filters.length > 0
+      ? await db.select().from(adminAuditLog)
+          .where(and(...filters))
+          .orderBy(desc(adminAuditLog.timestamp))
+          .limit(parseInt(limit as string))
+      : await db.select().from(adminAuditLog)
+          .orderBy(desc(adminAuditLog.timestamp))
+          .limit(parseInt(limit as string));
+
     res.json({ auditLogs });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch audit logs' });

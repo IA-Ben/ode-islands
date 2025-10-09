@@ -43,8 +43,8 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
   const handleProgressClick = () => {
     // Check if authenticated first
     if (!isAuthenticated) {
-      // Redirect to OAuth login with returnTo parameter
-      window.location.href = '/api/login?returnTo=/progress';
+      // Redirect to Stack Auth sign-in with return URL
+      window.location.href = '/handler/sign-in?returnUrl=' + encodeURIComponent('/progress');
       return;
     }
     router.push('/progress');
@@ -234,7 +234,7 @@ export default function PhaseNavigation({ currentPhase }: PhaseNavigationProps) 
                   ) : (
                     // Show Login button when not authenticated
                     <button
-                      onClick={() => window.location.href = '/api/login'}
+                      onClick={() => window.location.href = '/handler/sign-in'}
                       className="flex items-center space-x-2 backdrop-blur-sm border px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200"
                       style={{
                         backgroundColor: theme.colors.primary,
