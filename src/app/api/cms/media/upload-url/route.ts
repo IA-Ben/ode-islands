@@ -66,25 +66,36 @@ export async function POST(request: NextRequest) {
     const bucket = objectStorageClient.bucket(INPUT_BUCKET);
     const file = bucket.file(gcsFileName);
 
-    // Generate signed URL for direct upload (valid for 1 hour)
-    const [signedUrl] = await file.generateSignedPostPolicyV4({
-      expires: Date.now() + 60 * 60 * 1000, // 1 hour
-      fields: {
-        'Content-Type': fileType,
-      },
-      conditions: [
-        ['content-length-range', 0, MAX_FILE_SIZE],
-        ['eq', '$Content-Type', fileType],
-      ],
-    });
+    // Try to generate signed URL for PUT upload (simpler than POST policy)
+    // This requires iam.serviceAccounts.signBlob permission
+    try {
+      const [putSignedUrl] = await file.getSignedUrl({
+        version: 'v4',
+        action: 'write',
+        expires: Date.now() + 60 * 60 * 1000, // 1 hour
+        contentType: fileType,
+      });
 
-    return NextResponse.json({
-      success: true,
-      videoId,
-      uploadUrl: signedUrl.url,
-      fields: signedUrl.fields,
-      gcsPath: `gs://${INPUT_BUCKET}/${gcsFileName}`,
-    });
+      return NextResponse.json({
+        success: true,
+        videoId,
+        uploadUrl: putSignedUrl,
+        uploadMethod: 'PUT',
+        contentType: fileType,
+        gcsPath: `gs://${INPUT_BUCKET}/${gcsFileName}`,
+      });
+    } catch (signedUrlError: any) {
+      // If signed URL generation fails, fall back to uploading through our API
+      console.error('Signed URL generation failed, will use direct upload:', signedUrlError.message);
+
+      return NextResponse.json({
+        success: true,
+        videoId,
+        uploadUrl: '/api/cms/media/upload',
+        uploadMethod: 'API',
+        gcsPath: `gs://${INPUT_BUCKET}/${gcsFileName}`,
+      });
+    }
 
   } catch (error: any) {
     console.error('Error generating upload URL:', error);

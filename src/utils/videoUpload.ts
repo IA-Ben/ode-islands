@@ -157,22 +157,12 @@ export const uploadVideo = async (
       throw new Error(errorData.error || 'Failed to get upload URL');
     }
 
-    const { uploadUrl, fields, videoId } = await urlResponse.json();
+    const { uploadUrl, fields, videoId, uploadMethod, contentType } = await urlResponse.json();
 
-    onStatusChange({ status: 'uploading', message: 'Uploading directly to cloud storage...' });
+    onStatusChange({ status: 'uploading', message: 'Uploading video...' });
 
-    // Step 2: Upload directly to GCS using signed URL
+    // Step 2: Upload based on the method returned
     return new Promise((resolve) => {
-      const formData = new FormData();
-
-      // Add all the signed policy fields first
-      Object.entries(fields).forEach(([key, value]) => {
-        formData.append(key, value as string);
-      });
-
-      // Add the file last
-      formData.append('file', file);
-
       const xhr = new XMLHttpRequest();
 
       xhr.upload.addEventListener('progress', (e) => {
@@ -184,7 +174,7 @@ export const uploadVideo = async (
 
       xhr.addEventListener('load', async () => {
         if (xhr.status === 204 || xhr.status === 200) {
-          // Upload to GCS successful
+          // Upload successful
           onStatusChange({
             status: 'processing',
             message: 'Upload complete. Starting transcoding...'
@@ -197,7 +187,7 @@ export const uploadVideo = async (
         } else {
           onStatusChange({
             status: 'error',
-            message: `Upload to cloud storage failed: ${xhr.statusText}`
+            message: `Upload failed: ${xhr.statusText}`
           });
           resolve({ success: false, error: `Upload failed: ${xhr.statusText}` });
         }
@@ -211,8 +201,29 @@ export const uploadVideo = async (
         resolve({ success: false, error: 'Network error during upload' });
       });
 
-      xhr.open('POST', uploadUrl);
-      xhr.send(formData);
+      if (uploadMethod === 'PUT') {
+        // Direct PUT upload to signed GCS URL
+        xhr.open('PUT', uploadUrl);
+        xhr.setRequestHeader('Content-Type', contentType);
+        xhr.send(file);
+      } else if (uploadMethod === 'POST' && fields) {
+        // POST with form fields (original signed POST policy)
+        const formData = new FormData();
+        Object.entries(fields).forEach(([key, value]) => {
+          formData.append(key, value as string);
+        });
+        formData.append('file', file);
+        xhr.open('POST', uploadUrl);
+        xhr.send(formData);
+      } else {
+        // Fallback to API upload (through our server)
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('videoId', videoId);
+        xhr.open('POST', uploadUrl);
+        xhr.setRequestHeader('X-CSRF-Token', csrfToken);
+        xhr.send(formData);
+      }
     });
   } catch (error: any) {
     onStatusChange({
