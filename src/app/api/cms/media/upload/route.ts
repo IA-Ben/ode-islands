@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 import { randomUUID } from 'crypto';
-import { getSessionFromHeaders } from '../../../../../server/auth';
-import { validateCSRFToken } from '../../../../../server/csrfProtection';
+import { getSessionFromHeaders } from '../../../../../../server/auth';
+import { validateCSRFToken } from '../../../../../../server/csrfProtection';
 
 const INPUT_BUCKET = process.env.GCS_INPUT_BUCKET || 'ode-islands-video-input';
 const OUTPUT_BUCKET = process.env.GCS_OUTPUT_BUCKET || 'ode-islands-video-cdn';
