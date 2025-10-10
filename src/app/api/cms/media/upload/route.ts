@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { Storage } from '@google-cloud/storage';
 import { randomUUID } from 'crypto';
+import { getSessionFromHeaders } from '../../../../../server/auth';
+import { validateCSRFToken } from '../../../../../server/csrfProtection';
 
 const INPUT_BUCKET = process.env.GCS_INPUT_BUCKET || 'ode-islands-video-input';
 const OUTPUT_BUCKET = process.env.GCS_OUTPUT_BUCKET || 'ode-islands-video-cdn';
@@ -9,12 +11,34 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024 * 1024; // 2GB
 
 // Initialize storage lazily to avoid build-time errors
 function getStorage() {
-  return new Storage();
+  try {
+    return new Storage();
+  } catch (error: any) {
+    console.error('Failed to initialize Google Cloud Storage:', error.message);
+    throw new Error('Google Cloud Storage not configured. Please check GCP_CREDENTIALS_PATH environment variable.');
+  }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    
+    // Authenticate user
+    const session = await getSessionFromHeaders(request);
+    if (!session.isAuthenticated || !session.user?.isAdmin) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 401 }
+      );
+    }
+
+    // Validate CSRF token
+    const csrfToken = request.headers.get('X-CSRF-Token');
+    if (!csrfToken || !validateCSRFToken(csrfToken)) {
+      return NextResponse.json(
+        { error: 'Invalid or missing CSRF token' },
+        { status: 403 }
+      );
+    }
+
     const formData = await request.formData();
     const file = formData.get('file') as File;
     const videoId = formData.get('videoId') as string || randomUUID();
@@ -164,8 +188,29 @@ export async function POST(request: NextRequest) {
     
   } catch (error: any) {
     console.error('Media upload error:', error);
+
+    // Provide specific error messages for common issues
+    let errorMessage = 'Failed to upload media';
+    let errorDetails = error.message;
+
+    if (error.message?.includes('credentials') || error.message?.includes('authentication')) {
+      errorMessage = 'Google Cloud Storage authentication failed';
+      errorDetails = 'Please ensure GCP credentials are properly configured in environment variables.';
+    } else if (error.message?.includes('bucket')) {
+      errorMessage = 'Storage bucket access failed';
+      errorDetails = `Unable to access bucket. Please verify bucket permissions and that buckets exist: ${INPUT_BUCKET}, ${OUTPUT_BUCKET}`;
+    } else if (error.message?.includes('quota') || error.message?.includes('limit')) {
+      errorMessage = 'Storage quota exceeded';
+      errorDetails = 'Please check your Google Cloud Storage quota and billing.';
+    }
+
     return NextResponse.json(
-      { error: 'Failed to upload media', details: error.message },
+      {
+        success: false,
+        error: errorMessage,
+        details: errorDetails,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      },
       { status: 500 }
     );
   }
