@@ -109,6 +109,10 @@ const pollTranscodingStatus = async (
   }
 };
 
+/**
+ * Upload video directly to Google Cloud Storage using signed URLs
+ * This bypasses Vercel's body size limits entirely
+ */
 export const uploadVideo = async (
   file: File,
   csrfToken: string,
@@ -122,7 +126,7 @@ export const uploadVideo = async (
     });
     return { success: false, error: 'File too large. Maximum size is 2GB.' };
   }
-  
+
   if (!ALLOWED_TYPES.includes(file.type)) {
     onStatusChange({
       status: 'error',
@@ -130,61 +134,91 @@ export const uploadVideo = async (
     });
     return { success: false, error: 'Invalid file type. Allowed: MP4, MOV, AVI, WebM' };
   }
-  
-  onStatusChange({ status: 'uploading', message: 'Uploading video...' });
-  
-  return new Promise((resolve) => {
-    const formData = new FormData();
-    formData.append('file', file);
-    
-    const xhr = new XMLHttpRequest();
-    
-    xhr.upload.addEventListener('progress', (e) => {
-      if (e.lengthComputable) {
-        const percentage = Math.round((e.loaded / e.total) * 100);
-        onProgress({ percentage });
-      }
+
+  onStatusChange({ status: 'uploading', message: 'Getting upload URL...' });
+
+  try {
+    // Step 1: Get signed URL from our API
+    const urlResponse = await fetch('/api/cms/media/upload-url', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRF-Token': csrfToken,
+      },
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: file.size,
+      }),
     });
-    
-    xhr.addEventListener('load', async () => {
-      if (xhr.status === 200) {
-        const data = JSON.parse(xhr.responseText);
-        
-        if (data.success && data.videoId) {
+
+    if (!urlResponse.ok) {
+      const errorData = await urlResponse.json();
+      throw new Error(errorData.error || 'Failed to get upload URL');
+    }
+
+    const { uploadUrl, fields, videoId } = await urlResponse.json();
+
+    onStatusChange({ status: 'uploading', message: 'Uploading directly to cloud storage...' });
+
+    // Step 2: Upload directly to GCS using signed URL
+    return new Promise((resolve) => {
+      const formData = new FormData();
+
+      // Add all the signed policy fields first
+      Object.entries(fields).forEach(([key, value]) => {
+        formData.append(key, value as string);
+      });
+
+      // Add the file last
+      formData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', (e) => {
+        if (e.lengthComputable) {
+          const percentage = Math.round((e.loaded / e.total) * 100);
+          onProgress({ percentage });
+        }
+      });
+
+      xhr.addEventListener('load', async () => {
+        if (xhr.status === 204 || xhr.status === 200) {
+          // Upload to GCS successful
           onStatusChange({
             status: 'processing',
             message: 'Upload complete. Starting transcoding...'
           });
           onProgress({ percentage: 100 });
-          
-          const result = await pollTranscodingStatus(data.videoId, onStatusChange);
+
+          // Step 3: Poll for transcoding status
+          const result = await pollTranscodingStatus(videoId, onStatusChange);
           resolve(result);
         } else {
           onStatusChange({
             status: 'error',
-            message: data.error || 'Upload failed'
+            message: `Upload to cloud storage failed: ${xhr.statusText}`
           });
-          resolve({ success: false, error: data.error || 'Upload failed' });
+          resolve({ success: false, error: `Upload failed: ${xhr.statusText}` });
         }
-      } else {
+      });
+
+      xhr.addEventListener('error', () => {
         onStatusChange({
           status: 'error',
-          message: `Upload failed: ${xhr.statusText}`
+          message: 'Network error during upload'
         });
-        resolve({ success: false, error: `Upload failed: ${xhr.statusText}` });
-      }
-    });
-    
-    xhr.addEventListener('error', () => {
-      onStatusChange({
-        status: 'error',
-        message: 'Network error during upload'
+        resolve({ success: false, error: 'Network error during upload' });
       });
-      resolve({ success: false, error: 'Network error during upload' });
+
+      xhr.open('POST', uploadUrl);
+      xhr.send(formData);
     });
-    
-    xhr.open('POST', '/api/cms/media/upload');
-    xhr.setRequestHeader('X-CSRF-Token', csrfToken);
-    xhr.send(formData);
-  });
+  } catch (error: any) {
+    onStatusChange({
+      status: 'error',
+      message: error.message || 'Failed to initiate upload'
+    });
+    return { success: false, error: error.message || 'Failed to initiate upload' };
+  }
 };

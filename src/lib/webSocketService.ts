@@ -60,6 +60,18 @@ class WebSocketService {
       ...config
     };
 
+    // Disable WebSocket on Vercel (serverless platform doesn't support WebSockets)
+    if (typeof window !== 'undefined') {
+      const hostname = window.location.hostname;
+      const isVercel = hostname.includes('vercel.app') || process.env.NEXT_PUBLIC_VERCEL_ENV;
+
+      if (isVercel) {
+        console.log('WebSocket disabled on Vercel platform');
+        this.connectionStatus = 'closed';
+        return; // Skip initialization
+      }
+    }
+
     // Listen for online/offline status
     if (typeof window !== 'undefined') {
       window.addEventListener('online', () => {
