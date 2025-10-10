@@ -99,6 +99,18 @@ export default function BeforeChapterPageClient({ user }: BeforeChapterPageClien
           // Extract card content from storyCards
           const cardData = data.storyCards.map((sc: any) => sc.content);
           setCards(cardData);
+
+          // Check if there's a card parameter in URL for preview
+          const cardParam = searchParams?.get('card');
+          if (cardParam) {
+            const cardIndex = parseInt(cardParam, 10);
+            if (!isNaN(cardIndex) && cardIndex >= 0 && cardIndex < cardData.length) {
+              setIndex(cardIndex);
+              setLoadedCards(Math.max(loadedCards, cardIndex + 2));
+              // Scroll to card after a short delay to ensure DOM is ready
+              setTimeout(() => scrollToCard(cardIndex), 100);
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to fetch cards:', error);

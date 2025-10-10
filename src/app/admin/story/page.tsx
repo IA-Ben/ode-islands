@@ -349,6 +349,16 @@ export default function StoryBuilderPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       <button
+                        onClick={() => {
+                          const chapterKey = `chapter-${selectedChapter.order}`;
+                          window.open(`/before/${chapterKey}`, '_blank');
+                        }}
+                        className={`${components.buttonSecondary} !px-3 !py-2`}
+                        title="Preview Chapter"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
                         onClick={() => handleEditChapter(selectedChapter)}
                         className={`${components.buttonSecondary} !px-3 !py-2`}
                       >
@@ -445,6 +455,17 @@ export default function StoryBuilderPage() {
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const chapterKey = `chapter-${selectedChapter.order}`;
+                                    window.open(`/before/${chapterKey}?card=${index}`, '_blank');
+                                  }}
+                                  className="text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30 transition-colors"
+                                  title="Preview Card"
+                                >
+                                  <Eye className="w-3 h-3" />
+                                </button>
                                 {!card.id.includes('-card-') && (
                                   <button
                                     onClick={(e) => {
