@@ -178,36 +178,42 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
           <h3 className="text-lg font-semibold mb-4">Add Elements</h3>
           <div className="space-y-2">
             <button
+              type="button"
               onClick={() => addElement('text')}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               + Text
             </button>
             <button
+              type="button"
               onClick={() => addElement('image')}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               + Image
             </button>
             <button
+              type="button"
               onClick={() => addElement('video')}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               + Video
             </button>
             <button
+              type="button"
               onClick={() => addElement('button')}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               + Button
             </button>
             <button
+              type="button"
               onClick={() => addElement('divider')}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
               + Divider
             </button>
             <button
+              type="button"
               onClick={() => addElement('spacer')}
               className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
             >
@@ -231,6 +237,7 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
               <div>
                 <label className="block text-sm font-medium mb-1">Background Image</label>
                 <button
+                  type="button"
                   onClick={() => {
                     setMediaSelectElementId('card-background');
                     setMediaSelectType('image');
@@ -242,6 +249,7 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
                 </button>
                 {layout.backgroundImage && (
                   <button
+                    type="button"
                     onClick={() => updateLayout({ ...layout, backgroundImage: undefined })}
                     className="w-full mt-1 px-4 py-1 bg-red-500 text-white rounded hover:bg-red-600 text-xs"
                   >
@@ -312,6 +320,7 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
           
           <div className="mt-6">
             <button
+              type="button"
               onClick={() => setShowPreview(!showPreview)}
               className="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
             >
@@ -344,6 +353,7 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
                       </span>
                       <div className="flex gap-2">
                         <button
+                          type="button"
                           onClick={(e) => { e.stopPropagation(); moveElement(element.id, 'up'); }}
                           disabled={element.order === 0}
                           className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
@@ -351,6 +361,7 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
                           ↑
                         </button>
                         <button
+                          type="button"
                           onClick={(e) => { e.stopPropagation(); moveElement(element.id, 'down'); }}
                           disabled={element.order === layout.elements.length - 1}
                           className="px-2 py-1 text-xs bg-gray-200 rounded hover:bg-gray-300 disabled:opacity-50"
@@ -358,6 +369,7 @@ export function VisualCardEditor({ initialLayout, onChange, csrfToken }: VisualC
                           ↓
                         </button>
                         <button
+                          type="button"
                           onClick={(e) => { e.stopPropagation(); deleteElement(element.id); }}
                           className="px-2 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600"
                         >
@@ -497,6 +509,7 @@ function renderElementEditor(
       return (
         <div className="space-y-2">
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               openMediaSelector(element.id, 'image');
@@ -589,6 +602,7 @@ function renderElementEditor(
       return (
         <div className="space-y-2">
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               openMediaSelector(element.id, 'video');
