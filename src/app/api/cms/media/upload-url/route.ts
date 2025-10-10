@@ -98,7 +98,13 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error: any) {
-    console.error('Error generating upload URL:', error);
+    console.error('Error in upload-url endpoint:', error);
+    console.error('Error stack:', error.stack);
+    console.error('Error details:', JSON.stringify({
+      message: error.message,
+      code: error.code,
+      name: error.name,
+    }));
 
     let errorMessage = 'Failed to generate upload URL';
     let errorDetails = error.message;
@@ -113,6 +119,11 @@ export async function POST(request: NextRequest) {
         success: false,
         error: errorMessage,
         details: errorDetails,
+        debugInfo: process.env.NODE_ENV === 'development' ? {
+          message: error.message,
+          code: error.code,
+          stack: error.stack
+        } : undefined,
       },
       { status: 500 }
     );
