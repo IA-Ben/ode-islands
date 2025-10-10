@@ -60,7 +60,8 @@ export default function StoryCardModal({
   const [videoProcessing, setVideoProcessing] = useState(false);
 
   useEffect(() => {
-    if (initialData) {
+    // Only process initialData when modal is open
+    if (isOpen && initialData) {
       // Check if we have a visualLayout in the data
       if (initialData.visualLayout) {
         setVisualLayout(initialData.visualLayout);
@@ -82,8 +83,14 @@ export default function StoryCardModal({
       setTraditionalContent(initialData.content || {});
       setOrder(initialData.order || 0);
       setHasAR(initialData.hasAR || false);
+    } else if (isOpen && !initialData) {
+      // New card - reset to empty
+      setVisualLayout(createEmptyLayout());
+      setTraditionalContent({});
+      setOrder(0);
+      setHasAR(false);
     }
-  }, [initialData]);
+  }, [isOpen, initialData]);
 
   const getUploadParameters = async (file: { name: string; type: string; size: number }) => {
     const response = await fetch('/api/memories/upload', {
